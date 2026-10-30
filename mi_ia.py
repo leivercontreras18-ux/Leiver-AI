@@ -67,7 +67,7 @@ try:
     genai.configure(api_key=api_key)
     
     instrucciones = "Eres Leiver AI, un asistente experto, elegante, amable y directo (estilo Jarvis). Siempre respondes en español de forma clara y breve si es una charla."
-    modelo = genai.GenerativeModel('gemini-1.5-flash', system_instruction=instrucciones)
+    modelo = genai.GenerativeModel('gemini-3.5-flash', system_instruction=instrucciones)
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
