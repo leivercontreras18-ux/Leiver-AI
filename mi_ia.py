@@ -12,8 +12,7 @@ try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
     # Usamos el modelo que te recomendé, el más estable
-    modelo = genai.GenerativeModel('gemini-2.5-flash')
-
+    modelo = genai.GenerativeModel('gemini-3.8-flash')
     # --- INICIALIZAR EL HISTORIAL DE CHAT ---
     if "messages" not in st.session_state:
         st.session_state.messages = []
