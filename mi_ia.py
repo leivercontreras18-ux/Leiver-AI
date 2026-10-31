@@ -242,7 +242,6 @@ with st.sidebar:
     voz_activa = st.checkbox("🔊 Voz activa", value=True)
     
     st.subheader("🎤 Hablar")
-    # Simulación visual de entrada de audio como se ve en la captura
     st.caption("⬇️ 00:00")
     
     st.subheader("📁 Código")
@@ -277,3 +276,4 @@ with col_izq:
                 <div class="orb-inner"></div>
             </div>
         </div>
+        <div class="nova-title">{NOMBRE_IA.upper()}</div>
