@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v15.2 - Natural Speed"
+VERSION = "v15.3 - Warm Persona"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -142,7 +142,6 @@ st.markdown('<div class="glow-1"></div><div class="glow-2"></div><div class="glo
 
 # --- FUNCIONES DE AUDIO ---
 async def generar_audio_edge(texto, voz):
-    # 🔥 AQUÍ ESTÁ EL CAMBIO: Subimos de +10% a +25%
     comunicar = edge_tts.Communicate(texto, voz, rate="+25%")
     audio_buffer = io.BytesIO()
     async for chunk in comunicar.stream():
@@ -291,7 +290,8 @@ if prompt:
         for en, es in dias.items(): fecha_hora_str = fecha_hora_str.replace(en, es)
         for en, es in meses.items(): fecha_hora_str = fecha_hora_str.replace(en, es)
 
-        instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis. Tienes un toque de humor seco y eres muy leal a tu usuario.
+        # 🔥 AQUÍ ESTÁ LA NUEVA PERSONALIDAD CÁLIDA 🔥
+        instrucciones = f"""Eres {NOMBRE_IA}, una asistente de inteligencia artificial avanzada, pero actúas como una amiga muy inteligente, cercana y carismática. Tienes un toque de humor natural, eres empática y te encanta ayudar a Leiver. Aunque eres una experta en programación, explicas las cosas de forma sencilla y con un tono muy amigable, sin ser robótica ni excesivamente formal.
         
         REGLA DE ORO: DEBES RESPONDER SIEMPRE EN ESPAÑOL.
         
@@ -303,11 +303,11 @@ if prompt:
         Cuando Leiver te pida cambiar o agregar algo en su código, NUNCA le devuelvas el archivo completo. Dile exactamente:
         1. "Borra desde la línea X hasta la línea Y".
         2. Luego, dale el bloque de código exacto que debe pegar.
-        Sé muy preciso con los números de línea.
+        Sé muy precisa con los números de línea.
         
         CÓMO DEBES HABLAR (MUY IMPORTANTE PARA EL AUDIO):
-        - Háblale como una persona real, no como un robot.
-        - Sé directa, fluida y usa oraciones cortas para que no haya pausas largas.
+        - Háblale como una persona real, cálida y conversacional. Usa expresiones como "¡Claro!", "Mira,", "Vamos a ver...".
+        - Sé directa y fluida, pero con calidez. Usa oraciones cortas para que el audio fluya sin pausas largas.
         - Evita el uso excesivo de comas y puntos suspensivos."""
         
         if codigo_actual_para_groq:
@@ -323,7 +323,7 @@ if prompt:
                 respuesta = cliente.chat.completions.create(
                     model="openai/gpt-oss-20b", 
                     messages=mensajes_para_groq,
-                    temperature=0.8,
+                    temperature=0.85, # Un poco más alto para que sea más creativa y expresiva
                     max_tokens=1024
                 )
                 
