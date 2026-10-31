@@ -13,7 +13,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v13.1 - GitHub Reader"
+VERSION = "v13.2 - Exact Line Finder"
 ARCHIVO_HISTORIAL = "historial_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -40,12 +40,11 @@ def limpiar_texto_para_voz(texto):
 # --- FUNCIÓN PARA DESCARGAR CÓDIGO DE GITHUB ---
 def descargar_codigo_github(repo_y_archivo, token):
     try:
-        # Formato esperado: "usuario/repo/archivo.py" o "repo/archivo.py"
         partes = repo_y_archivo.strip().split('/')
         if len(partes) == 3:
             usuario, repo, archivo = partes
         elif len(partes) == 2:
-            usuario = "leivercontreras18-ux" # Tu usuario por defecto
+            usuario = "leivercontreras18-ux" 
             repo, archivo = partes
         else:
             return "Error: Formato incorrecto. Usa 'repositorio/archivo.py'"
@@ -166,7 +165,6 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("🐙 GitHub")
     
-    # NUEVO BUSCADOR DE ARCHIVOS EN GITHUB
     ruta_archivo = st.text_input("Ruta del archivo (ej. inventario-app/app.py)", label_visibility="collapsed")
     if st.button("Leer archivo de GitHub", use_container_width=True):
         token = st.secrets.get("GITHUB_TOKEN")
@@ -266,7 +264,7 @@ if audio_grabado or prompt:
         guardar_historial(st.session_state.messages)
         
         # ========================================================
-        # INSTRUCCIONES (REGLAS DE PROGRAMACIÓN SUAVIZADAS)
+        # INSTRUCCIONES (NUEVA REGLA DE CIRUGÍA EXACTA)
         # ========================================================
         instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis. Tienes un toque de humor seco y eres muy leal a tu usuario.
         
@@ -278,15 +276,19 @@ if audio_grabado or prompt:
         CONTEXTO DE GITHUB:
         {st.session_state.github_contexto}
         
+        REGLA DE PROGRAMACIÓN QUIRÚRGICA: 
+        Cuando Leiver te pida cambiar o agregar algo en su código, NUNCA le devuelvas el archivo completo. Actúa como un cirujano experto y dile exactamente:
+        1. "Borra desde la línea X hasta la línea Y" (indica el rango exacto de líneas que debe eliminar o reemplazar).
+        2. Luego, dale el bloque de código exacto que debe pegar en su lugar.
+        Sé muy preciso con los números de línea para que Leiver no tenga que adivinar.
+        
         CÓMO DEBES HABLAR:
         - Háblale como una persona real, no como un robot.
         - Sé directa y fluida. Evita el uso excesivo de comas y puntos suspensivos.
         - No uses listas largas. Prefiere párrafos fluidos."""
         
-        # Si hay código (subido o descargado de GitHub), se lo pasamos
         if codigo_actual:
             instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```python\n{codigo_actual}\n```"
-            instrucciones += "\n\nINSTRUCCIÓN: Si el usuario te pide un cambio, devuélvele solo el fragmento exacto que debe cambiar y dile en qué línea va, para no saturar la memoria."
 
         mensajes_para_groq = [{"role": "system", "content": instrucciones}]
         for msg in st.session_state.messages:
