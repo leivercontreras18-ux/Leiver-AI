@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v33.0 - Premium HUD"
+VERSION = "v33.1 - Premium Polish"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -78,7 +78,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS PREMIUM HUD ---
+# --- CSS PREMIUM HUD (CON AJUSTES CRÍTICOS) ---
 st.markdown("""
 <style>
     /* Variables de Sistema */
@@ -106,16 +106,18 @@ st.markdown("""
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
     /* =========================================
-       BARRA LATERAL
+       AJUSTE 1: BARRA LATERAL MÁS ANCHA Y LIMPIA
        ========================================= */
     [data-testid="stSidebar"] {
         background-color: var(--bg-sidebar) !important;
         border-right: 1px solid rgba(255, 255, 255, 0.03) !important;
+        min-width: 280px !important; /* Más ancha para que respire */
+        max-width: 280px !important;
     }
 
-    /* MENÚ DE NAVEGACIÓN (Forzar estilo) */
+    /* Ocultar los círculos de los radio buttons */
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label > div:first-child {
-        display: none !important; /* Ocultar el círculo de Streamlit */
+        display: none !important; 
     }
 
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label {
@@ -141,11 +143,10 @@ st.markdown("""
         background-color: rgba(255, 255, 255, 0.02) !important;
     }
 
-    /* Estado Activo */
+    /* Estado Activo del Menú */
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) {
         background-color: var(--bg-active-tab) !important;
         border-left: 3px solid var(--cyan-neon) !important;
-        box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.05) !important;
     }
 
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) p {
@@ -153,14 +154,27 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Botones Generales */
+    /* Ocultar las flechitas de los expanders (Configuración) */
+    [data-testid="stSidebar"] [data-testid="stExpander"] summary svg {
+        display: none !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] summary {
+        color: var(--text-muted) !important;
+        font-size: 0.85rem !important;
+        padding-left: 24px !important;
+    }
+
+    /* Botones */
     [data-testid="stSidebar"] button { 
         background: transparent !important; 
         color: var(--text-muted) !important; 
         border: 1px solid rgba(255,255,255,0.1) !important; 
         border-radius: 8px !important; 
         text-align: left !important;
-        padding: 8px 12px !important;
+        padding: 10px 16px !important;
+        margin-left: 12px !important;
+        margin-right: 12px !important;
+        width: calc(100% - 24px) !important;
         transition: all 0.2s ease !important;
     }
     [data-testid="stSidebar"] button:hover { 
@@ -168,6 +182,7 @@ st.markdown("""
         color: var(--text-pure-white) !important; 
     }
 
+    /* Botón Nuevo Chat */
     [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button { 
         background: rgba(0, 229, 255, 0.1) !important; 
         color: var(--cyan-neon) !important; 
@@ -177,7 +192,7 @@ st.markdown("""
     }
 
     /* =========================================
-       CHAT (GLASSMORPHISM LIMPIO)
+       CHAT (GLASSMORPHISM)
        ========================================= */
     [data-testid="stChatMessage"] {
         background: var(--glass-bubble) !important;
@@ -189,7 +204,6 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
 
-    /* TUS MENSAJES (Derecha) */
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         background: rgba(255, 255, 255, 0.04) !important;
@@ -198,7 +212,6 @@ st.markdown("""
         max-width: 80% !important;
     }
 
-    /* MENSAJES DE LILI (Izquierda) */
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
         border: 1px solid var(--glass-border) !important;
         box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.03) !important;
@@ -210,13 +223,10 @@ st.markdown("""
     [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { 
         display: none !important; 
     }
-    
-    [data-testid="stChatMessage"] > div {
-        background-color: transparent !important;
-    }
+    [data-testid="stChatMessage"] > div { background-color: transparent !important; }
 
     /* =========================================
-       CAJA DE TEXTO (CÁPSULA FLOTANTE)
+       AJUSTE 2: CAJA DE TEXTO SUAVE Y FLOTANTE
        ========================================= */
     [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { 
         background-color: transparent !important; 
@@ -230,11 +240,11 @@ st.markdown("""
     }
     
     .stChatInput { 
-        background: rgba(24, 29, 40, 0.8) !important;
-        backdrop-filter: blur(10px) !important;
+        background: rgba(24, 29, 40, 0.7) !important; /* Fondo semi-transparente suave */
+        backdrop-filter: blur(10px) !important; /* Desenfoque */
         border: 1px solid rgba(0, 229, 255, 0.2) !important; 
         border-radius: 30px !important; 
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 1px var(--cyan-neon) !important; 
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important; 
         transition: all 0.3s ease !important;
     }
     
@@ -247,39 +257,83 @@ st.markdown("""
     }
     
     .stChatInput textarea::placeholder { 
-        color: var(--text-muted) !important; 
+        color: rgba(255, 255, 255, 0.5) !important; /* Placeholder visible pero sutil */
     }
     
     .stChatInput:focus-within { 
         border-color: var(--cyan-neon) !important; 
-        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 8px rgba(0, 229, 255, 0.4) !important; 
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 8px rgba(0, 229, 255, 0.3) !important; 
     }
     
+    /* Botón de enviar integrado y sutil */
     [data-testid="stChatInput"] button { 
-        background: var(--cyan-neon) !important; 
+        background: transparent !important; 
         border-radius: 50% !important; 
         border: none !important; 
         margin: 5px !important; 
         width: 35px !important; 
         height: 35px !important; 
-        box-shadow: 0 0 10px rgba(0, 229, 255, 0.5) !important;
+        box-shadow: none !important; /* Quitamos el resplandor */
     }
-    
+    [data-testid="stChatInput"] button:hover {
+        background: rgba(0, 229, 255, 0.1) !important;
+    }
     [data-testid="stChatInput"] button svg { 
-        fill: #000000 !important; 
+        fill: var(--cyan-neon) !important; /* Icono cian brillante */
     }
-    
     audio, div[data-testid="stAudio"] { display: none !important; }
 
     /* =========================================
-       REACTOR (PANTALLA DE BIENVENIDA)
+       AJUSTE 3: ORBE Y TEXTO DE ESTADO
        ========================================= */
-    .center-display { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10vh; margin-bottom: 30px; position: relative; }
+    .center-display { 
+        display: flex; flex-direction: column; align-items: center; justify-content: center; 
+        margin-top: 10vh; margin-bottom: 30px; position: relative; 
+        padding: 40px 0; /* Espacio para que no se corten los anillos */
+    }
+    
     .reactor { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
-    .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0, 229, 255, 0.2); border-top: 2px solid var(--cyan-neon); border-bottom: 2px solid var(--cyan-neon); animation: spin 3s linear infinite; box-shadow: 0 0 30px rgba(0, 229, 255, 0.1); }
-    .reactor-ring-mid { position: absolute; inset: 20px; border-radius: 50%; border: 1px dashed rgba(0, 229, 255, 0.4); animation: spin-reverse 8s linear infinite; }
-    .reactor-core { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #ffffff 0%, var(--cyan-neon) 40%, #0077ff 100%); box-shadow: 0 0 50px var(--cyan-neon), inset 0 0 20px #ffffff; animation: pulse 2s ease-in-out infinite; z-index: 10; }
-    .display-text { margin-top: 30px; font-size: 14px; letter-spacing: 5px; color: var(--cyan-neon); text-transform: uppercase; text-shadow: 0 0 15px rgba(0, 229, 255, 0.3); z-index: 10; font-weight: 600; font-family: monospace; }
+    
+    /* Anillos con opacidad reducida */
+    .reactor-ring-outer { 
+        position: absolute; inset: 0; border-radius: 50%; 
+        border: 2px solid rgba(0, 229, 255, 0.1); 
+        border-top: 2px solid var(--cyan-neon); 
+        border-bottom: 2px solid var(--cyan-neon); 
+        animation: spin 3s linear infinite; 
+        opacity: 0.3; /* Reducimos opacidad para que no compitan */
+    }
+    .reactor-ring-mid { 
+        position: absolute; inset: 20px; border-radius: 50%; 
+        border: 1px dashed rgba(0, 229, 255, 0.2); 
+        animation: spin-reverse 8s linear infinite; 
+        opacity: 0.3;
+    }
+    
+    .reactor-core { 
+        width: 80px; height: 80px; border-radius: 50%; 
+        background: radial-gradient(circle at 50% 50%, #ffffff 0%, var(--cyan-neon) 40%, #0077ff 100%); 
+        box-shadow: 0 0 50px var(--cyan-neon), inset 0 0 20px #ffffff; 
+        animation: pulse 2s ease-in-out infinite; 
+        z-index: 10; 
+    }
+    
+    /* Texto en una cápsula integrada */
+    .display-text { 
+        margin-top: 30px; 
+        font-size: 12px; 
+        letter-spacing: 4px; 
+        color: var(--cyan-neon); 
+        text-transform: uppercase; 
+        font-weight: 600; 
+        font-family: monospace; 
+        background: rgba(24, 29, 40, 0.8); 
+        padding: 6px 16px; 
+        border-radius: 20px; 
+        border: 1px solid rgba(0, 229, 255, 0.3); 
+        box-shadow: 0 0 10px rgba(0, 229, 255, 0.1); 
+        z-index: 10; 
+    }
     
     @keyframes spin { 100% { transform: rotate(360deg); } }
     @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
@@ -313,7 +367,6 @@ with st.sidebar:
     st.caption(f"<p style='padding-left: 24px; color: #8a99ad; font-size: 0.75rem;'>{VERSION}</p>", unsafe_allow_html=True)
     
     modos = ["Programación", "Chat General", "Creativo", "Análisis"]
-    # Mapeo para la lógica
     modos_logicos = ["💻 Programación", "💬 Chat General", "🎨 Creativo", "📊 Análisis"]
     
     index_actual = modos_logicos.index(st.session_state.modo_actual)
@@ -332,7 +385,6 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
-    # Botón Nuevo Chat
     if st.button("+ Nuevo Chat", use_container_width=True):
         nuevo_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
         st.session_state.chat_actual_id = nuevo_id
@@ -340,7 +392,7 @@ with st.sidebar:
         guardar_todos_los_chats(st.session_state.todos_los_chats)
         st.rerun()
 
-    st.markdown("<p style='color: #8a99ad; font-size: 0.8rem; margin-top: 20px; margin-bottom: 10px;'>HISTORIAL</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #8a99ad; font-size: 0.8rem; margin-top: 20px; margin-bottom: 10px; padding-left: 24px;'>HISTORIAL</p>", unsafe_allow_html=True)
     for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
         if chat_id.startswith(f"{st.session_state.modo_actual}|") and len(st.session_state.todos_los_chats[chat_id]) > 0:
             col1, col2 = st.columns([0.8, 0.2])
@@ -361,44 +413,43 @@ with st.sidebar:
                         guardar_todos_los_chats(st.session_state.todos_los_chats)
                     st.rerun()
 
-    st.markdown("---")
+    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
     if st.session_state.modo_actual == "💻 Programación":
-        st.markdown("#### 🐙 GitHub")
-        token = st.secrets.get("GITHUB_TOKEN")
-        usuario_github = "leivercontreras18-ux"
-        
-        if token:
-            if st.button("🔄 Sincronizar Repositorios", use_container_width=True):
-                st.cache_data.clear()
-                st.rerun()
-                
-            repos = obtener_repositorios(token, usuario_github)
-            if repos:
-                idx_repo = repos.index("Leiver-AI") if "Leiver-AI" in repos else 0
-                repo_sel = st.selectbox("Repositorio", repos, index=idx_repo)
-                
-                archivos = obtener_archivos(usuario_github, repo_sel, token)
-                if archivos:
-                    idx_archivo = archivos.index("mi_ia.py") if "mi_ia.py" in archivos else 0
-                    arch_sel = st.selectbox("Archivo", archivos, index=idx_archivo)
+        with st.expander("🐙 GitHub"):
+            token = st.secrets.get("GITHUB_TOKEN")
+            usuario_github = "leivercontreras18-ux"
+            
+            if token:
+                if st.button("🔄 Sincronizar", use_container_width=True):
+                    st.cache_data.clear()
+                    st.rerun()
                     
-                    if st.button("📥 Cargar Archivo", use_container_width=True):
-                        exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
-                        if exito:
-                            st.session_state.codigo_github = resultado
-                            st.session_state.archivo_cargado_nombre = arch_sel
-                            st.rerun()
-            else:
-                st.warning("No se encontraron repositorios. Revisa tu Token.")
-                
-            if st.session_state.archivo_cargado_nombre:
-                st.success(f"✅ Leyendo: {st.session_state.archivo_cargado_nombre}")
+                repos = obtener_repositorios(token, usuario_github)
+                if repos:
+                    idx_repo = repos.index("Leiver-AI") if "Leiver-AI" in repos else 0
+                    repo_sel = st.selectbox("Repositorio", repos, index=idx_repo)
+                    
+                    archivos = obtener_archivos(usuario_github, repo_sel, token)
+                    if archivos:
+                        idx_archivo = archivos.index("mi_ia.py") if "mi_ia.py" in archivos else 0
+                        arch_sel = st.selectbox("Archivo", archivos, index=idx_archivo)
+                        
+                        if st.button("📥 Cargar Archivo", use_container_width=True):
+                            exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
+                            if exito:
+                                st.session_state.codigo_github = resultado
+                                st.session_state.archivo_cargado_nombre = arch_sel
+                                st.rerun()
+                else:
+                    st.warning("No se encontraron repositorios.")
+                    
+                if st.session_state.archivo_cargado_nombre:
+                    st.success(f"✅ {st.session_state.archivo_cargado_nombre}")
 
     with st.expander("Configuración"):
         voz_activa = st.checkbox("Voz activa", value=True)
-        with st.expander("Micrófono"):
-            audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
+        audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
 
 # --- CONEXIÓN CON GROQ ---
 if "GROQ_API_KEY" not in st.secrets:
@@ -474,11 +525,11 @@ if audio_grabado or prompt:
                 
         elif st.session_state.modo_actual == "🎨 Creativo":
             instrucciones = """Eres Lili Creative, una IA imaginativa, poética y apasionada por el arte.
-            REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL. CONTEXTO: Estás en MODO CREATIVO. Tu objetivo es inspirar y pensar fuera de la caja."""
+            REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL. CONTEXTO: Estás en MODO CREATIVO."""
             
         elif st.session_state.modo_actual == "📊 Análisis":
             instrucciones = """Eres Lili Analyst, una IA lógica y estructurada.
-            REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL. CONTEXTO: Estás en MODO ANÁLISIS. Tu objetivo es resumir y dar respuestas lógicas."""
+            REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL. CONTEXTO: Estás en MODO ANÁLISIS."""
             
         else:
             instrucciones = """Eres Lili, una IA avanzada y carismática. REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL."""
