@@ -13,7 +13,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v13.4 - Multi-Language"
+VERSION = "v13.6 - Clean UI"
 ARCHIVO_HISTORIAL = "historial_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -49,11 +49,19 @@ def obtener_repositorios(token, usuario):
 @st.cache_data(ttl=60)
 def obtener_archivos(usuario, repo, token):
     headers = {"Authorization": f"token {token}"}
-    res = requests.get(f"https://api.github.com/repos/{usuario}/{repo}/contents", headers=headers)
+    repo_info = requests.get(f"https://api.github.com/repos/{usuario}/{repo}", headers=headers)
+    if repo_info.status_code != 200:
+        return []
+    default_branch = repo_info.json().get("default_branch", "main")
+
+    tree_url = f"https://api.github.com/repos/{usuario}/{repo}/git/trees/{default_branch}?recursive=1"
+    res = requests.get(tree_url, headers=headers)
+    
     if res.status_code == 200:
-        # 🔥 AQUÍ ESTÁ EL CAMBIO: Aceptamos archivos de web y de Python
+        tree = res.json().get("tree", [])
         extensiones_validas = ('.py', '.html', '.css', '.js', '.json', '.txt', '.md')
-        return [f['name'] for f in res.json() if f['type'] == 'file' and f['name'].endswith(extensiones_validas)]
+        archivos = [f['path'] for f in tree if f['type'] == 'blob' and f['path'].endswith(extensiones_validas)]
+        return archivos
     return []
 
 def descargar_archivo_github(usuario, repo, archivo, token):
@@ -62,7 +70,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
     res = requests.get(url, headers=headers)
     if res.status_code == 200:
         return base64.b64decode(res.json()['content']).decode('utf-8')
-    return "Error al descargar"
+    return f"Error al descargar {archivo}"
 
 # --- CSS AVANZADO ---
 st.markdown("""
@@ -100,7 +108,7 @@ st.markdown("""
     
     [data-testid="stSidebar"] { background-color: #0b0b12 !important; border-right: 1px solid rgba(168, 85, 247, 0.15) !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { font-weight: 200 !important; letter-spacing: 2px; color: #e9d5ff !important; text-transform: uppercase; font-size: 14px !important; }
-    [data-testid="stFileUploader"] { background-color: rgba(255, 255, 255, 0.02) !important; border: 1px dashed rgba(168, 85, 247, 0.4) !important; border-radius: 15px !important; padding: 10px !important; transition: all 0.3s ease; }
+    [data-testid="stFileUploader"] { display: none !important; } /* Ocultamos el uploader por si acaso */
     [data-testid="stAudioInput"] { background-color: rgba(0, 242, 254, 0.05) !important; border: 1px solid rgba(0, 242, 254, 0.2) !important; border-radius: 15px !important; padding: 10px !important; }
     [data-testid="stSidebar"] button { background: rgba(255, 0, 85, 0.1) !important; color: #ff3366 !important; border: 1px solid rgba(255, 0, 85, 0.3) !important; border-radius: 10px !important; font-weight: bold !important; letter-spacing: 1px !important; transition: all 0.3s ease !important; }
     [data-testid="stSidebar"] button:hover { background: rgba(255, 0, 85, 0.3) !important; box-shadow: 0 0 15px rgba(255, 0, 85, 0.5) !important; color: white !important; border: 1px solid rgba(255, 0, 85, 0.8) !important; }
@@ -158,13 +166,7 @@ with st.sidebar:
     st.subheader("🎤 Hablar")
     audio_grabado = st.audio_input("Graba tu mensaje", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
     
-    st.subheader("📁 Código")
-    uploaded_file = st.file_uploader("Upload", type=["py", "txt", "json", "js", "html", "css"], label_visibility="collapsed")
-    
-    codigo_actual = uploaded_file.read().decode("utf-8") if uploaded_file else st.session_state.codigo_github
-    if uploaded_file:
-        st.success(f"Cargado: {uploaded_file.name}")
-        st.session_state.codigo_github = ""
+    # (La sección de Upload ha sido eliminada)
     
     st.markdown("---")
     st.subheader("🐙 GitHub")
@@ -193,7 +195,7 @@ with st.sidebar:
                         else:
                             st.error(codigo)
             else:
-                st.info("No hay archivos de código soportados en este repositorio.")
+                st.info("No se encontraron archivos soportados en este repositorio.")
         else:
             st.warning("No se encontraron repositorios. Revisa el token.")
             
@@ -278,6 +280,9 @@ if audio_grabado or prompt:
         st.session_state.messages.append({"role": "user", "content": texto_usuario})
         guardar_historial(st.session_state.messages)
         
+        # Usamos el código de GitHub guardado
+        codigo_actual = st.session_state.codigo_github
+        
         instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis. Tienes un toque de humor seco y eres muy leal a tu usuario.
         
         REGLA DE ORO: DEBES RESPONDER SIEMPRE EN ESPAÑOL.
@@ -289,7 +294,7 @@ if audio_grabado or prompt:
         {st.session_state.github_contexto}
         
         REGLA DE PROGRAMACIÓN QUIRÚRGICA: 
-        Cuando Leiver te pida cambiar o agregar algo en su código (sea Python, HTML, CSS o JS), NUNCA le devuelvas el archivo completo. Actúa como un cirujano experto y dile exactamente:
+        Cuando Leiver te pida cambiar o agregar algo en su código, NUNCA le devuelvas el archivo completo. Actúa como un cirujano experto y dile exactamente:
         1. "Borra desde la línea X hasta la línea Y" (indica el rango exacto de líneas que debe eliminar o reemplazar).
         2. Luego, dale el bloque de código exacto que debe pegar en su lugar.
         Sé muy preciso con los números de línea para que Leiver no tenga que adivinar.
