@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v16.0 - SaaS UI"
+VERSION = "v16.1 - SaaS UI Fixed"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -83,11 +83,11 @@ st.markdown("""
 <style>
     /* Fondo atmosférico */
     .stApp {
-        background-image: url('https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=2094&auto=format&fit=crop'); /* Fondo de montaña/nebulosa */
+        background-image: url('https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=2094&auto=format&fit=crop'); 
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
-        background-color: #121214; /* Color de respaldo */
+        background-color: #121214; 
     }
     
     /* Superposición oscura para que resalte la UI */
@@ -99,8 +99,6 @@ st.markdown("""
     }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
-    
-    /* Ocultar el borde por defecto de las columnas */
     [data-testid="column"] { padding: 0 !important; }
 
     /* =========================================
@@ -241,12 +239,12 @@ with st.sidebar:
     st.markdown("### Workspaces")
     st.button("📁 New Project", use_container_width=True)
     
-    # El historial de chats va aquí
+    # El historial de chats va aquí (CON EL ERROR CORREGIDO)
     st.markdown("### Historial")
     for chat_id in sorted(st.session_state.todos_los_chats.keys(), reverse=True):
         if len(st.session_state.todos_los_chats[chat_id]) > 0:
             prefijo = "🟣" if chat_id == st.session_state.chat_actual_id else "⚪"
-            if st.button(f"{prefilo} {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
+            if st.button(f"{prefijo} {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
                 st.session_state.chat_actual_id = chat_id
                 st.rerun()
 
@@ -384,7 +382,6 @@ if audio_grabado or prompt:
                         texto_para_hablar = limpiar_texto_para_voz(texto_respuesta)
                         comunicar = edge_tts.Communicate(texto_para_hablar, VOZ_FIJA, rate="+8%")
                         audio_buffer = io.BytesIO()
-                        # Generación rápida (puedes usar asyncio.run como antes si prefieres)
                         import asyncio
                         async def gen_audio():
                             async for chunk in comunicar.stream():
