@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v15.8 - Natural Rhythm"
+VERSION = "v15.9 - Agile Punctuation"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -37,7 +37,7 @@ def limpiar_texto_para_voz(texto):
     texto_limpio = re.sub(r'[*#_`]', '', texto)
     texto_limpio = re.sub(r'^\s*-\s*', '', texto_limpio, flags=re.MULTILINE)
     
-    # 2. Quitar Emojis (para que no diga "cara sonriente")
+    # 2. Quitar Emojis
     emoji_pattern = re.compile("["
         u"\U0001F600-\U0001F64F" u"\U0001F300-\U0001F5FF"
         u"\U0001F680-\U0001F6FF" u"\U0001F1E0-\U0001F1FF"
@@ -48,11 +48,12 @@ def limpiar_texto_para_voz(texto):
     # 3. Quitar comas de números grandes (1,500 -> 1500)
     texto_limpio = re.sub(r'(?<=\d),(?=\d)', '', texto_limpio) 
     
+    # 🔥 EL TRUCO: Reemplazamos los signos de interrogación y exclamación por comas
+    # para que el motor de voz haga una pausa corta en lugar de una pausa dramática.
+    texto_limpio = texto_limpio.replace('?', ',').replace('¡', '').replace('!', ',')
+    
     # 4. Limpiar espacios dobles que hayan quedado
     texto_limpio = re.sub(r'\s+', ' ', texto_limpio)
-    
-    # 🔥 NOTA: AQUÍ NO BORRAMOS LOS PUNTOS NI LAS COMAS. 
-    # Se los dejamos al motor de voz para que haga pausas naturales.
     
     return texto_limpio.strip()
 
@@ -159,8 +160,8 @@ st.markdown('<div class="glow-1"></div><div class="glow-2"></div><div class="glo
 
 # --- FUNCIONES DE AUDIO ---
 async def generar_audio_edge(texto, voz):
-    # 🔥 AQUÍ ESTÁ EL CAMBIO: +5% (Casi velocidad normal, con pausas naturales)
-    comunicar = edge_tts.Communicate(texto, voz, rate="+5%")
+    # 🔥 Subimos un poquito la velocidad a +8% para compensar la pausa de los signos
+    comunicar = edge_tts.Communicate(texto, voz, rate="+8%")
     audio_buffer = io.BytesIO()
     async for chunk in comunicar.stream():
         if chunk["type"] == "audio":
