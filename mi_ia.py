@@ -13,7 +13,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v13.6 - Clean UI"
+VERSION = "v13.7 - Clean Reader"
 ARCHIVO_HISTORIAL = "historial_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -64,13 +64,14 @@ def obtener_archivos(usuario, repo, token):
         return archivos
     return []
 
+# 🔥 AQUÍ ESTÁ EL ARREGLO: Ahora devuelve True/False en lugar de revisar si dice "Error"
 def descargar_archivo_github(usuario, repo, archivo, token):
     headers = {"Authorization": f"token {token}"}
     url = f"https://api.github.com/repos/{usuario}/{repo}/contents/{archivo}"
     res = requests.get(url, headers=headers)
     if res.status_code == 200:
-        return base64.b64decode(res.json()['content']).decode('utf-8')
-    return f"Error al descargar {archivo}"
+        return True, base64.b64decode(res.json()['content']).decode('utf-8')
+    return False, f"Error {res.status_code}: No se pudo descargar."
 
 # --- CSS AVANZADO ---
 st.markdown("""
@@ -108,7 +109,7 @@ st.markdown("""
     
     [data-testid="stSidebar"] { background-color: #0b0b12 !important; border-right: 1px solid rgba(168, 85, 247, 0.15) !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { font-weight: 200 !important; letter-spacing: 2px; color: #e9d5ff !important; text-transform: uppercase; font-size: 14px !important; }
-    [data-testid="stFileUploader"] { display: none !important; } /* Ocultamos el uploader por si acaso */
+    [data-testid="stFileUploader"] { display: none !important; }
     [data-testid="stAudioInput"] { background-color: rgba(0, 242, 254, 0.05) !important; border: 1px solid rgba(0, 242, 254, 0.2) !important; border-radius: 15px !important; padding: 10px !important; }
     [data-testid="stSidebar"] button { background: rgba(255, 0, 85, 0.1) !important; color: #ff3366 !important; border: 1px solid rgba(255, 0, 85, 0.3) !important; border-radius: 10px !important; font-weight: bold !important; letter-spacing: 1px !important; transition: all 0.3s ease !important; }
     [data-testid="stSidebar"] button:hover { background: rgba(255, 0, 85, 0.3) !important; box-shadow: 0 0 15px rgba(255, 0, 85, 0.5) !important; color: white !important; border: 1px solid rgba(255, 0, 85, 0.8) !important; }
@@ -154,6 +155,8 @@ if "github_contexto" not in st.session_state:
     st.session_state.github_contexto = ""
 if "codigo_github" not in st.session_state:
     st.session_state.codigo_github = ""
+if "archivo_cargado_nombre" not in st.session_state:
+    st.session_state.archivo_cargado_nombre = ""
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -165,8 +168,6 @@ with st.sidebar:
     
     st.subheader("🎤 Hablar")
     audio_grabado = st.audio_input("Graba tu mensaje", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
-    
-    # (La sección de Upload ha sido eliminada)
     
     st.markdown("---")
     st.subheader("🐙 GitHub")
@@ -187,13 +188,14 @@ with st.sidebar:
                 
                 if st.button("Leer archivo seleccionado", use_container_width=True):
                     with st.spinner("Descargando..."):
-                        codigo = descargar_archivo_github(usuario_github, repo_seleccionado, archivo_seleccionado, token)
-                        if "Error" not in codigo:
-                            st.session_state.codigo_github = codigo
+                        exito, resultado = descargar_archivo_github(usuario_github, repo_seleccionado, archivo_seleccionado, token)
+                        if exito:
+                            st.session_state.codigo_github = resultado
+                            st.session_state.archivo_cargado_nombre = archivo_seleccionado
                             st.success(f"✅ {archivo_seleccionado} cargado")
                             st.rerun()
                         else:
-                            st.error(codigo)
+                            st.error(resultado)
             else:
                 st.info("No se encontraron archivos soportados en este repositorio.")
         else:
@@ -219,10 +221,15 @@ with st.sidebar:
     else:
         st.warning("Falta GITHUB_TOKEN en los Secrets.")
 
+    # Mostramos un pequeño indicador de qué archivo está cargado
+    if st.session_state.archivo_cargado_nombre:
+        st.info(f"📄 En memoria: {st.session_state.archivo_cargado_nombre}")
+
     st.markdown("---")
     if st.button("🗑️ Limpiar Chat", use_container_width=True):
         st.session_state.messages = []
         st.session_state.codigo_github = ""
+        st.session_state.archivo_cargado_nombre = ""
         if os.path.exists(ARCHIVO_HISTORIAL):
             os.remove(ARCHIVO_HISTORIAL)
         st.session_state.mic_key += 1
@@ -280,7 +287,6 @@ if audio_grabado or prompt:
         st.session_state.messages.append({"role": "user", "content": texto_usuario})
         guardar_historial(st.session_state.messages)
         
-        # Usamos el código de GitHub guardado
         codigo_actual = st.session_state.codigo_github
         
         instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis. Tienes un toque de humor seco y eres muy leal a tu usuario.
