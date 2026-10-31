@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v35.1 - Minimal GitHub HUD"
+VERSION = "v36.0 - Clean HUD"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -78,7 +78,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS PREMIUM HUD (CON TU NUEVO CSS MINIMALISTA) ---
+# --- CSS PREMIUM HUD (INTEGRACIÓN TOTAL CON TU NUEVO CSS) ---
 st.markdown("""
 <style>
     /* Variables de Sistema */
@@ -149,72 +149,91 @@ st.markdown("""
     }
 
     /* =========================================
-       PANEL DE GITHUB (TU CSS MINIMALISTA)
+       PANEL DE GITHUB (TU CSS DE LIMPIEZA ABSOLUTA)
        ========================================= */
-    /* 1. Hacer el contenedor de GitHub invisible y plano */
+    /* 1. Eliminar Emojis e Iconos Nativos del Encabezado */
+    [data-testid="stExpander"] summary span p {
+        display: inline-flex;
+        align-items: center;
+    }
+    [data-testid="stExpander"] summary img, 
+    [data-testid="stExpander"] summary span[role="img"] {
+        display: none !important;
+    }
+    /* Ocultar la flechita del expander */
+    [data-testid="stExpander"] summary svg { display: none !important; }
+
+    /* 2. Redistribución Visual y Espaciado del Contenedor */
     [data-testid="stExpander"] {
+        background: rgba(19, 24, 34, 0.3) !important;
+        border: 1px solid rgba(0, 229, 255, 0.08) !important;
+        border-radius: 8px !important;
+        padding: 4px !important;
+        margin-top: 15px !important;
+    }
+
+    /* Forzar fuentes limpias y en mayúsculas para el encabezado */
+    [data-testid="stExpander"] summary {
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 1.5px !important;
+        text-transform: uppercase !important;
+        color: #8a99ad !important;
+        padding: 10px !important;
+    }
+    [data-testid="stExpander"] summary:hover { color: #ffffff !important; }
+
+    /* 3. Limpieza Absoluta de Botones (Sincronizar y Cargar) */
+    [data-testid="stExpander"] button {
         background: transparent !important;
-        border: none !important;
+        border: 1px solid rgba(0, 229, 255, 0.2) !important;
+        border-radius: 6px !important;
+        color: #00e5ff !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 1px !important;
+        text-transform: uppercase !important;
+        width: 100% !important;
+        padding: 10px !important;
         box-shadow: none !important;
-        padding: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 0px !important;
+    }
+    [data-testid="stExpander"] button img,
+    [data-testid="stExpander"] button span { display: none !important; }
+
+    [data-testid="stExpander"] button:hover {
+        border-color: #00e5ff !important;
+        background: rgba(0, 229, 255, 0.05) !important;
+        color: #ffffff !important;
+        text-shadow: 0 0 5px rgba(0, 229, 255, 0.5) !important;
     }
 
-    /* Línea sutil divisoria superior */
-    [data-testid="stExpander"]::before {
-        content: "";
-        display: block;
-        height: 1px;
-        background: rgba(255, 255, 255, 0.05);
-        margin-bottom: 15px;
-    }
-
-    /* 2. Convertir los selectores en líneas minimalistas */
+    /* 4. Estilizar Cajas de Selección (Repositorio / Archivo) */
     [data-testid="stExpander"] [data-baseweb="select"] {
-        background-color: transparent !important;
-        border: none !important;
-        border-bottom: 1px solid rgba(0, 229, 255, 0.2) !important;
-        border-radius: 0px !important;
-        padding-left: 0px !important;
+        background-color: rgba(10, 14, 22, 0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.03) !important;
+        border-radius: 6px !important;
+    }
+    [data-testid="stExpander"] [data-baseweb="select"]:focus-within {
+        border-color: rgba(0, 229, 255, 0.3) !important;
     }
 
-    [data-testid="stExpander"] [data-baseweb="select"]:focus-within {
-        border-bottom-color: #00e5ff !important;
-        box-shadow: 0 1px 5px rgba(0, 229, 255, 0.2) !important;
+    /* Ajustar etiquetas de texto internas */
+    [data-testid="stExpander"] label {
+        color: #56667a !important;
+        font-size: 0.75rem !important;
+        font-weight: 500 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.8px !important;
+        margin-top: 10px !important;
     }
     
     /* Asegurar que el texto seleccionado en el dropdown sea visible */
     [data-testid="stExpander"] [data-baseweb="select"] div[data-testid="stMarkdownContainer"] p {
         color: #ffffff !important;
-    }
-
-    /* 3. Simplificar los botones ("Sincronizar" y "Cargar Archivo") */
-    [data-testid="stExpander"] button {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        color: #8a99ad !important;
-        font-size: 0.8rem !important;
-        font-weight: 500 !important;
-        letter-spacing: 1px !important;
-        text-transform: uppercase !important;
-        transition: all 0.3s ease !important;
-        padding: 8px 0px !important;
-        justify-content: flex-start !important;
-    }
-
-    [data-testid="stExpander"] button:hover {
-        color: #00e5ff !important;
-        text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
-    }
-    
-    /* Ocultar la flechita del expander para que sea solo texto */
-    [data-testid="stExpander"] summary svg { display: none !important; }
-    [data-testid="stExpander"] summary {
-        padding: 8px 0px !important;
-        font-size: 0.8rem !important;
-        text-transform: uppercase !important;
-        letter-spacing: 1px !important;
-        color: #8a99ad !important;
     }
 
     /* =========================================
@@ -383,14 +402,14 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
-    # PANEL DE GITHUB (CON TU CSS MINIMALISTA)
+    # PANEL DE GITHUB (SIN EMOJIS EN EL TÍTULO)
     if st.session_state.modo_actual == "Programación":
-        with st.expander("🐙 GitHub"):
+        with st.expander("GitHub"): # <- Quitamos el emoji 🐙 de aquí
             token = st.secrets.get("GITHUB_TOKEN")
             usuario_github = "leivercontreras18-ux"
             
             if token:
-                if st.button("🔄 Sincronizar", use_container_width=True):
+                if st.button("Sincronizar", use_container_width=True): # <- Quitamos el emoji 🔄
                     st.cache_data.clear()
                     st.rerun()
                     
@@ -404,7 +423,7 @@ with st.sidebar:
                         idx_archivo = archivos.index("mi_ia.py") if "mi_ia.py" in archivos else 0
                         arch_sel = st.selectbox("Archivo", archivos, index=idx_archivo)
                         
-                        if st.button("📥 Cargar Archivo", use_container_width=True):
+                        if st.button("Cargar Archivo", use_container_width=True): # <- Quitamos el emoji 📥
                             exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
                             if exito:
                                 st.session_state.codigo_github = resultado
@@ -416,7 +435,7 @@ with st.sidebar:
                 if st.session_state.archivo_cargado_nombre:
                     st.success(f"✅ {st.session_state.archivo_cargado_nombre}")
 
-    with st.expander("⚙️ Configuración"):
+    with st.expander("Configuración"):
         voz_activa = st.checkbox("Voz activa", value=True)
         audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
 
