@@ -6,13 +6,13 @@ import edge_tts
 import base64
 import json
 import os
-import re  # Nueva librería para limpiar el texto
+import re
 from groq import Groq
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Nova"
 VOZ_FIJA = "es-MX-DaliaNeural"
-VERSION = "v11.2 - TTS Fix"
+VERSION = "v11.4 - Personality"
 ARCHIVO_HISTORIAL = "historial_nova.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
@@ -30,13 +30,9 @@ def guardar_historial(mensajes):
 
 # --- FUNCIÓN PARA LIMPIAR EL TEXTO DE LA VOZ ---
 def limpiar_texto_para_voz(texto):
-    # 1. Quitar asteriscos, numerales, guiones bajos y backticks (formato markdown)
     texto_limpio = re.sub(r'[*#_`]', '', texto)
-    # 2. Quitar guiones de listas al inicio de línea
     texto_limpio = re.sub(r'^\s*-\s*', '', texto_limpio, flags=re.MULTILINE)
-    # 3. Quitar enlaces markdown [texto](url) dejando solo el texto
     texto_limpio = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', texto_limpio)
-    # 4. Quitar comas de los números (ej. 1,500 -> 1500) para que lo lea como un entero
     texto_limpio = re.sub(r'(?<=\d),(?=\d)', '', texto_limpio)
     return texto_limpio.strip()
 
@@ -219,8 +215,23 @@ if audio_grabado or prompt:
         st.session_state.messages.append({"role": "user", "content": texto_usuario})
         guardar_historial(st.session_state.messages)
         
-        # MEJORA EN LAS INSTRUCCIONES: Le pedimos que no use asteriscos
-        instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa y clara. IMPORTANTE: No uses formato Markdown, ni asteriscos, ni numerales en tus respuestas. Escribe en texto plano."
+        # ========================================================
+        # AQUÍ ESTÁ LA NUEVA PERSONALIDAD DE NOVA
+        # ========================================================
+        instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis de Iron Man. 
+        Tienes un toque de humor seco y eres muy leal a tu usuario.
+        
+        CONTEXTO DEL USUARIO: 
+        Tu usuario se llama Leiver, vive en Venezuela y es sumamente curioso y preguntón. Le encanta entender cómo funcionan las cosas a nivel profundo, y trabaja en proyectos de programación (como su app de inventario en Python y Streamlit). 
+        
+        TU COMPORTAMIENTO:
+        - Sé paciente, didáctica y muy detallada en tus explicaciones. Disfruta de las preguntas de Leiver, anímalo a seguir aprendiendo.
+        - Explícale conceptos complejos de forma sencilla, paso a paso.
+        - Háblale con un español neutro/latino, con un toque de calidez venezolana y mucha elegancia.
+        - Usa analogías interesantes cuando sea necesario.
+        
+        REGLA ESTRICTA DE FORMATO: 
+        No uses formato Markdown, ni asteriscos, ni numerales, ni negritas en tus respuestas. Escribe en texto plano y párrafos cortos para que tu voz fluya naturalmente al ser leída."""
         
         if codigo_actual:
             instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```python\n{codigo_actual}\n```"
@@ -244,7 +255,6 @@ if audio_grabado or prompt:
                 
                 if voz_activa: 
                     try:
-                        # AQUÍ APLICAMOS LA LIMPIEZA ANTES DE GENERAR EL AUDIO
                         texto_para_hablar = limpiar_texto_para_voz(texto_respuesta)
                         audio_buffer = asyncio.run(generar_audio_edge(texto_para_hablar, VOZ_FIJA))
                         st.session_state.audio_pendiente = audio_buffer
