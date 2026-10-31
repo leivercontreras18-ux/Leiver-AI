@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v21.0 - Red Anime & Bubbles"
+VERSION = "v21.1 - One Piece & Delete Chats"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="🌸", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="🏴‍☠️", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,13 +78,23 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS ESTILO ANIME ROJO (BURBUJAS Y ALINEACIÓN) ---
+# --- CSS ESTILO ANIME ONE PIECE (BURBUJAS Y ALINEACIÓN) ---
 st.markdown("""
 <style>
-    /* 1. FONDO ROJO OSCURO CON DEGRADADO */
+    /* 1. FONDO DE ONE PIECE (Luffy / Going Merry) */
     .stApp {
-        background: radial-gradient(circle at center, #4a0404 0%, #0a0000 100%) !important;
-        color: #ffffff !important;
+        background-image: url('https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=2000&auto=format&fit=crop'); /* Fondo marítimo/pirata de alta calidad */
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        background-color: #000000;
+    }
+    /* Capa oscura para legibilidad */
+    .stApp::before {
+        content: "";
+        position: fixed; inset: 0;
+        background: rgba(10, 5, 5, 0.8); /* Oscuro con un toque rojizo/marrón */
+        z-index: -1;
     }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
@@ -94,7 +104,7 @@ st.markdown("""
        BARRA LATERAL
        ========================================= */
     [data-testid="stSidebar"] {
-        background-color: rgba(10, 0, 0, 0.8) !important;
+        background-color: rgba(15, 10, 10, 0.85) !important;
         border-right: 1px solid #8b0000 !important;
         backdrop-filter: blur(10px) !important;
     }
@@ -132,7 +142,6 @@ st.markdown("""
     /* =========================================
        CHAT (BURBUJAS Y ALINEACIÓN)
        ========================================= */
-    /* Contenedor general del mensaje */
     div[data-testid="stChatMessage"] {
         background-color: transparent !important;
         border: none !important;
@@ -140,8 +149,6 @@ st.markdown("""
         margin-bottom: 15px !important;
         display: flex !important;
     }
-
-    /* Ocultar avatares para que se vea más limpio */
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { 
         display: none !important; 
     }
@@ -155,14 +162,14 @@ st.markdown("""
         max-width: 80% !important;
     }
     
-    /* La burbuja de tus mensajes */
+    /* Burbuja de tus mensajes */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
-        background: rgba(255, 77, 77, 0.2) !important; /* Rojo translúcido */
-        border: 1px solid rgba(255, 77, 77, 0.4) !important;
+        background: rgba(200, 30, 30, 0.3) !important; /* Rojo One Piece */
+        border: 1px solid rgba(200, 30, 30, 0.5) !important;
         color: #ffffff !important;
-        border-radius: 20px 20px 0 20px !important; /* Borde inferior derecho recto */
+        border-radius: 20px 20px 0 20px !important; 
         padding: 12px 18px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
     }
 
     /* MENSAJES DE LILI (A LA IZQUIERDA) */
@@ -174,17 +181,16 @@ st.markdown("""
         max-width: 80% !important;
     }
     
-    /* La burbuja de Lili */
+    /* Burbuja de Lili */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
-        background: rgba(255, 255, 255, 0.08) !important; /* Blanco translúcido */
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        color: #e5e5e5 !important;
-        border-radius: 20px 20px 20px 0 !important; /* Borde inferior izquierdo recto */
+        background: rgba(255, 255, 255, 0.1) !important; 
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        color: #f0f0f0 !important;
+        border-radius: 20px 20px 20px 0 !important; 
         padding: 12px 18px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
     }
     
-    /* Texto dentro de las burbujas */
     div[data-testid="stChatMessage"] p {
         font-size: 15px !important;
         line-height: 1.5 !important;
@@ -192,7 +198,7 @@ st.markdown("""
     }
 
     /* =========================================
-       CAJA DE TEXTO (ESTILO FOTO)
+       CAJA DE TEXTO
        ========================================= */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important; 
@@ -202,8 +208,8 @@ st.markdown("""
     }
     
     .stChatInput {
-        background: rgba(20, 20, 25, 0.9) !important;
-        border: 1px solid #ff4d4d !important; /* Borde rojo */
+        background: rgba(20, 10, 10, 0.9) !important;
+        border: 1px solid #ff4d4d !important; 
         border-radius: 15px !important;
         box-shadow: 0 0 15px rgba(255, 77, 77, 0.3) !important;
     }
@@ -215,7 +221,6 @@ st.markdown("""
         color: #ffffff !important; font-size: 16px !important; padding: 12px 20px !important; 
     }
     
-    /* Botón de enviar */
     [data-testid="stChatInput"] button {
         background: #ffffff !important; 
         color: #000000 !important; 
@@ -232,19 +237,19 @@ st.markdown("""
 
 # --- INICIALIZACIÓN DE ESTADO ---
 if "todos_los_chats" not in st.session_state: st.session_state.todos_los_chats = cargar_todos_los_chats()
-if "chat_actual_id" not in st.session_state: st.session_state.chat_actual_id = datetime.datetime.now().strftime("%d/%m %H:%M")
+if "chat_actual_id" not in st.session_state: st.session_state.chat_actual_id = datetime.datetime.now().strftime("%H:%M:%S")
 if st.session_state.chat_actual_id not in st.session_state.todos_los_chats: st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
 if "audio_pendiente" not in st.session_state: st.session_state.audio_pendiente = None
 if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
 
-# --- SIDEBAR (HISTORIAL CORREGIDO) ---
+# --- SIDEBAR (HISTORIAL Y BOTÓN DE BORRAR) ---
 with st.sidebar:
-    st.markdown("<h2>🌸 Lili AI</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>🏴‍☠️ Lili AI</h2>", unsafe_allow_html=True)
     
     if st.button("➕ Nuevo Chat", use_container_width=True):
-        nuevo_id = datetime.datetime.now().strftime("%H:%M:%S") # Usamos segundos para que no se repita
+        nuevo_id = datetime.datetime.now().strftime("%H:%M:%S")
         st.session_state.chat_actual_id = nuevo_id
         st.session_state.todos_los_chats[nuevo_id] = []
         guardar_todos_los_chats(st.session_state.todos_los_chats)
@@ -253,14 +258,26 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### Historial")
     
-    # AQUÍ ESTÁ LA CORRECCIÓN PARA QUE SE VEAN TODOS LOS CHATS
-    for chat_id in sorted(st.session_state.todos_los_chats.keys(), reverse=True):
-        # Mostramos el chat si tiene mensajes (o si es el actual)
+    # AQUÍ ESTÁ LA MAGIA PARA BORRAR CHATS
+    for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
         if len(st.session_state.todos_los_chats[chat_id]) > 0:
-            icono = "🟢" if chat_id == st.session_state.chat_actual_id else "⚪"
-            if st.button(f"{icono} Chat {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
-                st.session_state.chat_actual_id = chat_id
-                st.rerun()
+            col1, col2 = st.columns([0.8, 0.2])
+            with col1:
+                icono = "🟢" if chat_id == st.session_state.chat_actual_id else "⚪"
+                if st.button(f"{icono} {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
+                    st.session_state.chat_actual_id = chat_id
+                    st.rerun()
+            with col2:
+                if st.button("🗑️", key=f"del_{chat_id}", use_container_width=True):
+                    del st.session_state.todos_los_chats[chat_id]
+                    guardar_todos_los_chats(st.session_state.todos_los_chats)
+                    # Si borramos el chat actual, creamos uno nuevo vacío
+                    if chat_id == st.session_state.chat_actual_id:
+                        nuevo_id = datetime.datetime.now().strftime("%H:%M:%S")
+                        st.session_state.chat_actual_id = nuevo_id
+                        st.session_state.todos_los_chats[nuevo_id] = []
+                        guardar_todos_los_chats(st.session_state.todos_los_chats)
+                    st.rerun()
 
     st.markdown("---")
     with st.expander("⚙️ Ajustes"):
