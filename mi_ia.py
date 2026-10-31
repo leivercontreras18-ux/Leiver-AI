@@ -7,13 +7,13 @@ import base64
 import json
 import os
 import re
+import requests
 from groq import Groq
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Nova"
-# 🔥 CAMBIO CLAVE: Voz británica para el estilo F.R.I.D.A.Y.
-VOZ_FIJA = "en-GB-SoniaNeural" 
-VERSION = "v11.6 - F.R.I.D.A.Y. Style"
+VOZ_FIJA = "es-VE-PaolaNeural" 
+VERSION = "v12.0 - GitHub Integration"
 ARCHIVO_HISTORIAL = "historial_nova.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
@@ -37,18 +37,16 @@ def limpiar_texto_para_voz(texto):
     texto_limpio = re.sub(r'(?<=\d),(?=\d)', '', texto_limpio) 
     return texto_limpio.strip()
 
-# --- CSS AVANZADO (Se mantiene igual) ---
+# --- CSS AVANZADO ---
 st.markdown("""
 <style>
-    /* 1. FONDO Y GLOWS */
     .stApp { background-color: #121214 !important; }
     .glow-1 { position: fixed; top: 25%; left: 25%; width: 384px; height: 384px; border-radius: 50%; background: rgba(88, 28, 135, 0.2); filter: blur(120px); pointer-events: none; z-index: 0; }
     .glow-2 { position: fixed; bottom: 33%; right: 25%; width: 400px; height: 400px; border-radius: 50%; background: rgba(131, 24, 67, 0.1); filter: blur(150px); pointer-events: none; z-index: 0; }
     .glow-3 { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; height: 320px; border-radius: 50%; background: rgba(49, 46, 129, 0.2); filter: blur(100px); pointer-events: none; z-index: 0; }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
     .block-container { padding-top: 2rem !important; padding-bottom: 0 !important; max-width: 95% !important; height: 100vh !important; overflow: hidden !important; }
-
-    /* 2. EL ORBE */
+    
     @keyframes blob { 0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; transform: scale(1); } 33% { border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%; transform: scale(1.03) rotate(4deg); } 66% { border-radius: 28% 72% 35% 65% / 40% 60% 30% 70%; transform: scale(0.97) rotate(-4deg); } }
     .orb-wrapper { position: relative; display: flex; align-items: center; justify-content: center; width: 300px; height: 300px; margin: 0 auto; }
     .orb-glow { position: absolute; width: 300px; height: 300px; border-radius: 50%; background: linear-gradient(to top right, rgba(168, 85, 247, 0.4), rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.4)); filter: blur(60px); animation: pulse 3s infinite alternate; }
@@ -57,8 +55,7 @@ st.markdown("""
     @keyframes pulse { 0% { opacity: 0.6; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1.1); } } @keyframes spin { 100% { transform: rotate(360deg); } }
     .nova-title { font-size: 36px; font-weight: 200; letter-spacing: 0.2em; background: linear-gradient(to right, #e9d5ff, #f1f5f9, #fbcfe8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-top: 20px; margin-bottom: 0; text-align: center; }
     .nova-subtitle { font-size: 14px; color: rgba(233, 213, 255, 0.6); text-align: center; margin-top: 5px; }
-
-    /* 3. CAJA DEL CHAT */
+    
     div[data-testid="stVerticalBlockBorderWrapper"] { background: rgba(255, 255, 255, 0.02) !important; border: none !important; backdrop-filter: blur(30px) !important; border-radius: 30px !important; box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.4) !important; padding: 20px !important; overflow: hidden !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] > div { background: transparent !important; }
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
@@ -66,16 +63,14 @@ st.markdown("""
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) { background: linear-gradient(135deg, rgba(147, 51, 234, 0.4), rgba(88, 28, 135, 0.4)) !important; border: 1px solid rgba(168, 85, 247, 0.3) !important; color: #f3e8ff !important; border-radius: 25px 25px 5px 25px !important; margin-left: auto !important; width: fit-content !important; max-width: 85% !important; padding: 14px 20px !important; margin-bottom: 15px !important; backdrop-filter: blur(10px) !important; }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) { background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) !important; border: 1px solid rgba(255, 255, 255, 0.05) !important; color: rgba(252, 231, 243, 0.95) !important; border-radius: 25px 25px 25px 5px !important; margin-right: auto !important; width: fit-content !important; max-width: 85% !important; padding: 14px 20px !important; margin-bottom: 15px !important; backdrop-filter: blur(10px) !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar { width: 6px !important; } ::-webkit-scrollbar-track { background: transparent !important; } ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.4) !important; border-radius: 10px !important; }
-
-    /* 4. BARRA DE TEXTO */
+    
     [data-testid="stBottom"], [data-testid="stBottom"] > div { background: transparent !important; }
     [data-testid="stBottomBlockContainer"] { background: transparent !important; padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
     [data-testid="stChatInput"] { background: rgba(20, 20, 30, 0.4) !important; border: 1px solid rgba(168, 85, 247, 0.4) !important; border-radius: 30px !important; backdrop-filter: blur(20px) !important; box-shadow: 0 0 20px rgba(168, 85, 247, 0.15) !important; }
     [data-testid="stChatInput"] > div, [data-testid="stChatInput"] div, [data-testid="stChatInput"] div[data-baseweb="base-input"], [data-testid="stChatInput"] div[data-baseweb="textarea"], [data-testid="stChatInput"] textarea, [data-testid="stChatInput"] input { background-color: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; color: #ffffff !important; }
     [data-testid="stChatInput"]:focus-within { border: 1px solid rgba(168, 85, 247, 0.8) !important; box-shadow: 0 0 25px rgba(168, 85, 247, 0.3) !important; }
     audio, div[data-testid="stAudio"] { display: none !important; }
-
-    /* 5. SIDEBAR */
+    
     [data-testid="stSidebar"] { background-color: #0b0b12 !important; border-right: 1px solid rgba(168, 85, 247, 0.15) !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { font-weight: 200 !important; letter-spacing: 2px; color: #e9d5ff !important; text-transform: uppercase; font-size: 14px !important; }
     [data-testid="stFileUploader"] { background-color: rgba(255, 255, 255, 0.02) !important; border: 1px dashed rgba(168, 85, 247, 0.4) !important; border-radius: 15px !important; padding: 10px !important; transition: all 0.3s ease; }
@@ -83,8 +78,7 @@ st.markdown("""
     [data-testid="stSidebar"] button { background: rgba(255, 0, 85, 0.1) !important; color: #ff3366 !important; border: 1px solid rgba(255, 0, 85, 0.3) !important; border-radius: 10px !important; font-weight: bold !important; letter-spacing: 1px !important; transition: all 0.3s ease !important; }
     [data-testid="stSidebar"] button:hover { background: rgba(255, 0, 85, 0.3) !important; box-shadow: 0 0 15px rgba(255, 0, 85, 0.5) !important; color: white !important; border: 1px solid rgba(255, 0, 85, 0.8) !important; }
     [data-testid="stSidebar"] .stCheckbox p { font-size: 13px !important; color: #a78bfa !important; }
-
-    /* 6. MAGIA RESPONSIVE */
+    
     @media (max-width: 768px) {
         .block-container { height: auto !important; overflow: auto !important; padding-bottom: 5rem !important; }
         .orb-wrapper { width: 180px; height: 180px; margin-bottom: 10px; } .orb-body { width: 150px; height: 150px; } .orb-glow { width: 180px; height: 180px; filter: blur(30px); }
@@ -98,9 +92,8 @@ st.markdown("""
 # --- INYECTAR GLOWS DE FONDO ---
 st.markdown('<div class="glow-1"></div><div class="glow-2"></div><div class="glow-3"></div>', unsafe_allow_html=True)
 
-# --- FUNCIONES DE AUDIO CON VELOCIDAD AJUSTADA ---
+# --- FUNCIONES DE AUDIO ---
 async def generar_audio_edge(texto, voz):
-    # ⚡ rate="+10%" acelera ligeramente la voz para eliminar pausas largas
     comunicar = edge_tts.Communicate(texto, voz, rate="+10%")
     audio_buffer = io.BytesIO()
     async for chunk in comunicar.stream():
@@ -122,20 +115,50 @@ if "audio_pendiente" not in st.session_state:
     st.session_state.audio_pendiente = None
 if "mic_key" not in st.session_state:
     st.session_state.mic_key = 0
+if "github_contexto" not in st.session_state:
+    st.session_state.github_contexto = ""
 
 # --- SIDEBAR ---
 with st.sidebar:
     st.title(f"🤖 {NOMBRE_IA} System")
     st.caption(f"{VERSION} - Powered by Groq ⚡")
     st.markdown("---")
+    
     voz_activa = st.checkbox("🔊 Voz activa", value=True)
+    
     st.subheader("🎤 Hablar")
     audio_grabado = st.audio_input("Graba tu mensaje", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
+    
     st.subheader("📁 Código")
     uploaded_file = st.file_uploader("Upload", type=["py", "txt", "json", "js"], label_visibility="collapsed")
     codigo_actual = uploaded_file.read().decode("utf-8") if uploaded_file else ""
     if uploaded_file:
         st.success(f"Cargado: {uploaded_file.name}")
+    
+    st.markdown("---")
+    st.subheader("🐙 GitHub")
+    if st.button("Sincronizar mis Repositorios", use_container_width=True):
+        with st.spinner("Conectando con GitHub..."):
+            token = st.secrets.get("GITHUB_TOKEN")
+            if token:
+                try:
+                    headers = {"Authorization": f"token {token}"}
+                    respuesta = requests.get("https://api.github.com/user/repos?per_page=100", headers=headers)
+                    if respuesta.status_code == 200:
+                        repos = respuesta.json()
+                        texto_repos = "Aquí está la lista de los repositorios de Leiver en GitHub:\n"
+                        for r in repos:
+                            desc = r['description'] if r['description'] else "Sin descripción"
+                            texto_repos += f"- {r['name']}: {desc} (Lenguaje: {r['language']})\n"
+                        st.session_state.github_contexto = texto_repos
+                        st.success("¡Repositorios sincronizados!")
+                    else:
+                        st.error("Error al conectar. Revisa tu token.")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+            else:
+                st.warning("Falta GITHUB_TOKEN en los Secrets.")
+
     st.markdown("---")
     if st.button("🗑️ Limpiar Chat", use_container_width=True):
         st.session_state.messages = []
@@ -196,20 +219,21 @@ if audio_grabado or prompt:
         st.session_state.messages.append({"role": "user", "content": texto_usuario})
         guardar_historial(st.session_state.messages)
         
-        # ========================================================
-        # INSTRUCCIONES PARA UNA VOZ Y CONVERSACIÓN MÁS NATURAL
-        # ========================================================
         instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis. Tienes un toque de humor seco y eres muy leal a tu usuario.
         
+        REGLA DE ORO: DEBES RESPONDER SIEMPRE EN ESPAÑOL. No importa qué idioma use el usuario, tu respuesta debe ser en español latino/neutro.
+
         CONTEXTO DEL USUARIO: 
-        Tu usuario se llama Leiver, vive en Venezuela y es sumamente curioso y preguntón. Trabaja en proyectos de programación (Python, Streamlit).
+        Tu usuario se llama Leiver, vive en Venezuela y es sumamente curioso y preguntón. Trabaja en proyectos de programación.
         
-        CÓMO DEBES HABLAR (MUY IMPORTANTE PARA LA VOZ):
-        - Háblale como una persona real, no como un robot ni como un libro de texto.
-        - Usa un español conversacional, cálido y natural, con modismos venezolanos suaves si encaja.
-        - Sé directo y fluido. Evita el uso excesivo de comas (,) y puntos suspensivos (...). Usa frases más cortas y directas para que la lectura sea continua.
+        CONTEXTO DE GITHUB:
+        {st.session_state.github_contexto}
+        
+        CÓMO DEBES HABLAR:
+        - Háblale como una persona real, no como un robot.
+        - Sé directo y fluido. Evita el uso excesivo de comas y puntos suspensivos.
         - No uses listas largas ni enumeres con números. Prefiere hablar en párrafos fluidos.
-        - REGLA ESTRICTA DE FORMATO: No uses formato Markdown, ni asteriscos, ni negritas, ni numerales. Escribe todo en texto plano."""
+        - REGLA ESTRICTA DE FORMATO: No uses formato Markdown, ni asteriscos, ni negritas, ni numerales."""
         
         if codigo_actual:
             instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```python\n{codigo_actual}\n```"
