@@ -12,143 +12,188 @@ VOZ_FIJA = "es-MX-DaliaNeural"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS AVANZADO (INTERFAZ FIJA / SCI-FI) ---
+# --- CSS AVANZADO (RÉPLICA EXACTA DEL DISEÑO REACT/TAILWIND) ---
 st.markdown("""
 <style>
-    /* 1. ELIMINAR EL SCROLL DE LA PÁGINA PRINCIPAL */
-    html, body, .stApp {
-        height: 100vh !important;
-        overflow: hidden !important;
-        background-color: #0b0b12;
-        background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0b0b12 100%);
+    /* 1. FONDO OSCURO Y GLOWS DE NEBULOSA (React: bg-[#121214]) */
+    .stApp {
+        background-color: #121214 !important;
+        color: #e2e8f0;
+        overflow: hidden !important; /* Bloquea el scroll de la página principal */
     }
     
-    /* Ocultar menús */
+    /* Los resplandores de fondo (Glows) */
+    .glow-1 { position: fixed; top: 25%; left: 25%; width: 384px; height: 384px; border-radius: 50%; background: rgba(88, 28, 135, 0.2); filter: blur(120px); pointer-events: none; z-index: -1; }
+    .glow-2 { position: fixed; bottom: 33%; right: 25%; width: 400px; height: 400px; border-radius: 50%; background: rgba(131, 24, 67, 0.1); filter: blur(150px); pointer-events: none; z-index: -1; }
+    .glow-3 { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; height: 320px; border-radius: 50%; background: rgba(49, 46, 129, 0.2); filter: blur(100px); pointer-events: none; z-index: -1; }
+
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header { background: transparent !important; }
     
-    /* Ajustar el contenedor principal para que ocupe la pantalla exacta */
     .block-container { 
         padding-top: 2rem !important; 
-        padding-bottom: 0rem !important;
+        padding-bottom: 0 !important;
         max-width: 95% !important; 
         height: 100vh !important;
     }
 
-    /* -----------------------------------------
-       2. EL ORBE DEFORMABLE (Morphing Blob)
-       ----------------------------------------- */
-    .orb-wrapper {
+    /* 2. EL ORBE (Animación exacta provista por Gemini) */
+    @keyframes blob {
+        0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; transform: scale(1); }
+        33% { border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%; transform: scale(1.03) rotate(4deg); }
+        66% { border-radius: 28% 72% 35% 65% / 40% 60% 30% 70%; transform: scale(0.97) rotate(-4deg); }
+    }
+
+    .orb-container {
         display: flex;
         flex-direction: column;
-        justify-content: center;
         align-items: center;
-        height: 85vh; /* Ocupa casi toda la altura */
-    }
-    
-    .fluid-orb {
-        width: 320px;
-        height: 320px;
-        background: linear-gradient(135deg, #fbcfe8 0%, #d8b4fe 50%, #bfdbfe 100%);
-        /* La animación de deformación y flotación */
-        animation: morph 8s ease-in-out infinite, float 6s ease-in-out infinite;
-        box-shadow: 0 0 100px rgba(216, 180, 254, 0.6), inset 0 0 50px rgba(255,255,255,0.8);
-        filter: blur(10px); /* Efecto suave */
+        justify-content: center;
+        height: 75vh;
     }
 
-    @keyframes morph {
-        0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
-        34% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; }
-        67% { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; }
+    /* Brillo exterior del orbe */
+    .orb-glow {
+        position: absolute;
+        width: 300px; height: 300px;
+        border-radius: 50%;
+        background: linear-gradient(to top right, rgba(168, 85, 247, 0.3), rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.3));
+        filter: blur(60px);
+        animation: pulse 3s infinite alternate;
     }
 
-    @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-15px); }
-        100% { transform: translateY(0px); }
+    /* Cuerpo del orbe con gradientes */
+    .orb-body {
+        width: 256px; height: 256px;
+        background: linear-gradient(to right, rgba(192, 132, 252, 0.4), rgba(249, 168, 212, 0.5), rgba(129, 140, 248, 0.4));
+        backdrop-filter: blur(12px);
+        box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.2);
+        animation: blob 8s infinite ease-in-out;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        position: relative;
+        overflow: hidden;
     }
 
-    .title-container {
-        text-align: center;
-        margin-top: 20px;
+    /* Capa interior giratoria */
+    .orb-inner {
+        position: absolute; inset: 0;
+        background: linear-gradient(to bottom left, rgba(236, 72, 153, 0.2), transparent, rgba(147, 51, 234, 0.3));
+        mix-blend-mode: overlay;
+        animation: spin 12s infinite linear;
     }
-    .title-container h1 {
-        color: #ffffff;
-        font-weight: 300;
-        letter-spacing: 3px;
-        margin-bottom: 0px;
+
+    @keyframes pulse { 0% { opacity: 0.6; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1.1); } }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Textos NOVA */
+    .nova-title {
+        font-size: 36px;
+        font-weight: 200;
+        letter-spacing: 0.2em;
+        background: linear-gradient(to right, #e9d5ff, #f1f5f9, #fbcfe8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-top: 30px;
+        margin-bottom: 0;
     }
-    .title-container p {
-        color: #7dd3fc;
+    .nova-subtitle {
         font-size: 14px;
+        color: rgba(233, 213, 255, 0.6);
+        letter-spacing: 0.05em;
     }
 
-    /* -----------------------------------------
-       3. EL PANEL DE CHAT (Cristal)
-       ----------------------------------------- */
+    /* 3. EL PANEL DE CHAT (Glassmorphism) */
+    /* Estilo del contenedor derecho */
+    .chat-panel {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(24px);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        border-radius: 24px;
+        height: 80vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .chat-header {
+        padding: 16px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 14px;
+        color: #cbd5e1;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+    }
+
+    /* Ocultar avatares de Streamlit */
     div[data-testid="stChatMessageAvatarUser"],
-    div[data-testid="stChatMessageAvatarAssistant"] {
-        display: none !important;
-    }
+    div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
 
-    /* Burbuja del Usuario (Morado) */
+    /* Burbuja del Usuario */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
-        background-color: #e9d5ff !important; 
-        border-radius: 20px 20px 0 20px !important;
+        background: rgba(147, 51, 234, 0.1) !important;
+        border: 1px solid rgba(168, 85, 247, 0.2) !important;
+        color: #f3e8ff !important;
+        border-radius: 16px 16px 0 16px !important;
         margin-left: auto !important;
         width: fit-content !important;
         max-width: 85% !important;
-        padding: 10px 15px !important;
+        padding: 12px 16px !important;
         margin-bottom: 15px !important;
     }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) p {
-        color: #1a1a1a !important; 
-        margin: 0;
-    }
 
-    /* Burbuja de Nova (Rosa) */
+    /* Burbuja de Nova */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
-        background-color: #fbcfe8 !important;
-        border-radius: 20px 20px 20px 0 !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        color: rgba(252, 231, 243, 0.9) !important;
+        border-radius: 16px 16px 16px 0 !important;
         margin-right: auto !important;
         width: fit-content !important;
         max-width: 85% !important;
-        padding: 10px 15px !important;
+        padding: 12px 16px !important;
         margin-bottom: 15px !important;
     }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) p {
-        color: #1a1a1a !important;
-        margin: 0;
-    }
 
-    /* -----------------------------------------
-       4. BARRA DE TEXTO ANCLADA (Solo lado derecho)
-       ----------------------------------------- */
+    /* 4. BARRA DE TEXTO (Píldora Flotante) */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
         position: fixed !important;
         bottom: 20px !important;
-        right: 2% !important; /* Alineado a la derecha */
-        width: 48% !important; /* Ancho de la columna del chat */
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 100% !important;
+        max-width: 600px !important;
         padding: 0 !important;
         z-index: 1000;
     }
     
     .stChatInput {
-        background: rgba(20, 20, 30, 0.95) !important;
-        border: 2px solid #a855f7 !important; 
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(168, 85, 247, 0.3) !important;
         border-radius: 30px !important;
-        box-shadow: 0 0 20px rgba(168, 85, 247, 0.4) !important;
+        backdrop-filter: blur(24px) !important;
+        box-shadow: 0 0 20px rgba(168, 85, 247, 0.1) !important;
+        transition: all 0.3s ease !important;
     }
-    .stChatInput input {
-        color: white !important;
+    
+    .stChatInput:focus-within {
+        border: 1px solid rgba(168, 85, 247, 0.6) !important;
+        box-shadow: 0 0 25px rgba(168, 85, 247, 0.25) !important;
     }
 
     /* Ocultar audio nativo */
     audio { display: none !important; }
     div[data-testid="stAudio"] { display: none !important; }
 </style>
+""", unsafe_allow_html=True)
+
+# --- INYECTAR GLOWS DE FONDO ---
+st.markdown("""
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+    <div class="glow-3"></div>
 """, unsafe_allow_html=True)
 
 # --- FUNCIONES DE AUDIO ---
@@ -182,27 +227,31 @@ try:
     instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa."
 
     # --- LAYOUT PRINCIPAL ---
-    col_izq, col_der = st.columns([1.1, 1])
+    col_izq, col_der = st.columns([1.5, 1])
 
     with col_izq:
         st.markdown("""
-            <div class="orb-wrapper">
-                <div class="fluid-orb"></div>
-                <div class="title-container">
-                    <h1>Nova</h1>
-                    <p>How can I help you today?</p>
+            <div class="orb-container">
+                <div class="orb-glow"></div>
+                <div class="orb-body">
+                    <div class="orb-inner"></div>
                 </div>
+                <h1 class="nova-title">NOVA</h1>
+                <p class="nova-subtitle">How can I help you today?</p>
             </div>
         """, unsafe_allow_html=True)
 
     with col_der:
-        # Contenedor con altura fija y scroll interno
-        # 550px de altura asegura que quepa en casi cualquier pantalla
-        chat_container = st.container(height=530)
+        st.markdown('<div class="chat-panel">', unsafe_allow_html=True)
+        st.markdown('<div class="chat-header">Chat Log</div>', unsafe_allow_html=True)
+        
+        # Contenedor con altura fija para el scroll interno
+        chat_container = st.container(height=520)
         with chat_container:
             for message in st.session_state.messages:
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # --- LÓGICA DE ENTRADA ---
     prompt = st.chat_input(f"Ask {NOMBRE_IA}...")
