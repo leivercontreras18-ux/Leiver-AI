@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v36.1 - Balanced HUD"
+VERSION = "v37.0 - Symmetric HUD"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -78,7 +78,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS PREMIUM HUD (CON TU CSS CORREGIDO) ---
+# --- CSS PREMIUM HUD (CON TU AJUSTE DE BOTONES EN COLUMNAS) ---
 st.markdown("""
 <style>
     /* Variables de Sistema */
@@ -149,9 +149,8 @@ st.markdown("""
     }
 
     /* =========================================
-       PANEL DE GITHUB (TU CSS CORREGIDO)
+       PANEL DE GITHUB (TU CSS SIMÉTRICO)
        ========================================= */
-    /* 1. Asegurar que los textos principales permanezcan visibles */
     [data-testid="stExpander"] summary {
         font-size: 0.8rem !important;
         font-weight: 600 !important;
@@ -161,11 +160,8 @@ st.markdown("""
         padding: 10px !important;
     }
     [data-testid="stExpander"] summary:hover { color: #ffffff !important; }
-
-    /* Ocultar la flechita del expander */
     [data-testid="stExpander"] summary svg { display: none !important; }
 
-    /* 2. Re-estilizar los botones para que mantengan su contenido textual */
     [data-testid="stExpander"] button {
         background: rgba(0, 229, 255, 0.03) !important;
         border: 1px solid rgba(0, 229, 255, 0.2) !important;
@@ -175,11 +171,6 @@ st.markdown("""
         font-weight: 600 !important;
         letter-spacing: 1px !important;
         text-transform: uppercase !important;
-        width: 100% !important;
-        padding: 10px !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
         height: auto !important;
     }
 
@@ -189,13 +180,12 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* Ocultar únicamente las imágenes nativas o emojis dentro del botón sin romper el texto */
+    /* Ocultar emojis en los botones sin romper el texto */
     [data-testid="stExpander"] button img,
     [data-testid="stExpander"] button span[role="img"] {
         display: none !important;
     }
 
-    /* 3. Corregir el espaciado e indicadores de los selectores */
     [data-testid="stExpander"] [data-baseweb="select"] {
         background-color: rgba(10, 14, 22, 0.6) !important;
         border: 1px solid rgba(0, 229, 255, 0.1) !important;
@@ -207,14 +197,26 @@ st.markdown("""
         box-shadow: 0 0 8px rgba(0, 229, 255, 0.2) !important;
     }
 
-    /* Mantener las flechas de los selectores visibles en cian */
     [data-testid="stExpander"] svg {
         color: #00e5ff !important;
     }
     
-    /* Asegurar que el texto seleccionado en el dropdown sea visible */
     [data-testid="stExpander"] [data-baseweb="select"] div[data-testid="stMarkdownContainer"] p {
         color: #ffffff !important;
+    }
+
+    /* 🔥 TU CSS PARA LAS COLUMNAS DE BOTONES 🔥 */
+    [data-testid="stExpander"] [data-testid="stHorizontalBlock"] {
+        gap: 8px !important;
+    }
+    [data-testid="stExpander"] [data-testid="stHorizontalBlock"] button {
+        width: 100% !important;
+        padding: 10px 4px !important;
+        font-size: 0.7rem !important; /* Letra más pequeña para que quepa en horizontal */
+        white-space: nowrap !important; /* Evita que el texto se parta en dos líneas */
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
     }
 
     /* =========================================
@@ -383,18 +385,17 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
-    # PANEL DE GITHUB
+    # PANEL DE GITHUB SIMÉTRICO
     if st.session_state.modo_actual == "Programación":
-        with st.expander("GitHub"):
+        with st.expander("GITHUB", expanded=True):
             token = st.secrets.get("GITHUB_TOKEN")
             usuario_github = "leivercontreras18-ux"
             
             if token:
-                if st.button("Sincronizar", use_container_width=True):
-                    st.cache_data.clear()
-                    st.rerun()
-                    
                 repos = obtener_repositorios(token, usuario_github)
+                repo_sel = None
+                arch_sel = None
+                
                 if repos:
                     idx_repo = repos.index("Leiver-AI") if "Leiver-AI" in repos else 0
                     repo_sel = st.selectbox("Repositorio", repos, index=idx_repo)
@@ -403,20 +404,36 @@ with st.sidebar:
                     if archivos:
                         idx_archivo = archivos.index("mi_ia.py") if "mi_ia.py" in archivos else 0
                         arch_sel = st.selectbox("Archivo", archivos, index=idx_archivo)
+                    else:
+                        st.info("No hay archivos válidos.")
+                else:
+                    st.warning("No se encontraron repositorios.")
+                
+                st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
+                
+                # Los botones agrupados abajo en paralelo
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    if st.button("SINCRONIZAR", use_container_width=True):
+                        st.cache_data.clear()
+                        st.rerun()
                         
-                        if st.button("Cargar Archivo", use_container_width=True):
+                with col2:
+                    if st.button("CARGAR ARCHIVO", use_container_width=True):
+                        if repo_sel and arch_sel:
                             exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
                             if exito:
                                 st.session_state.codigo_github = resultado
                                 st.session_state.archivo_cargado_nombre = arch_sel
                                 st.rerun()
-                else:
-                    st.warning("No se encontraron repositorios.")
-                    
+                        else:
+                            st.error("Selecciona un repo y archivo primero.")
+                            
                 if st.session_state.archivo_cargado_nombre:
                     st.success(f"✅ {st.session_state.archivo_cargado_nombre}")
 
-    with st.expander("Configuración"):
+    with st.expander("Configuración", expanded=False):
         voz_activa = st.checkbox("Voz activa", value=True)
         audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
 
