@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v19.0 - Ethereal Circuit"
+VERSION = "v19.1 - One Piece Theme"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="🔮", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="🏴‍☠️", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,75 +78,62 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS ESTILO ETHEREAL CIRCUIT ---
+# --- CSS ESTILO ONE PIECE (DARK GRAND LINE) ---
 st.markdown("""
 <style>
-    /* 1. FONDO OSCURO CON CIRCUITOS */
+    /* 1. FONDO SÓLIDO OSCURO (Azul Mar Profundo) */
     .stApp {
-        background-image: url('https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2070&auto=format&fit=crop');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-        background-color: #0a0a0c;
-    }
-    /* Capa oscura para que el texto resalte */
-    .stApp::before {
-        content: "";
-        position: fixed; inset: 0;
-        background: rgba(8, 8, 12, 0.85);
-        z-index: -1;
+        background-color: #0b1320 !important; /* Azul marino casi negro */
+        background-image: radial-gradient(circle at 50% 0%, #1a2a40 0%, #0b1320 80%) !important;
+        color: #ffffff !important;
     }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
     
-    /* Quitar el fondo blanco de los contenedores */
-    .block-container { padding-top: 2rem !important; max-width: 1100px !important; }
+    .block-container { padding-top: 2rem !important; max-width: 1000px !important; }
 
     /* =========================================
-       BARRA LATERAL (MENÚ FLOTANTE)
+       BARRA LATERAL (MENÚ FLOTANTE PIRATA)
        ========================================= */
     [data-testid="stSidebar"] {
-        background-color: transparent !important;
-        border-right: none !important;
+        background-color: #0d1826 !important;
+        border-right: 2px solid #d4af37 !important; /* Borde Dorado */
     }
     
-    /* El Orbe en la barra lateral */
+    /* El Orbe (Ahora simula una Fruta del Diablo o el Sol de Luffy) */
     .side-orb {
-        width: 140px; height: 140px; border-radius: 50%;
-        background: radial-gradient(circle at 30% 30%, #ffffff, #a78bfa, #4c1d95);
-        box-shadow: 0 0 50px rgba(139, 92, 246, 0.7), inset 0 0 20px rgba(255, 255, 255, 0.6);
+        width: 120px; height: 120px; border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #ffeb3b, #ff9800, #d32f2f);
+        box-shadow: 0 0 50px rgba(255, 152, 0, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.8);
         animation: float 4s ease-in-out infinite;
         margin: 20px auto 40px auto;
         position: relative;
     }
-    /* Anillo exterior del orbe */
+    /* Anillo exterior */
     .side-orb::after {
-        content: ""; position: absolute; inset: -15px;
-        border-radius: 50%; border: 1px solid rgba(0, 242, 254, 0.3);
+        content: "🏴‍☠️"; font-size: 40px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
         animation: pulse 3s infinite alternate;
     }
 
     @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-    @keyframes pulse { 0% { opacity: 0.5; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1.05); } }
+    @keyframes pulse { 0% { opacity: 0.7; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1.05); } }
 
-    /* Botones del menú (Estilo Texto Flotante) */
+    /* Botones del menú */
     [data-testid="stSidebar"] button {
-        background: transparent !important; color: #a1a1aa !important; border: none !important;
-        text-align: left !important; padding: 15px 10px !important;
-        font-size: 16px !important; font-weight: 500 !important; letter-spacing: 2px !important;
+        background: transparent !important; color: #d4af37 !important; /* Texto Dorado */
+        border: none !important; text-align: left !important; padding: 15px 10px !important;
+        font-size: 16px !important; font-weight: bold !important; letter-spacing: 2px !important;
         transition: all 0.3s ease !important;
     }
     [data-testid="stSidebar"] button:hover {
-        color: #ffffff !important; padding-left: 20px !important; text-shadow: 0 0 10px #ffffff;
+        color: #ffeb3b !important; padding-left: 20px !important; text-shadow: 0 0 10px #ffeb3b;
     }
-    /* El botón activo (Nuevo Chat) */
     [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
-        color: #ffffff !important; font-weight: bold !important;
-        border-left: 2px solid #8b5cf6 !important;
+        color: #ffffff !important; border-left: 3px solid #d32f2f !important; /* Borde Rojo */
     }
 
     /* =========================================
-       CHAT (TEXTO FLOTANTE SIN BURBUJAS)
+       CHAT (TEXTO FLOTANTE CON ALTO CONTRASTE)
        ========================================= */
     div[data-testid="stChatMessage"] {
         background-color: transparent !important;
@@ -157,14 +144,17 @@ st.markdown("""
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { 
         display: none !important; 
     }
+    
+    /* Forzar que el texto sea blanco puro y legible */
     div[data-testid="stChatMessage"] p {
         font-size: 16px !important;
-        line-height: 1.6 !important;
-        color: #e5e5e5 !important;
+        line-height: 1.7 !important;
+        color: #ffffff !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* Sombra para mejor lectura */
     }
 
     /* =========================================
-       CAJA DE TEXTO (PÍLDORA BRILLANTE)
+       CAJA DE TEXTO (ESTILO TESORO)
        ========================================= */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important; 
@@ -174,36 +164,31 @@ st.markdown("""
     }
     
     .stChatInput {
-        background: rgba(20, 20, 25, 0.6) !important;
-        border: 1px solid rgba(0, 242, 254, 0.4) !important; /* Borde Cian */
-        border-radius: 30px !important;
-        backdrop-filter: blur(10px) !important;
-        box-shadow: 0 0 20px rgba(0, 242, 254, 0.1), inset 0 0 10px rgba(0, 242, 254, 0.05) !important;
-        transition: all 0.3s ease !important;
+        background: rgba(13, 24, 38, 0.9) !important;
+        border: 2px solid #d4af37 !important; /* Borde Dorado */
+        border-radius: 15px !important;
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.2) !important;
     }
     .stChatInput:focus-within { 
-        border: 1px solid rgba(0, 242, 254, 0.8) !important; 
-        box-shadow: 0 0 30px rgba(0, 242, 254, 0.3) !important;
+        border: 2px solid #ffeb3b !important; 
+        box-shadow: 0 0 30px rgba(255, 235, 59, 0.4) !important;
     }
     [data-testid="stChatInput"] textarea { 
         color: #ffffff !important; font-size: 16px !important; padding: 12px 20px !important; 
     }
     
-    /* Botón de enviar (Avión de papel) */
+    /* Botón de enviar */
     [data-testid="stChatInput"] button {
-        background: transparent !important; 
-        color: #00f2fe !important; 
-        border-radius: 50% !important;
-        border: none !important; 
-        width: 40px !important; height: 40px !important; 
+        background: transparent !important; color: #d4af37 !important; border: none !important; 
     }
-    [data-testid="stChatInput"] button svg {
-        fill: #00f2fe !important;
-    }
-    [data-testid="stChatInput"] button:hover { 
-        background: rgba(0, 242, 254, 0.1) !important;
-    }
+    [data-testid="stChatInput"] button svg { fill: #d4af37 !important; }
+    [data-testid="stChatInput"] button:hover { color: #ffeb3b !important; }
 
+    /* Ajustes de textos internos de Streamlit para que se lean */
+    .stMarkdown p, .stMarkdown li, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+        color: #ffffff !important;
+    }
+    
     audio, div[data-testid="stAudio"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -217,22 +202,20 @@ if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
 
-# --- SIDEBAR (MENÚ FLOTANTE CON ORBE) ---
+# --- SIDEBAR ---
 with st.sidebar:
-    # Orbe flotante
     st.markdown('<div class="side-orb"></div>', unsafe_allow_html=True)
     
-    # Menú estilo texto
-    if st.button("H O M E", use_container_width=True):
+    if st.button("⚓ H O M E", use_container_width=True):
         nuevo_id = datetime.datetime.now().strftime("%d/%m %H:%M")
         st.session_state.chat_actual_id = nuevo_id
         st.session_state.todos_los_chats[nuevo_id] = []
         st.rerun()
 
-    st.button("H I S T O R Y", use_container_width=True)
-    st.button("P R O F I L E", use_container_width=True)
+    st.button("🗺️ H I S T O R Y", use_container_width=True)
+    st.button("👤 P R O F I L E", use_container_width=True)
     
-    with st.expander("S E T T I N G S"):
+    with st.expander("⚙️ S E T T I N G S"):
         voz_activa = st.checkbox("🔊 Voz activa", value=True)
         token = st.secrets.get("GITHUB_TOKEN")
         usuario_github = "leivercontreras18-ux"
@@ -261,23 +244,21 @@ cliente = Groq(api_key=st.secrets["GROQ_API_KEY"])
 # --- LAYOUT PRINCIPAL ---
 mensajes_actuales = st.session_state.todos_los_chats[st.session_state.chat_actual_id]
 
-# Mostrar mensajes (sin cajas, solo texto)
 for message in mensajes_actuales:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Texto de bienvenida si no hay mensajes
 if len(mensajes_actuales) == 0:
     st.markdown("""
-        <div style="text-align: left; margin-top: 10vh; color: #e5e5e5; max-width: 500px;">
-            <h1 style="font-size: 28px; font-weight: 400; line-height: 1.4; font-family: serif;">I am fully at your disposal for all your needs. We have the best generative model to give meaning to your ideas and concepts.</h1>
+        <div style="text-align: left; margin-top: 10vh; color: #ffffff; max-width: 600px; text-shadow: 1px 1px 3px black;">
+            <h1 style="font-size: 32px; font-weight: 400; line-height: 1.4; font-family: serif; color: #d4af37;">"El Rey de los Piratas"</h1>
+            <p style="font-size: 18px; color: #e5e5e5;">Bienvenido al Grand Line, Leiver. Soy Lili, tu nakama. Estoy lista para ayudarte a navegar por el código, buscar tesoros de información o simplemente charlar. ¿Cuál es nuestro próximo destino?</p>
         </div>
     """, unsafe_allow_html=True)
 
 # --- PROCESAMIENTO DE ENTRADA ---
-prompt = st.chat_input("Escribe tu mensaje...")
+prompt = st.chat_input("Escribe tu mensaje al mar...")
 
-# Micrófono oculto en la configuración
 with st.sidebar:
     with st.expander("🎤 Micrófono"):
         audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
@@ -301,9 +282,9 @@ if audio_grabado or prompt:
         
         codigo_actual = st.session_state.codigo_github
         
-        instrucciones = f"""Eres {NOMBRE_IA}, una IA avanzada, cercana y carismática.
+        instrucciones = f"""Eres {NOMBRE_IA}, una IA avanzada, cercana y carismática. Actúas como un nakama (compañero) de Leiver.
         REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
-        CONTEXTO: Te habla Leiver, de Venezuela. Eres su asistente de programación.
+        CONTEXTO: Te habla Leiver, de Venezuela. Tienes una vibra pirata, leal y emocionada por la aventura.
         REGLA DE PROGRAMACIÓN: NUNCA devuelvas archivos completos. Dile: "Borra desde la línea X hasta la Y" y dale el bloque de código exacto."""
         
         if codigo_actual:
@@ -315,7 +296,7 @@ if audio_grabado or prompt:
         mensajes_para_groq.append({"role": "user", "content": texto_usuario})
 
         try:
-            with st.spinner("Pensando..."):
+            with st.spinner("Navegando..."):
                 respuesta = cliente.chat.completions.create(
                     model="openai/gpt-oss-20b", messages=mensajes_para_groq, temperature=0.8, max_tokens=1024
                 )
