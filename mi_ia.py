@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v32.0 - Glass Navigation"
+VERSION = "v32.1 - Glass Forced"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -78,15 +78,9 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS GLASS NAVIGATION (MENÚ LIMPIO + CHAT DE CRISTAL) ---
+# --- CSS GLASS NAVIGATION (FUERZA BRUTA) ---
 st.markdown("""
 <style>
-    :root { 
-        --accent-color: #00f2fe; 
-        --bg-glow: rgba(0, 242, 254, 0.1); 
-        --panel-bg: rgba(30, 41, 59, 0.5);
-    }
-
     /* FONDO OSCURO PROFUNDO */
     .stApp { 
         background: radial-gradient(circle at 50% 0%, #0f172a 0%, #050810 100%) !important; 
@@ -97,107 +91,105 @@ st.markdown("""
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
     /* =========================================
-       BARRA LATERAL (ESTILO MENÚ DE APP)
+       BARRA LATERAL (MENÚ ESTILO APP)
        ========================================= */
     [data-testid="stSidebar"] { 
         background-color: #0b1120 !important; 
         border-right: 1px solid rgba(255, 255, 255, 0.05) !important; 
     }
     
-    /* Título */
-    [data-testid="stSidebar"] h3 { 
-        color: #ffffff !important; 
-        font-weight: 700; 
-        letter-spacing: 1px;
-        display: flex; align-items: center; gap: 10px;
-    }
-
-    /* 🔥 EL TRUCO PARA EL MENÚ: Ocultar los círculos de radio */
-    [data-testid="stSidebar"] .stRadio [role="radiogroup"] > label > div:first-child {
+    /* Ocultar los círculos de Streamlit (Ataque directo) */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label > div:first-child {
         display: none !important; 
     }
 
-    /* Estilo base de las opciones del menú */
-    [data-testid="stSidebar"] .stRadio [role="radiogroup"] > label {
+    /* Estilo base de las etiquetas del menú */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label {
         padding: 12px 15px !important;
         border-radius: 8px !important;
         margin-bottom: 5px !important;
-        border-left: 4px solid transparent !important; /* Borde invisible por defecto */
+        border-left: 4px solid transparent !important;
+        background-color: transparent !important;
         transition: all 0.2s ease !important;
-        cursor: pointer !important;
-        background: transparent !important;
+        display: flex !important;
+        align-items: center !important;
     }
 
-    /* Texto de las opciones */
-    [data-testid="stSidebar"] .stRadio [role="radiogroup"] > label div p {
+    /* Texto del menú */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label p {
         color: #94a3b8 !important;
         font-size: 15px !important;
         font-weight: 500 !important;
         margin: 0 !important;
     }
 
-    /* Hover en las opciones */
-    [data-testid="stSidebar"] .stRadio [role="radiogroup"] > label:hover {
-        background: rgba(255, 255, 255, 0.03) !important;
+    /* Hover */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label:hover {
+        background-color: rgba(255, 255, 255, 0.03) !important;
     }
 
-    /* 🔥 ESTADO ACTIVO: Fondo gris y línea cian a la izquierda */
-    [data-testid="stSidebar"] .stRadio [role="radiogroup"] > label:has(input:checked) {
-        background-color: #334155 !important; /* Fondo gris oscuro */
-        border-left: 4px solid var(--accent-color) !important; /* Línea cian */
+    /* 🔥 ESTADO ACTIVO (Seleccionado) */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) {
+        background-color: #334155 !important; /* Fondo gris */
+        border-left: 4px solid #00f2fe !important; /* Línea cian */
     }
-    
-    [data-testid="stSidebar"] .stRadio [role="radiogroup"] > label:has(input:checked) div p {
-        color: #ffffff !important; /* Texto blanco brillante */
+    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) p {
+        color: #ffffff !important; /* Texto blanco */
         font-weight: 600 !important;
     }
 
-    /* Botones generales */
+    /* Botones generales (Historial, etc) */
     [data-testid="stSidebar"] button { 
         background: transparent !important; color: #cbd5e1 !important; border: 1px solid rgba(255,255,255,0.1) !important; 
         text-align: left !important; padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.2s ease !important; 
     }
     [data-testid="stSidebar"] button:hover { background: #1e293b !important; color: #ffffff !important; }
     
-    /* Botón Nuevo Chat */
     [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button { 
-        background: rgba(0, 242, 254, 0.1) !important; color: var(--accent-color) !important; 
+        background: rgba(0, 242, 254, 0.1) !important; color: #00f2fe !important; 
         border: 1px solid rgba(0, 242, 254, 0.3) !important; text-align: center !important; font-weight: bold !important; 
     }
 
     /* =========================================
-       CHAT (TARJETAS DE CRISTAL BRILLANTE)
+       CHAT (TARJETAS DE CRISTAL FORZADAS)
        ========================================= */
-    div[data-testid="stChatMessage"] {
-        background: rgba(30, 41, 59, 0.6) !important;
-        backdrop-filter: blur(12px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    /* Forzar el fondo de las tarjetas */
+    [data-testid="stChatMessage"] {
+        background: rgba(30, 41, 59, 0.7) !important;
+        backdrop-filter: blur(15px) !important;
         border-radius: 16px !important;
-        padding: 18px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        padding: 16px !important;
         margin-bottom: 20px !important;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
-        display: flex !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Eliminar fondos internos de Streamlit que tapan el cristal */
+    [data-testid="stChatMessage"] > div {
+        background-color: transparent !important;
+    }
+
+    /* TUS MENSAJES (Derecha - Brillo Cian) */
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+        border: 1px solid rgba(0, 242, 254, 0.4) !important;
+        box-shadow: 0 0 20px rgba(0, 242, 254, 0.1) !important;
+        margin-left: auto !important;
+        width: fit-content !important;
+        max-width: 80% !important;
+    }
+
+    /* MENSAJES DE LILI (Izquierda - Brillo Morado) */
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
+        border: 1px solid rgba(157, 78, 221, 0.4) !important;
+        box-shadow: 0 0 20px rgba(157, 78, 221, 0.1) !important;
+        margin-right: auto !important;
+        width: fit-content !important;
+        max-width: 80% !important;
     }
     
-    div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
-
-    /* TUS MENSAJES (Derecha) */
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
-        flex-direction: row-reverse !important; justify-content: flex-start !important; 
-        margin-left: auto !important; width: fit-content !important; max-width: 80% !important;
-        border: 1px solid rgba(0, 242, 254, 0.4) !important; /* Borde cian sutil */
-        box-shadow: 0 0 20px rgba(0, 242, 254, 0.05) !important; /* Brillo cian */
-    }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
-        color: #ffffff !important;
-    }
-
-    /* MENSAJES DE LILI (Izquierda) */
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
-        flex-direction: row !important; justify-content: flex-start !important; 
-        margin-right: auto !important; width: fit-content !important; max-width: 80% !important;
-        border: 1px solid rgba(157, 78, 221, 0.4) !important; /* Borde morado sutil */
-        box-shadow: 0 0 20px rgba(157, 78, 221, 0.05) !important; /* Brillo morado */
+    /* Ocultar avatares */
+    [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { 
+        display: none !important; 
     }
 
     /* =========================================
@@ -215,9 +207,8 @@ st.markdown("""
     }
     .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input { background-color: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; color: #ffffff !important; }
     .stChatInput textarea::placeholder { color: #64748b !important; }
-    .stChatInput:focus-within { box-shadow: 0 0 30px rgba(0, 242, 254, 0.2) !important; border: 1px solid var(--accent-color) !important; }
     
-    [data-testid="stChatInput"] button { background: var(--accent-color) !important; border-radius: 50% !important; border: none !important; margin: 5px !important; width: 35px !important; height: 35px !important; box-shadow: 0 0 10px var(--accent-color) !important; }
+    [data-testid="stChatInput"] button { background: #00f2fe !important; border-radius: 50% !important; border: none !important; margin: 5px !important; width: 35px !important; height: 35px !important; }
     [data-testid="stChatInput"] button svg { fill: #000000 !important; }
     audio, div[data-testid="stAudio"] { display: none !important; }
 
@@ -226,13 +217,13 @@ st.markdown("""
        ========================================= */
     .center-display { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10vh; margin-bottom: 30px; position: relative; }
     .reactor { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
-    .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0, 242, 254, 0.3); border-top: 2px solid var(--accent-color); border-bottom: 2px solid var(--accent-color); animation: spin 3s linear infinite; box-shadow: 0 0 30px var(--bg-glow); }
+    .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0, 242, 254, 0.3); border-top: 2px solid #00f2fe; border-bottom: 2px solid #00f2fe; animation: spin 3s linear infinite; box-shadow: 0 0 30px rgba(0, 242, 254, 0.1); }
     .reactor-ring-mid { position: absolute; inset: 20px; border-radius: 50%; border: 1px dashed rgba(157, 78, 221, 0.6); animation: spin-reverse 8s linear infinite; }
-    .reactor-core { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #ffffff 0%, var(--accent-color) 40%, #4facfe 100%); box-shadow: 0 0 50px var(--accent-color), inset 0 0 20px #ffffff; animation: pulse 2s ease-in-out infinite; z-index: 10; }
-    .display-text { margin-top: 30px; font-size: 14px; letter-spacing: 5px; color: var(--accent-color); text-transform: uppercase; text-shadow: 0 0 15px var(--bg-glow); z-index: 10; font-weight: 600; font-family: monospace; }
+    .reactor-core { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #ffffff 0%, #00f2fe 40%, #4facfe 100%); box-shadow: 0 0 50px #00f2fe, inset 0 0 20px #ffffff; animation: pulse 2s ease-in-out infinite; z-index: 10; }
+    .display-text { margin-top: 30px; font-size: 14px; letter-spacing: 5px; color: #00f2fe; text-transform: uppercase; text-shadow: 0 0 15px rgba(0, 242, 254, 0.1); z-index: 10; font-weight: 600; font-family: monospace; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
     @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
-    @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 30px var(--accent-color), inset 0 0 15px #ffffff; } 50% { transform: scale(1.05); box-shadow: 0 0 60px var(--accent-color), inset 0 0 30px #ffffff; } 100% { transform: scale(0.95); box-shadow: 0 0 30px var(--accent-color), inset 0 0 15px #ffffff; } }
+    @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 30px #00f2fe, inset 0 0 15px #ffffff; } 50% { transform: scale(1.05); box-shadow: 0 0 60px #00f2fe, inset 0 0 30px #ffffff; } 100% { transform: scale(0.95); box-shadow: 0 0 30px #00f2fe, inset 0 0 15px #ffffff; } }
 </style>
 """, unsafe_allow_html=True)
 
