@@ -13,7 +13,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v13.2 - Exact Line Finder"
+VERSION = "v13.3 - GitHub UI"
 ARCHIVO_HISTORIAL = "historial_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -37,30 +37,30 @@ def limpiar_texto_para_voz(texto):
     texto_limpio = re.sub(r'(?<=\d),(?=\d)', '', texto_limpio) 
     return texto_limpio.strip()
 
-# --- FUNCIÓN PARA DESCARGAR CÓDIGO DE GITHUB ---
-def descargar_codigo_github(repo_y_archivo, token):
-    try:
-        partes = repo_y_archivo.strip().split('/')
-        if len(partes) == 3:
-            usuario, repo, archivo = partes
-        elif len(partes) == 2:
-            usuario = "leivercontreras18-ux" 
-            repo, archivo = partes
-        else:
-            return "Error: Formato incorrecto. Usa 'repositorio/archivo.py'"
-        
-        url = f"https://api.github.com/repos/{usuario}/{repo}/contents/{archivo}"
-        headers = {"Authorization": f"token {token}"}
-        respuesta = requests.get(url, headers=headers)
-        
-        if respuesta.status_code == 200:
-            contenido_base64 = respuesta.json()['content']
-            codigo = base64.b64decode(contenido_base64).decode('utf-8')
-            return codigo
-        else:
-            return f"Error {respuesta.status_code}: No se pudo encontrar el archivo."
-    except Exception as e:
-        return f"Error: {e}"
+# --- FUNCIONES PARA GITHUB ---
+@st.cache_data(ttl=60)
+def obtener_repositorios(token, usuario):
+    headers = {"Authorization": f"token {token}"}
+    res = requests.get(f"https://api.github.com/users/{usuario}/repos?per_page=100", headers=headers)
+    if res.status_code == 200:
+        return [r['name'] for r in res.json()]
+    return []
+
+@st.cache_data(ttl=60)
+def obtener_archivos(usuario, repo, token):
+    headers = {"Authorization": f"token {token}"}
+    res = requests.get(f"https://api.github.com/repos/{usuario}/{repo}/contents", headers=headers)
+    if res.status_code == 200:
+        return [f['name'] for f in res.json() if f['type'] == 'file' and f['name'].endswith(('.py', '.txt', '.json'))]
+    return []
+
+def descargar_archivo_github(usuario, repo, archivo, token):
+    headers = {"Authorization": f"token {token}"}
+    url = f"https://api.github.com/repos/{usuario}/{repo}/contents/{archivo}"
+    res = requests.get(url, headers=headers)
+    if res.status_code == 200:
+        return base64.b64decode(res.json()['content']).decode('utf-8')
+    return "Error al descargar"
 
 # --- CSS AVANZADO ---
 st.markdown("""
@@ -158,49 +158,66 @@ with st.sidebar:
     
     st.subheader("📁 Código")
     uploaded_file = st.file_uploader("Upload", type=["py", "txt", "json", "js"], label_visibility="collapsed")
+    
+    # Prioridad: archivo subido o archivo de GitHub
     codigo_actual = uploaded_file.read().decode("utf-8") if uploaded_file else st.session_state.codigo_github
     if uploaded_file:
         st.success(f"Cargado: {uploaded_file.name}")
+        st.session_state.codigo_github = "" # Limpiamos GitHub si sube uno manual
     
     st.markdown("---")
     st.subheader("🐙 GitHub")
     
-    ruta_archivo = st.text_input("Ruta del archivo (ej. inventario-app/app.py)", label_visibility="collapsed")
-    if st.button("Leer archivo de GitHub", use_container_width=True):
-        token = st.secrets.get("GITHUB_TOKEN")
-        if token:
-            with st.spinner("Descargando código..."):
-                codigo_descargado = descargar_codigo_github(ruta_archivo, token)
-                if "Error" not in codigo_descargado:
-                    st.session_state.codigo_github = codigo_descargado
-                    st.success("¡Archivo cargado!")
-                    st.rerun()
-                else:
-                    st.error(codigo_descargado)
-        else:
-            st.warning("Falta GITHUB_TOKEN en los Secrets.")
+    token = st.secrets.get("GITHUB_TOKEN")
+    usuario_github = "leivercontreras18-ux" # Tu usuario de GitHub
 
-    if st.button("Sincronizar mis Repositorios", use_container_width=True):
-        with st.spinner("Conectando con GitHub..."):
-            token = st.secrets.get("GITHUB_TOKEN")
-            if token:
+    if token:
+        # 1. Cargar Repositorios
+        repos = obtener_repositorios(token, usuario_github)
+        
+        if repos:
+            repo_seleccionado = st.selectbox("1. Repositorio", repos)
+            
+            # 2. Cargar Archivos del repo seleccionado
+            archivos = obtener_archivos(usuario_github, repo_seleccionado, token)
+            
+            if archivos:
+                archivo_seleccionado = st.selectbox("2. Archivo", archivos)
+                
+                if st.button("Leer archivo seleccionado", use_container_width=True):
+                    with st.spinner("Descargando..."):
+                        codigo = descargar_archivo_github(usuario_github, repo_seleccionado, archivo_seleccionado, token)
+                        if "Error" not in codigo:
+                            st.session_state.codigo_github = codigo
+                            st.success(f"✅ {archivo_seleccionado} cargado")
+                            st.rerun()
+                        else:
+                            st.error(codigo)
+            else:
+                st.info("No hay archivos .py en este repositorio.")
+        else:
+            st.warning("No se encontraron repositorios. Revisa el token.")
+            
+        # Sincronizar contexto general
+        if st.button("Sincronizar Descripciones", use_container_width=True):
+            with st.spinner("Conectando..."):
                 try:
                     headers = {"Authorization": f"token {token}"}
-                    respuesta = requests.get("https://api.github.com/user/repos?per_page=100", headers=headers)
+                    respuesta = requests.get(f"https://api.github.com/users/{usuario_github}/repos?per_page=100", headers=headers)
                     if respuesta.status_code == 200:
-                        repos = respuesta.json()
-                        texto_repos = "Aquí está la lista de los repositorios de Leiver en GitHub:\n"
-                        for r in repos:
+                        repos_data = respuesta.json()
+                        texto_repos = f"Aquí está la lista de repositorios de {usuario_github} en GitHub:\n"
+                        for r in repos_data:
                             desc = r['description'] if r['description'] else "Sin descripción"
                             texto_repos += f"- {r['name']}: {desc} (Lenguaje: {r['language']})\n"
                         st.session_state.github_contexto = texto_repos
-                        st.success("¡Repositorios sincronizados!")
+                        st.success("¡Descripciones sincronizadas!")
                     else:
-                        st.error("Error al conectar. Revisa tu token.")
+                        st.error("Error al conectar.")
                 except Exception as e:
                     st.error(f"Error: {e}")
-            else:
-                st.warning("Falta GITHUB_TOKEN en los Secrets.")
+    else:
+        st.warning("Falta GITHUB_TOKEN en los Secrets.")
 
     st.markdown("---")
     if st.button("🗑️ Limpiar Chat", use_container_width=True):
@@ -264,7 +281,7 @@ if audio_grabado or prompt:
         guardar_historial(st.session_state.messages)
         
         # ========================================================
-        # INSTRUCCIONES (NUEVA REGLA DE CIRUGÍA EXACTA)
+        # INSTRUCCIONES (CIRUJANA EXACTA)
         # ========================================================
         instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis. Tienes un toque de humor seco y eres muy leal a tu usuario.
         
