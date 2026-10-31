@@ -11,9 +11,9 @@ from groq import Groq
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Nova"
-# ¡AQUÍ ESTÁ EL CAMBIO DE VOZ! (Voz venezolana)
-VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v11.5 - Natural Voice"
+# 🔥 CAMBIO CLAVE: Voz británica para el estilo F.R.I.D.A.Y.
+VOZ_FIJA = "en-GB-SoniaNeural" 
+VERSION = "v11.6 - F.R.I.D.A.Y. Style"
 ARCHIVO_HISTORIAL = "historial_nova.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
@@ -31,7 +31,6 @@ def guardar_historial(mensajes):
 
 # --- FUNCIÓN PARA LIMPIAR EL TEXTO DE LA VOZ ---
 def limpiar_texto_para_voz(texto):
-    # Quitamos asteriscos y markdown, pero MANTENEMOS comas y puntos (ayudan a las pausas)
     texto_limpio = re.sub(r'[*#_`]', '', texto)
     texto_limpio = re.sub(r'^\s*-\s*', '', texto_limpio, flags=re.MULTILINE)
     texto_limpio = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', texto_limpio)
@@ -99,10 +98,10 @@ st.markdown("""
 # --- INYECTAR GLOWS DE FONDO ---
 st.markdown('<div class="glow-1"></div><div class="glow-2"></div><div class="glow-3"></div>', unsafe_allow_html=True)
 
-# --- FUNCIONES DE AUDIO CON VELOCIDAD Y TONO AJUSTADOS ---
+# --- FUNCIONES DE AUDIO CON VELOCIDAD AJUSTADA ---
 async def generar_audio_edge(texto, voz):
-    # AQUÍ ESTÁ EL TRUCO: rate="-5%" (un poco más lento) y pitch="-2Hz" (un poco más grave)
-    comunicar = edge_tts.Communicate(texto, voz, rate="-5%", pitch="-2Hz")
+    # ⚡ rate="+10%" acelera ligeramente la voz para eliminar pausas largas
+    comunicar = edge_tts.Communicate(texto, voz, rate="+10%")
     audio_buffer = io.BytesIO()
     async for chunk in comunicar.stream():
         if chunk["type"] == "audio":
@@ -208,7 +207,7 @@ if audio_grabado or prompt:
         CÓMO DEBES HABLAR (MUY IMPORTANTE PARA LA VOZ):
         - Háblale como una persona real, no como un robot ni como un libro de texto.
         - Usa un español conversacional, cálido y natural, con modismos venezolanos suaves si encaja.
-        - Usa pausas naturales en tu escritura. Abundan las comas (,), los puntos suspensivos (...) y las oraciones cortas para que el motor de voz pueda respirar y suene humano.
+        - Sé directo y fluido. Evita el uso excesivo de comas (,) y puntos suspensivos (...). Usa frases más cortas y directas para que la lectura sea continua.
         - No uses listas largas ni enumeres con números. Prefiere hablar en párrafos fluidos.
         - REGLA ESTRICTA DE FORMATO: No uses formato Markdown, ni asteriscos, ni negritas, ni numerales. Escribe todo en texto plano."""
         
@@ -224,7 +223,7 @@ if audio_grabado or prompt:
                 respuesta = cliente.chat.completions.create(
                     model="openai/gpt-oss-120b",
                     messages=mensajes_para_groq,
-                    temperature=0.8, # Un poco más alto para que sea más creativa y fluida
+                    temperature=0.8,
                     max_tokens=2048
                 )
                 
