@@ -3,11 +3,12 @@ import time
 import io
 import asyncio
 import edge_tts
+import base64
 from groq import Groq
 
 # --- ¡AQUÍ PONES EL NOMBRE DE TU IA! ---
 NOMBRE_IA = "Nova"
-VOZ_FIJA = "es-MX-DaliaNeural" # Voz única en español latino
+VOZ_FIJA = "es-MX-DaliaNeural"
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🤖", layout="wide")
@@ -33,8 +34,8 @@ st.markdown("""
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) { flex-direction: row !important; justify-content: flex-start !important; margin-right: auto !important; width: fit-content !important; max-width: 80% !important; }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] { background-color: transparent !important; padding: 10px 15px !important; text-align: left !important; }
     
-    /* EL TRUCO MAGICO: Ocultar el reproductor de audio nativo */
-    div[data-testid="stAudio"] { display: none !important; }
+    /* EL TRUCO MAGICO: Ocultar CUALQUIER etiqueta de audio */
+    audio { display: none !important; }
     
     [data-testid="stBottomBlockContainer"] { background-color: #1a1a1a !important; padding-bottom: 1.5rem !important; }
 </style>
@@ -50,10 +51,18 @@ async def generar_audio_edge(texto, voz):
     audio_buffer.seek(0)
     return audio_buffer
 
+# --- FUNCIÓN PARA REPRODUCIR AUDIO ---
+def autoplay_audio(audio_buffer):
+    audio_bytes = audio_buffer.read()
+    b64 = base64.b64encode(audio_bytes).decode()
+    # Inyectamos el audio directamente en el HTML (sin iframe)
+    audio_html = f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}"></audio>'
+    st.markdown(audio_html, unsafe_allow_html=True)
+
 # --- BARRA LATERAL ---
 with st.sidebar:
     st.title(f"🤖 {NOMBRE_IA}")
-    st.caption("v3.8 - Powered by Groq ⚡")
+    st.caption("v3.9 - Powered by Groq ⚡")
     st.divider()
     
     st.subheader("⚙️ Configuración")
@@ -61,8 +70,7 @@ with st.sidebar:
     
     st.divider()
     st.subheader("🎤 Hablar con Nova")
-    st.write("*(Haz clic para grabar, clic de nuevo para detener)*")
-    # El micrófono manual: no se activa solo, requiere clic
+    st.write("*(Haz clic para grabar)*")
     audio_grabado = st.audio_input("Graba tu mensaje", label_visibility="collapsed")
     
     st.divider()
@@ -104,7 +112,6 @@ try:
     if audio_grabado or prompt:
         texto_usuario = ""
         
-        # 1. Si hay audio, lo transcribimos con Whisper de Groq
         if audio_grabado and not prompt:
             with st.spinner("Escuchando..."):
                 try:
@@ -118,13 +125,10 @@ try:
                 except Exception as e:
                     st.error(f"Error al procesar el audio: {e}")
                     texto_usuario = "(No se pudo entender el audio)"
-        
-        # 2. Si hay texto (o si falló el audio), usamos el texto
         elif prompt:
             texto_usuario = prompt
             
         if texto_usuario:
-            # Mostrar el mensaje del usuario
             with st.chat_message("user", avatar="👤"):
                 st.markdown(texto_usuario)
             
@@ -134,7 +138,6 @@ try:
             if codigo_actual:
                 contexto_ia = f"Te adjunto el código actual del archivo:\n\n```python\n{codigo_actual}\n```\n\nMi petición es: {texto_usuario}\n\nPor favor, devuélveme el código completo modificado dentro de un bloque de código."
 
-            # Generar respuesta de Groq
             with st.chat_message("assistant", avatar="🤖"):
                 with st.spinner("Pensando..."):
                     try:
@@ -152,20 +155,14 @@ try:
                         st.markdown(texto_respuesta)
                         st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
                         
-                        # Reproducir voz de Nova
                         if activar_voz: 
                             try:
                                 audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
-                                # autoplay=True y lo ocultamos con CSS
-                                st.audio(audio_buffer, format="audio/mp3", autoplay=True)
+                                autoplay_audio(audio_buffer)
                             except Exception as e:
                                 st.warning(f"No se pudo generar la voz: {e}")
                         
                     except Exception as e:
                         st.error(f"Error de Groq: {e}")
             
-            if prompt:
-                st.rerun()
-
-except KeyError:
-    st.warning("⚠️ Falta la API Key de Groq. Configúrala en los Secrets de Streamlit.")
+            # ¡Eliminamos el st.rerun() para no interrumpir el audio!
