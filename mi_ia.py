@@ -13,7 +13,7 @@ NOMBRE_IA = "Nova"
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🤖", layout="wide")
 
-# --- CSS PERSONALIZADO (ESTILO CHATGPT) ---
+# --- CSS PERSONALIZADO (ESTILO CHATGPT PREMIUM) ---
 st.markdown("""
 <style>
     /* Ocultar menús de Streamlit */
@@ -37,7 +37,7 @@ st.markdown("""
     .block-container {
         max-width: 800px;
         padding-top: 2rem;
-        padding-bottom: 6rem;
+        padding-bottom: 150px; /* Espacio para que el chat no quede tapado por la caja de texto */
     }
 
     /* Burbujas de chat limpias */
@@ -49,12 +49,22 @@ st.markdown("""
     }
 
     /* El mensaje del usuario se resalta con un fondo gris */
-    /* (Usamos un truco para pintar solo los mensajes del usuario) */
     .stChatMessage[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         background-color: #2f2f2f !important;
         border-radius: 15px !important;
         padding: 1rem !important;
         margin-bottom: 1rem !important;
+    }
+
+    /* FIJAR LA CAJA DE ENTRADA AL FONDO DE LA PANTALLA */
+    div[data-testid="stVerticalBlock"] > div:has(> div > .stChatInput) {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background-color: #212121;
+        padding: 15px 20%;
+        z-index: 1000;
+        border-top: 1px solid #333;
     }
 
     /* Botones */
@@ -143,12 +153,13 @@ try:
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
-    # --- ZONA DE ENTRADA ---
-    col1, col2 = st.columns([1, 8])
-    with col1:
-        audio_grabado = st.audio_input("Habla aquí", label_visibility="collapsed")
-    with col2:
-        prompt = st.chat_input(f"Habla con {NOMBRE_IA}...")
+    # --- ZONA DE ENTRADA (Fija al fondo) ---
+    with st.container():
+        col1, col2 = st.columns([1, 8])
+        with col1:
+            audio_grabado = st.audio_input("Habla aquí", label_visibility="collapsed")
+        with col2:
+            prompt = st.chat_input(f"Habla con {NOMBRE_IA}...")
 
     # --- LÓGICA DE PROCESAMIENTO ---
     if audio_grabado or prompt:
@@ -166,11 +177,8 @@ try:
             tipo_entrada = "voz"
 
         with st.chat_message("user", avatar="👤"):
-            if tipo_entrada == "voz":
-                st.audio(audio_grabado)
-                st.markdown(texto_usuario)
-            else:
-                st.markdown(texto_usuario)
+            # Quitamos el st.audio(audio_grabado) para que no salga el reproductor feo
+            st.markdown(texto_usuario)
         
         st.session_state.messages.append({"role": "user", "content": texto_usuario})
 
