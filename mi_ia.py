@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v31.3 - Isolated Modes"
+VERSION = "v32.0 - Glass Navigation"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="💻", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,35 +78,152 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS ESTILOS DINÁMICOS ---
+# --- CSS GLASS NAVIGATION (MENÚ LIMPIO + CHAT DE CRISTAL) ---
 st.markdown("""
 <style>
-    :root { --accent-color: #00f2fe; --bg-glow: rgba(0, 242, 254, 0.1); }
-    .stApp { background: radial-gradient(circle at 50% 50%, #0f172a 0%, #050810 100%) !important; color: #f8fafc !important; }
+    :root { 
+        --accent-color: #00f2fe; 
+        --bg-glow: rgba(0, 242, 254, 0.1); 
+        --panel-bg: rgba(30, 41, 59, 0.5);
+    }
+
+    /* FONDO OSCURO PROFUNDO */
+    .stApp { 
+        background: radial-gradient(circle at 50% 0%, #0f172a 0%, #050810 100%) !important; 
+        color: #f8fafc !important; 
+    }
+
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
-    [data-testid="stSidebar"] { background-color: #0b1120 !important; border-right: 1px solid #1e293b !important; }
-    [data-testid="stSidebar"] .stRadio > div { gap: 5px; }
-    [data-testid="stSidebar"] .stRadio label { background: transparent !important; color: #cbd5e1 !important; border: 1px solid transparent !important; padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.2s ease !important; cursor: pointer; }
-    [data-testid="stSidebar"] .stRadio label:hover { background: #1e293b !important; color: #ffffff !important; }
-    [data-testid="stSidebar"] button { background: transparent !important; color: #cbd5e1 !important; border: 1px solid #1e293b !important; text-align: left !important; padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.2s ease !important; }
-    [data-testid="stSidebar"] button:hover { background: #1e293b !important; color: #ffffff !important; border-color: #334155 !important;}
-    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button { background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%) !important; color: #000000 !important; text-align: center !important; font-weight: bold !important; border: none !important; }
-    div[data-testid="stChatMessage"] { background-color: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 20px !important; display: flex !important; }
+
+    /* =========================================
+       BARRA LATERAL (ESTILO MENÚ DE APP)
+       ========================================= */
+    [data-testid="stSidebar"] { 
+        background-color: #0b1120 !important; 
+        border-right: 1px solid rgba(255, 255, 255, 0.05) !important; 
+    }
+    
+    /* Título */
+    [data-testid="stSidebar"] h3 { 
+        color: #ffffff !important; 
+        font-weight: 700; 
+        letter-spacing: 1px;
+        display: flex; align-items: center; gap: 10px;
+    }
+
+    /* 🔥 EL TRUCO PARA EL MENÚ: Ocultar los círculos de radio */
+    [data-testid="stSidebar"] .stRadio [role="radiogroup"] > label > div:first-child {
+        display: none !important; 
+    }
+
+    /* Estilo base de las opciones del menú */
+    [data-testid="stSidebar"] .stRadio [role="radiogroup"] > label {
+        padding: 12px 15px !important;
+        border-radius: 8px !important;
+        margin-bottom: 5px !important;
+        border-left: 4px solid transparent !important; /* Borde invisible por defecto */
+        transition: all 0.2s ease !important;
+        cursor: pointer !important;
+        background: transparent !important;
+    }
+
+    /* Texto de las opciones */
+    [data-testid="stSidebar"] .stRadio [role="radiogroup"] > label div p {
+        color: #94a3b8 !important;
+        font-size: 15px !important;
+        font-weight: 500 !important;
+        margin: 0 !important;
+    }
+
+    /* Hover en las opciones */
+    [data-testid="stSidebar"] .stRadio [role="radiogroup"] > label:hover {
+        background: rgba(255, 255, 255, 0.03) !important;
+    }
+
+    /* 🔥 ESTADO ACTIVO: Fondo gris y línea cian a la izquierda */
+    [data-testid="stSidebar"] .stRadio [role="radiogroup"] > label:has(input:checked) {
+        background-color: #334155 !important; /* Fondo gris oscuro */
+        border-left: 4px solid var(--accent-color) !important; /* Línea cian */
+    }
+    
+    [data-testid="stSidebar"] .stRadio [role="radiogroup"] > label:has(input:checked) div p {
+        color: #ffffff !important; /* Texto blanco brillante */
+        font-weight: 600 !important;
+    }
+
+    /* Botones generales */
+    [data-testid="stSidebar"] button { 
+        background: transparent !important; color: #cbd5e1 !important; border: 1px solid rgba(255,255,255,0.1) !important; 
+        text-align: left !important; padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.2s ease !important; 
+    }
+    [data-testid="stSidebar"] button:hover { background: #1e293b !important; color: #ffffff !important; }
+    
+    /* Botón Nuevo Chat */
+    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button { 
+        background: rgba(0, 242, 254, 0.1) !important; color: var(--accent-color) !important; 
+        border: 1px solid rgba(0, 242, 254, 0.3) !important; text-align: center !important; font-weight: bold !important; 
+    }
+
+    /* =========================================
+       CHAT (TARJETAS DE CRISTAL BRILLANTE)
+       ========================================= */
+    div[data-testid="stChatMessage"] {
+        background: rgba(30, 41, 59, 0.6) !important;
+        backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 16px !important;
+        padding: 18px !important;
+        margin-bottom: 20px !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+        display: flex !important;
+    }
+    
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) { flex-direction: row-reverse !important; justify-content: flex-start !important; margin-left: auto !important; width: fit-content !important; max-width: 80% !important; }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] { background: #1e293b !important; color: #ffffff !important; border-radius: 16px 16px 0 16px !important; padding: 12px 18px !important; border: 1px solid #334155 !important; }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) { flex-direction: row !important; justify-content: flex-start !important; margin-right: auto !important; width: fit-content !important; max-width: 80% !important; }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] { background: var(--bg-glow) !important; color: #ffffff !important; border-radius: 16px 16px 16px 0 !important; padding: 12px 18px !important; border: 1px solid var(--accent-color) !important; }
+
+    /* TUS MENSAJES (Derecha) */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
+        flex-direction: row-reverse !important; justify-content: flex-start !important; 
+        margin-left: auto !important; width: fit-content !important; max-width: 80% !important;
+        border: 1px solid rgba(0, 242, 254, 0.4) !important; /* Borde cian sutil */
+        box-shadow: 0 0 20px rgba(0, 242, 254, 0.05) !important; /* Brillo cian */
+    }
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
+        color: #ffffff !important;
+    }
+
+    /* MENSAJES DE LILI (Izquierda) */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
+        flex-direction: row !important; justify-content: flex-start !important; 
+        margin-right: auto !important; width: fit-content !important; max-width: 80% !important;
+        border: 1px solid rgba(157, 78, 221, 0.4) !important; /* Borde morado sutil */
+        box-shadow: 0 0 20px rgba(157, 78, 221, 0.05) !important; /* Brillo morado */
+    }
+
+    /* =========================================
+       CAJA DE TEXTO
+       ========================================= */
     [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { background-color: transparent !important; background: transparent !important; }
     [data-testid="stBottomBlockContainer"] { padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
-    .stChatInput { background: #0f172a !important; border: 1px solid var(--accent-color) !important; border-radius: 30px !important; box-shadow: 0 0 15px var(--bg-glow) !important; }
+    
+    .stChatInput { 
+        background: rgba(15, 23, 42, 0.8) !important; 
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(0, 242, 254, 0.4) !important; 
+        border-radius: 30px !important; 
+        box-shadow: 0 0 20px rgba(0, 242, 254, 0.1) !important; 
+    }
     .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input { background-color: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; color: #ffffff !important; }
     .stChatInput textarea::placeholder { color: #64748b !important; }
-    .stChatInput:focus-within { box-shadow: 0 0 25px var(--bg-glow) !important; }
-    [data-testid="stChatInput"] button { background: var(--accent-color) !important; border-radius: 50% !important; border: none !important; margin: 5px !important; width: 35px !important; height: 35px !important; }
+    .stChatInput:focus-within { box-shadow: 0 0 30px rgba(0, 242, 254, 0.2) !important; border: 1px solid var(--accent-color) !important; }
+    
+    [data-testid="stChatInput"] button { background: var(--accent-color) !important; border-radius: 50% !important; border: none !important; margin: 5px !important; width: 35px !important; height: 35px !important; box-shadow: 0 0 10px var(--accent-color) !important; }
     [data-testid="stChatInput"] button svg { fill: #000000 !important; }
     audio, div[data-testid="stAudio"] { display: none !important; }
+
+    /* =========================================
+       REACTOR
+       ========================================= */
     .center-display { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10vh; margin-bottom: 30px; position: relative; }
     .reactor { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
     .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0, 242, 254, 0.3); border-top: 2px solid var(--accent-color); border-bottom: 2px solid var(--accent-color); animation: spin 3s linear infinite; box-shadow: 0 0 30px var(--bg-glow); }
@@ -122,8 +239,6 @@ st.markdown("""
 # --- INICIALIZACIÓN DE ESTADO Y MIGRACIÓN ---
 if "todos_los_chats" not in st.session_state: 
     st.session_state.todos_los_chats = cargar_todos_los_chats()
-    
-    # Migración: Si los chats antiguos no tienen el prefijo del modo, se los ponemos (ej: "💻 Programación|17:00")
     for key in list(st.session_state.todos_los_chats.keys()):
         if "|" not in key:
             new_key = f"💻 Programación|{key}"
@@ -143,20 +258,18 @@ if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_ca
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h3 style='color: var(--accent-color);'>💻 Lili Dev</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>💠 Lili AI Hub</h3>", unsafe_allow_html=True)
     st.caption(f"{VERSION}")
     
     st.markdown("### Modo de Trabajo")
     modos = ["💻 Programación", "💬 Chat General", "🎨 Creativo", "📊 Análisis"]
     
-    # Manejo del cambio de modo: Autocambia al último chat de ese modo o crea uno nuevo
     seleccion = st.radio("", modos, index=modos.index(st.session_state.modo_actual), label_visibility="collapsed")
     if seleccion != st.session_state.modo_actual:
         st.session_state.modo_actual = seleccion
-        # Buscar si hay chats en este modo
         chats_del_modo = [k for k in st.session_state.todos_los_chats.keys() if k.startswith(f"{st.session_state.modo_actual}|")]
         if chats_del_modo:
-            st.session_state.chat_actual_id = sorted(chats_del_modo)[-1] # El más reciente
+            st.session_state.chat_actual_id = sorted(chats_del_modo)[-1]
         else:
             st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
             st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
@@ -172,13 +285,11 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("**Historial**")
-    # FILTRO: Solo mostramos los chats que empiezan con el nombre del modo actual
     for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
         if chat_id.startswith(f"{st.session_state.modo_actual}|") and len(st.session_state.todos_los_chats[chat_id]) > 0:
             col1, col2 = st.columns([0.8, 0.2])
             with col1:
                 icono = "▸" if chat_id == st.session_state.chat_actual_id else "▫"
-                # Mostramos solo la hora, no el nombre del modo entero
                 hora_chat = chat_id.split("|")[1]
                 if st.button(f"{icono} {hora_chat}", key=f"btn_{chat_id}", use_container_width=True):
                     st.session_state.chat_actual_id = chat_id
@@ -196,7 +307,6 @@ with st.sidebar:
 
     st.markdown("---")
     
-    # GITHUB CON AUTOSELECCIÓN
     if st.session_state.modo_actual == "💻 Programación":
         st.markdown("#### 🐙 Repositorios")
         token = st.secrets.get("GITHUB_TOKEN")
@@ -241,7 +351,6 @@ if "GROQ_API_KEY" not in st.secrets:
 cliente = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # --- LAYOUT PRINCIPAL ---
-# Aseguramos que el chat actual exista (por si se borró o hubo un error)
 if st.session_state.chat_actual_id not in st.session_state.todos_los_chats:
     st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
     st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
@@ -298,7 +407,6 @@ if audio_grabado or prompt:
             instrucciones = """Eres Lili Dev, una IA experta en programación y arquitectura de software.
             REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
             CONTEXTO: Te habla Leiver, de Venezuela. Estás en MODO PROGRAMACIÓN.
-            
             IMPORTANTE: El usuario TIENE UN ARCHIVO CARGADO en tu memoria. 
             Si el usuario te pregunta "¿de qué trata?", "resume" o "analiza" el código, DEBES leer el código que se te proporcionó abajo y darle un resumen detallado.
             Si te pide cambios, NUNCA devuelvas el archivo completo. Dile: "Borra desde la línea X hasta la Y" y dale el bloque de código exacto. Sé precisa y técnica."""
@@ -310,15 +418,11 @@ if audio_grabado or prompt:
                 
         elif st.session_state.modo_actual == "🎨 Creativo":
             instrucciones = """Eres Lili Creative, una IA imaginativa, poética y apasionada por el arte.
-            REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
-            CONTEXTO: Te habla Leiver. Estás en MODO CREATIVO.
-            Tu objetivo es inspirar, escribir historias, brainstorming y pensar fuera de la caja. Usa un tono entusiasta."""
+            REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL. CONTEXTO: Estás en MODO CREATIVO. Tu objetivo es inspirar y pensar fuera de la caja."""
             
         elif st.session_state.modo_actual == "📊 Análisis":
             instrucciones = """Eres Lili Analyst, una IA lógica y estructurada.
-            REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
-            CONTEXTO: Te habla Leiver. Estás en MODO ANÁLISIS.
-            Tu objetivo es resumir, extraer datos clave y dar respuestas lógicas y concisas."""
+            REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL. CONTEXTO: Estás en MODO ANÁLISIS. Tu objetivo es resumir y dar respuestas lógicas."""
             
         else:
             instrucciones = """Eres Lili, una IA avanzada y carismática. REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL."""
