@@ -15,15 +15,14 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v37.2 - Dropdowns HUD"
+VERSION = "v37.3 - Forced GitHub Sync"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
 
-# --- SISTEMA DE NOTIFICACIONES FLOTANTES (TOASTS) ---
+# --- SISTEMA DE NOTIFICACIONES FLOTANTES ---
 if "toast_msg" not in st.session_state:
     st.session_state.toast_msg = None
-
 if st.session_state.toast_msg:
     st.toast(st.session_state.toast_msg[0], icon=st.session_state.toast_msg[1])
     st.session_state.toast_msg = None
@@ -54,16 +53,15 @@ def limpiar_texto_para_voz(texto):
     texto_limpio = re.sub(r'\s+', ' ', texto_limpio)
     return texto_limpio.strip()
 
-# --- FUNCIONES PARA GITHUB ---
-@st.cache_data(ttl=60)
-def obtener_repositorios(token, usuario):
+# --- FUNCIONES PARA GITHUB (SIN CACHÉ PARA FORZAR ACTUALIZACIÓN) ---
+def obtener_repositorios(token):
+    # Usamos /user/repos para traer TODOS (públicos y privados) del usuario autenticado
     headers = {"Authorization": f"token {token}"}
-    res = requests.get(f"https://api.github.com/users/{usuario}/repos?per_page=100", headers=headers)
+    res = requests.get("https://api.github.com/user/repos?per_page=100&sort=updated", headers=headers)
     if res.status_code == 200:
         return [r['name'] for r in res.json()]
     return []
 
-@st.cache_data(ttl=60)
 def obtener_archivos(usuario, repo, token):
     headers = {"Authorization": f"token {token}"}
     repo_info = requests.get(f"https://api.github.com/repos/{usuario}/{repo}", headers=headers)
@@ -86,7 +84,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS PREMIUM HUD (CON FIX PARA DROPDOWNS Y BOTONES) ---
+# --- CSS PREMIUM HUD ---
 st.markdown("""
 <style>
     /* Variables de Sistema */
@@ -168,7 +166,6 @@ st.markdown("""
     [data-testid="stExpander"] summary:hover { color: #ffffff !important; }
     [data-testid="stExpander"] summary svg { display: none !important; }
 
-    /* Botones dentro del expander */
     [data-testid="stExpander"] button {
         background: rgba(0, 229, 255, 0.03) !important;
         border: 1px solid rgba(0, 229, 255, 0.2) !important;
@@ -190,8 +187,7 @@ st.markdown("""
     [data-testid="stExpander"] button img,
     [data-testid="stExpander"] button span[role="img"] { display: none !important; }
 
-    /* 🔥 FIX PARA EL SELECTOR NATIVO (DROPDOWN) */
-    /* Caja principal del selector */
+    /* FIX PARA EL SELECTOR NATIVO */
     [data-testid="stExpander"] div[data-baseweb="select"] > div {
         background-color: rgba(10, 14, 22, 0.6) !important;
         border: 1px solid rgba(0, 229, 255, 0.1) !important;
@@ -203,7 +199,6 @@ st.markdown("""
         border-color: rgba(0, 229, 255, 0.3) !important;
     }
 
-    /* El botón de la flechita */
     [data-testid="stExpander"] div[data-baseweb="select"] > div > div:last-child {
         background-color: transparent !important;
         border-left: none !important;
@@ -213,7 +208,6 @@ st.markdown("""
         color: #00e5ff !important;
     }
 
-    /* 🔥 FIX PARA EL MENÚ DESPLEGABLE (LAS OPCIONES) */
     ul[data-baseweb="menu"] {
         background-color: #131822 !important;
         border: 1px solid rgba(0, 229, 255, 0.2) !important;
@@ -230,7 +224,6 @@ st.markdown("""
         color: #00e5ff !important;
     }
 
-    /* Ajuste de columnas para botones (Sincronizar / Cargar) */
     [data-testid="stExpander"] [data-testid="stHorizontalBlock"] { gap: 8px !important; }
     [data-testid="stExpander"] [data-testid="stHorizontalBlock"] button {
         width: 100% !important;
@@ -388,7 +381,7 @@ with st.sidebar:
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
     # =========================================
-    # PANEL DE GITHUB (BOTONES CORREGIDOS Y DROPDOWN HUD)
+    # PANEL DE GITHUB
     # =========================================
     if st.session_state.modo_actual == "Programación":
         with st.expander("GITHUB", expanded=True):
@@ -396,15 +389,22 @@ with st.sidebar:
             usuario_github = "leivercontreras18-ux"
             
             if token:
-                repos = obtener_repositorios(token, usuario_github)
+                # Trae todos los repositorios sin caché
+                repos = obtener_repositorios(token)
                 repo_sel = None
                 arch_sel = None
                 
                 if repos:
-                    idx_repo = repos.index("Leiver-AI") if "Leiver-AI" in repos else 0
+                    # Buscamos "Leiver-AI" de forma flexible
+                    idx_repo = 0
+                    for i, r in enumerate(repos):
+                        if r.lower() == "leiver-ai":
+                            idx_repo = i
+                            break
+                            
                     repo_sel = st.selectbox("Repositorio", repos, index=idx_repo)
                     
-                    if repo_sel == "Leiver-AI":
+                    if repo_sel.lower() == "leiver-ai":
                         st.markdown("<p style='color: #00e5ff; font-size: 0.7rem; text-align: right; margin-top: -10px;'>🧠 Repositorio de la IA detectado</p>", unsafe_allow_html=True)
                     
                     archivos = obtener_archivos(usuario_github, repo_sel, token)
@@ -414,16 +414,15 @@ with st.sidebar:
                     else:
                         st.info("No hay archivos válidos.")
                 else:
-                    st.warning("No se encontraron repositorios.")
+                    st.warning("No se encontraron repositorios. ¿El token tiene permisos?")
                 
                 st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
                 
-                # Botones en paralelo (Texto corto para que no se corte)
+                # Botones en paralelo
                 col1, col2 = st.columns(2)
                 
                 with col1:
                     if st.button("SINCRONIZAR", use_container_width=True):
-                        st.cache_data.clear()
                         st.session_state.toast_msg = ("Repositorios sincronizados", "🔄")
                         st.rerun()
                         
