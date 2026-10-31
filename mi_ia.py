@@ -4,23 +4,34 @@ import io
 import asyncio
 import edge_tts
 import base64
+import json
+import os
 from groq import Groq
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Nova"
 VOZ_FIJA = "es-MX-DaliaNeural"
-VERSION = "v10.0"
+VERSION = "v11.0"
+ARCHIVO_HISTORIAL = "historial_nova.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
+
+# --- FUNCIONES PARA LA MEMORIA ---
+def cargar_historial():
+    if os.path.exists(ARCHIVO_HISTORIAL):
+        with open(ARCHIVO_HISTORIAL, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+def guardar_historial(mensajes):
+    with open(ARCHIVO_HISTORIAL, "w", encoding="utf-8") as f:
+        json.dump(mensajes, f, ensure_ascii=False, indent=4)
 
 # --- CSS AVANZADO ---
 st.markdown("""
 <style>
     /* 1. FONDO Y GLOWS */
-    .stApp {
-        background-color: #121214 !important;
-    }
-    
+    .stApp { background-color: #121214 !important; }
     .glow-1 { position: fixed; top: 25%; left: 25%; width: 384px; height: 384px; border-radius: 50%; background: rgba(88, 28, 135, 0.2); filter: blur(120px); pointer-events: none; z-index: 0; }
     .glow-2 { position: fixed; bottom: 33%; right: 25%; width: 400px; height: 400px; border-radius: 50%; background: rgba(131, 24, 67, 0.1); filter: blur(150px); pointer-events: none; z-index: 0; }
     .glow-3 { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; height: 320px; border-radius: 50%; background: rgba(49, 46, 129, 0.2); filter: blur(100px); pointer-events: none; z-index: 0; }
@@ -28,228 +39,56 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header { background: transparent !important; }
+    .block-container { padding-top: 2rem !important; padding-bottom: 0 !important; max-width: 95% !important; height: 100vh !important; overflow: hidden !important; }
 
-    /* 2. ESTRUCTURA PRINCIPAL */
-    .block-container { 
-        padding-top: 2rem !important; 
-        padding-bottom: 0 !important;
-        max-width: 95% !important; 
-        height: 100vh !important; 
-        overflow: hidden !important; 
-    }
-
-    /* 3. EL ORBE */
+    /* 2. EL ORBE */
     @keyframes blob {
         0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; transform: scale(1); }
         33% { border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%; transform: scale(1.03) rotate(4deg); }
         66% { border-radius: 28% 72% 35% 65% / 40% 60% 30% 70%; transform: scale(0.97) rotate(-4deg); }
     }
-
-    .orb-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 300px;
-        height: 300px;
-        margin: 0 auto;
-    }
-
-    .orb-glow {
-        position: absolute;
-        width: 300px; height: 300px;
-        border-radius: 50%;
-        background: linear-gradient(to top right, rgba(168, 85, 247, 0.4), rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.4));
-        filter: blur(60px);
-        animation: pulse 3s infinite alternate;
-    }
-
-    .orb-body {
-        width: 256px; height: 256px;
-        background: linear-gradient(to right, rgba(192, 132, 252, 0.4), rgba(249, 168, 212, 0.5), rgba(129, 140, 248, 0.4));
-        backdrop-filter: blur(12px);
-        box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.2);
-        animation: blob 8s infinite ease-in-out;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .orb-inner {
-        position: absolute; inset: 0;
-        background: linear-gradient(to bottom left, rgba(236, 72, 153, 0.2), transparent, rgba(147, 51, 234, 0.3));
-        mix-blend-mode: overlay;
-        animation: spin 12s infinite linear;
-    }
-
+    .orb-wrapper { position: relative; display: flex; align-items: center; justify-content: center; width: 300px; height: 300px; margin: 0 auto; }
+    .orb-glow { position: absolute; width: 300px; height: 300px; border-radius: 50%; background: linear-gradient(to top right, rgba(168, 85, 247, 0.4), rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.4)); filter: blur(60px); animation: pulse 3s infinite alternate; }
+    .orb-body { width: 256px; height: 256px; background: linear-gradient(to right, rgba(192, 132, 252, 0.4), rgba(249, 168, 212, 0.5), rgba(129, 140, 248, 0.4)); backdrop-filter: blur(12px); box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.2); animation: blob 8s infinite ease-in-out; border: 1px solid rgba(255, 255, 255, 0.2); position: relative; overflow: hidden; }
+    .orb-inner { position: absolute; inset: 0; background: linear-gradient(to bottom left, rgba(236, 72, 153, 0.2), transparent, rgba(147, 51, 234, 0.3)); mix-blend-mode: overlay; animation: spin 12s infinite linear; }
     @keyframes pulse { 0% { opacity: 0.6; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1.1); } }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    .nova-title {
-        font-size: 36px;
-        font-weight: 200;
-        letter-spacing: 0.2em;
-        background: linear-gradient(to right, #e9d5ff, #f1f5f9, #fbcfe8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-top: 20px;
-        margin-bottom: 0;
-        text-align: center;
-    }
-    .nova-subtitle {
-        font-size: 14px;
-        color: rgba(233, 213, 255, 0.6);
-        text-align: center;
-        margin-top: 5px;
-    }
+    .nova-title { font-size: 36px; font-weight: 200; letter-spacing: 0.2em; background: linear-gradient(to right, #e9d5ff, #f1f5f9, #fbcfe8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-top: 20px; margin-bottom: 0; text-align: center; }
+    .nova-subtitle { font-size: 14px; color: rgba(233, 213, 255, 0.6); text-align: center; margin-top: 5px; }
 
-    /* =======================================================
-       4. CAJA DEL CHAT (CRISTAL)
-       ======================================================= */
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(255, 255, 255, 0.02) !important; 
-        border: none !important; 
-        backdrop-filter: blur(30px) !important; 
-        border-radius: 30px !important; 
-        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.4) !important;
-        padding: 20px !important;
-        overflow: hidden !important;
-    }
+    /* 3. CAJA DEL CHAT */
+    div[data-testid="stVerticalBlockBorderWrapper"] { background: rgba(255, 255, 255, 0.02) !important; border: none !important; backdrop-filter: blur(30px) !important; border-radius: 30px !important; box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.4) !important; padding: 20px !important; overflow: hidden !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] > div { background: transparent !important; }
-
-    /* Ocultar Avatares y botones de Streamlit */
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
     div[data-testid="stChatMessage"] button { display: none !important; }
 
-    /* Burbujas */
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
-        background: linear-gradient(135deg, rgba(147, 51, 234, 0.4), rgba(88, 28, 135, 0.4)) !important;
-        border: 1px solid rgba(168, 85, 247, 0.3) !important;
-        color: #f3e8ff !important;
-        border-radius: 25px 25px 5px 25px !important; 
-        margin-left: auto !important;
-        width: fit-content !important;
-        max-width: 85% !important;
-        padding: 14px 20px !important;
-        margin-bottom: 15px !important;
-        backdrop-filter: blur(10px) !important;
-    }
+    /* BURBUJAS */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) { background: linear-gradient(135deg, rgba(147, 51, 234, 0.4), rgba(88, 28, 135, 0.4)) !important; border: 1px solid rgba(168, 85, 247, 0.3) !important; color: #f3e8ff !important; border-radius: 25px 25px 5px 25px !important; margin-left: auto !important; width: fit-content !important; max-width: 85% !important; padding: 14px 20px !important; margin-bottom: 15px !important; backdrop-filter: blur(10px) !important; }
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) { background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) !important; border: 1px solid rgba(255, 255, 255, 0.05) !important; color: rgba(252, 231, 243, 0.95) !important; border-radius: 25px 25px 25px 5px !important; margin-right: auto !important; width: fit-content !important; max-width: 85% !important; padding: 14px 20px !important; margin-bottom: 15px !important; backdrop-filter: blur(10px) !important; }
 
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
-        color: rgba(252, 231, 243, 0.95) !important;
-        border-radius: 25px 25px 25px 5px !important;
-        margin-right: auto !important;
-        width: fit-content !important;
-        max-width: 85% !important;
-        padding: 14px 20px !important;
-        margin-bottom: 15px !important;
-        backdrop-filter: blur(10px) !important;
-    }
-
-    /* Scroll elegante */
+    /* SCROLL */
     div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar { width: 6px !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-track { background: transparent !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.4) !important; border-radius: 10px !important; }
-    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.8) !important; }
 
-    /* =======================================================
-       5. BARRA DE TEXTO
-       ======================================================= */
+    /* 4. BARRA DE TEXTO */
     [data-testid="stBottom"], [data-testid="stBottom"] > div { background: transparent !important; }
-
-    [data-testid="stBottomBlockContainer"] {
-        background: transparent !important;
-        padding-bottom: 2rem !important;
-        max-width: 800px !important; 
-        margin: 0 auto !important; 
-    }
-    
-    [data-testid="stChatInput"] {
-        background: rgba(20, 20, 30, 0.4) !important;
-        border: 1px solid rgba(168, 85, 247, 0.4) !important;
-        border-radius: 30px !important;
-        backdrop-filter: blur(20px) !important;
-        box-shadow: 0 0 20px rgba(168, 85, 247, 0.15) !important;
-    }
-
-    [data-testid="stChatInput"] > div, [data-testid="stChatInput"] div,
-    [data-testid="stChatInput"] div[data-baseweb="base-input"],
-    [data-testid="stChatInput"] div[data-baseweb="textarea"],
-    [data-testid="stChatInput"] textarea, [data-testid="stChatInput"] input {
-        background-color: transparent !important;
-        border: none !important;
-        outline: none !important;
-        box-shadow: none !important;
-        color: #ffffff !important;
-    }
-
-    [data-testid="stChatInput"]:focus-within {
-        border: 1px solid rgba(168, 85, 247, 0.8) !important;
-        box-shadow: 0 0 25px rgba(168, 85, 247, 0.3) !important;
-    }
+    [data-testid="stBottomBlockContainer"] { background: transparent !important; padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
+    [data-testid="stChatInput"] { background: rgba(20, 20, 30, 0.4) !important; border: 1px solid rgba(168, 85, 247, 0.4) !important; border-radius: 30px !important; backdrop-filter: blur(20px) !important; box-shadow: 0 0 20px rgba(168, 85, 247, 0.15) !important; }
+    [data-testid="stChatInput"] > div, [data-testid="stChatInput"] div, [data-testid="stChatInput"] div[data-baseweb="base-input"], [data-testid="stChatInput"] div[data-baseweb="textarea"], [data-testid="stChatInput"] textarea, [data-testid="stChatInput"] input { background-color: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; color: #ffffff !important; }
+    [data-testid="stChatInput"]:focus-within { border: 1px solid rgba(168, 85, 247, 0.8) !important; box-shadow: 0 0 25px rgba(168, 85, 247, 0.3) !important; }
 
     audio, div[data-testid="stAudio"] { display: none !important; }
 
-    /* =======================================================
-       6. REDISEÑO DE LA BARRA LATERAL (SIDEBAR SCI-FI)
-       ======================================================= */
-    [data-testid="stSidebar"] {
-        background-color: #0b0b12 !important;
-        border-right: 1px solid rgba(168, 85, 247, 0.15) !important;
-    }
-
-    [data-testid="stSidebar"] h1, 
-    [data-testid="stSidebar"] h2, 
-    [data-testid="stSidebar"] h3 {
-        font-weight: 200 !important;
-        letter-spacing: 2px;
-        color: #e9d5ff !important;
-        text-transform: uppercase;
-        font-size: 14px !important;
-    }
-
-    [data-testid="stFileUploader"] {
-        background-color: rgba(255, 255, 255, 0.02) !important;
-        border: 1px dashed rgba(168, 85, 247, 0.4) !important;
-        border-radius: 15px !important;
-        padding: 10px !important;
-        transition: all 0.3s ease;
-    }
-    [data-testid="stFileUploader"]:hover {
-        border-color: rgba(168, 85, 247, 0.8) !important;
-        background-color: rgba(168, 85, 247, 0.05) !important;
-    }
-
-    [data-testid="stAudioInput"] {
-        background-color: rgba(0, 242, 254, 0.05) !important;
-        border: 1px solid rgba(0, 242, 254, 0.2) !important;
-        border-radius: 15px !important;
-        padding: 10px !important;
-    }
-
-    [data-testid="stSidebar"] button {
-        background: rgba(255, 0, 85, 0.1) !important;
-        color: #ff3366 !important;
-        border: 1px solid rgba(255, 0, 85, 0.3) !important;
-        border-radius: 10px !important;
-        font-weight: bold !important;
-        letter-spacing: 1px !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    [data-testid="stSidebar"] button:hover {
-        background: rgba(255, 0, 85, 0.3) !important;
-        box-shadow: 0 0 15px rgba(255, 0, 85, 0.5) !important;
-        color: white !important;
-        border: 1px solid rgba(255, 0, 85, 0.8) !important;
-    }
-    
-    [data-testid="stSidebar"] .stCheckbox p {
-        font-size: 13px !important;
-        color: #a78bfa !important;
-    }
+    /* 5. SIDEBAR */
+    [data-testid="stSidebar"] { background-color: #0b0b12 !important; border-right: 1px solid rgba(168, 85, 247, 0.15) !important; }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { font-weight: 200 !important; letter-spacing: 2px; color: #e9d5ff !important; text-transform: uppercase; font-size: 14px !important; }
+    [data-testid="stFileUploader"] { background-color: rgba(255, 255, 255, 0.02) !important; border: 1px dashed rgba(168, 85, 247, 0.4) !important; border-radius: 15px !important; padding: 10px !important; transition: all 0.3s ease; }
+    [data-testid="stAudioInput"] { background-color: rgba(0, 242, 254, 0.05) !important; border: 1px solid rgba(0, 242, 254, 0.2) !important; border-radius: 15px !important; padding: 10px !important; }
+    [data-testid="stSidebar"] button { background: rgba(255, 0, 85, 0.1) !important; color: #ff3366 !important; border: 1px solid rgba(255, 0, 85, 0.3) !important; border-radius: 10px !important; font-weight: bold !important; letter-spacing: 1px !important; transition: all 0.3s ease !important; }
+    [data-testid="stSidebar"] button:hover { background: rgba(255, 0, 85, 0.3) !important; box-shadow: 0 0 15px rgba(255, 0, 85, 0.5) !important; color: white !important; border: 1px solid rgba(255, 0, 85, 0.8) !important; }
+    [data-testid="stSidebar"] .stCheckbox p { font-size: 13px !important; color: #a78bfa !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -272,9 +111,10 @@ def autoplay_audio(audio_buffer):
     audio_html = f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}"></audio>'
     st.markdown(audio_html, unsafe_allow_html=True)
 
-# --- ESTADO DE LA SESIÓN ---
+# --- CARGAR MEMORIA AL INICIAR ---
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = cargar_historial()
+    
 if "audio_pendiente" not in st.session_state:
     st.session_state.audio_pendiente = None
 if "mic_key" not in st.session_state:
@@ -282,10 +122,8 @@ if "mic_key" not in st.session_state:
 
 # --- SIDEBAR ---
 with st.sidebar:
-    # Aquí cambiamos "System" por el nombre y la versión
     st.title(f"🤖 {NOMBRE_IA} System")
     st.caption(f"{VERSION} - Powered by Groq ⚡")
-    
     st.markdown("---")
     
     voz_activa = st.checkbox("🔊 Voz activa", value=True)
@@ -302,6 +140,8 @@ with st.sidebar:
     st.markdown("---")
     if st.button("🗑️ Limpiar Chat", use_container_width=True):
         st.session_state.messages = []
+        if os.path.exists(ARCHIVO_HISTORIAL):
+            os.remove(ARCHIVO_HISTORIAL) # Borramos el archivo físico
         st.session_state.mic_key += 1
         st.rerun()
 
@@ -311,7 +151,6 @@ if "GROQ_API_KEY" not in st.secrets:
     st.stop()
 
 cliente = Groq(api_key=st.secrets["GROQ_API_KEY"])
-instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa y clara."
 
 # --- LAYOUT PRINCIPAL ---
 col_izq, col_der = st.columns([1, 1.2], gap="large")
@@ -357,33 +196,48 @@ if audio_grabado or prompt:
                 st.error(f"Error de audio: {e}")
                 
     if texto_usuario:
+        # 1. Guardar mensaje del usuario en el estado y en el archivo
         st.session_state.messages.append({"role": "user", "content": texto_usuario})
+        guardar_historial(st.session_state.messages)
         
-        contexto_ia = f"Código:\n```python\n{codigo_actual}\n```\nPetición: {texto_usuario}" if codigo_actual else texto_usuario
+        # 2. Construir el contexto para Groq (Instrucciones + Código + Historial)
+        instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa y clara."
+        
+        # Si hay código, se lo añadimos a las instrucciones para que lo tenga presente
+        if codigo_actual:
+            instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```python\n{codigo_actual}\n```"
+
+        # Preparamos la lista de mensajes para Groq
+        mensajes_para_groq = [{"role": "system", "content": instrucciones}]
+        
+        # Añadimos todo el historial (memoria)
+        for msg in st.session_state.messages:
+            mensajes_para_groq.append({"role": msg["role"], "content": msg["content"]})
 
         try:
-            respuesta = cliente.chat.completions.create(
-                model="openai/gpt-oss-120b",
-                messages=[
-                    {"role": "system", "content": instrucciones}, 
-                    {"role": "user", "content": texto_usuario}
-                ],
-                temperature=0.7, 
-                max_tokens=2048
-            )
-            
-            texto_respuesta = respuesta.choices[0].message.content
-            st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
-            
-            if voz_activa: 
-                try:
-                    audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
-                    st.session_state.audio_pendiente = audio_buffer
-                except Exception:
-                    pass
-            
-            st.session_state.mic_key += 1
-            st.rerun()
+            with st.spinner("Pensando..."):
+                respuesta = cliente.chat.completions.create(
+                    model="openai/gpt-oss-120b",
+                    messages=mensajes_para_groq,
+                    temperature=0.7, 
+                    max_tokens=2048
+                )
+                
+                texto_respuesta = respuesta.choices[0].message.content
+                
+                # 3. Guardar la respuesta de Nova
+                st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
+                guardar_historial(st.session_state.messages)
+                
+                if voz_activa: 
+                    try:
+                        audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
+                        st.session_state.audio_pendiente = audio_buffer
+                    except Exception:
+                        pass
+                
+                st.session_state.mic_key += 1
+                st.rerun()
             
         except Exception as e:
             st.error(f"Error de Groq: {e}")
