@@ -15,10 +15,18 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v37.0 - Symmetric HUD"
+VERSION = "v37.1 - Notifications & IA"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
+
+# --- SISTEMA DE NOTIFICACIONES FLOTANTES (TOASTS) ---
+if "toast_msg" not in st.session_state:
+    st.session_state.toast_msg = None
+
+if st.session_state.toast_msg:
+    st.toast(st.session_state.toast_msg[0], icon=st.session_state.toast_msg[1])
+    st.session_state.toast_msg = None
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,7 +86,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS PREMIUM HUD (CON TU AJUSTE DE BOTONES EN COLUMNAS) ---
+# --- CSS PREMIUM HUD ---
 st.markdown("""
 <style>
     /* Variables de Sistema */
@@ -106,7 +114,7 @@ st.markdown("""
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
     /* =========================================
-       BARRA LATERAL Y MENÚ CUSTOM
+       BARRA LATERAL
        ========================================= */
     [data-testid="stSidebar"] {
         background-color: #131822 !important;
@@ -115,7 +123,6 @@ st.markdown("""
     }
     [data-testid="stSidebarCollapseButton"] { display: none !important; }
 
-    /* Botones del menú principal */
     [data-testid="stSidebar"] button[key^="menu_"] {
         background-color: transparent !important;
         border: none !important;
@@ -139,7 +146,6 @@ st.markdown("""
         background-color: rgba(255, 255, 255, 0.02) !important;
     }
 
-    /* El truco del botón activo */
     div[data-testid="stSidebar"] div[class*="st-key-menu_"] button {
         color: var(--cyan-neon) !important;
         background-color: rgba(0, 229, 255, 0.08) !important;
@@ -149,7 +155,7 @@ st.markdown("""
     }
 
     /* =========================================
-       PANEL DE GITHUB (TU CSS SIMÉTRICO)
+       PANEL DE GITHUB SIMÉTRICO
        ========================================= */
     [data-testid="stExpander"] summary {
         font-size: 0.8rem !important;
@@ -180,40 +186,28 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* Ocultar emojis en los botones sin romper el texto */
     [data-testid="stExpander"] button img,
-    [data-testid="stExpander"] button span[role="img"] {
-        display: none !important;
-    }
+    [data-testid="stExpander"] button span[role="img"] { display: none !important; }
 
     [data-testid="stExpander"] [data-baseweb="select"] {
         background-color: rgba(10, 14, 22, 0.6) !important;
         border: 1px solid rgba(0, 229, 255, 0.1) !important;
         border-radius: 6px !important;
     }
-
     [data-testid="stExpander"] [data-baseweb="select"]:focus-within {
         border-color: #00e5ff !important;
         box-shadow: 0 0 8px rgba(0, 229, 255, 0.2) !important;
     }
+    [data-testid="stExpander"] svg { color: #00e5ff !important; }
+    [data-testid="stExpander"] [data-baseweb="select"] div[data-testid="stMarkdownContainer"] p { color: #ffffff !important; }
 
-    [data-testid="stExpander"] svg {
-        color: #00e5ff !important;
-    }
-    
-    [data-testid="stExpander"] [data-baseweb="select"] div[data-testid="stMarkdownContainer"] p {
-        color: #ffffff !important;
-    }
-
-    /* 🔥 TU CSS PARA LAS COLUMNAS DE BOTONES 🔥 */
-    [data-testid="stExpander"] [data-testid="stHorizontalBlock"] {
-        gap: 8px !important;
-    }
+    /* Ajuste de columnas para botones */
+    [data-testid="stExpander"] [data-testid="stHorizontalBlock"] { gap: 8px !important; }
     [data-testid="stExpander"] [data-testid="stHorizontalBlock"] button {
         width: 100% !important;
         padding: 10px 4px !important;
-        font-size: 0.7rem !important; /* Letra más pequeña para que quepa en horizontal */
-        white-space: nowrap !important; /* Evita que el texto se parta en dos líneas */
+        font-size: 0.7rem !important;
+        white-space: nowrap !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
@@ -231,7 +225,6 @@ st.markdown("""
         margin-bottom: 20px !important;
         border: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
-
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         background: rgba(255, 255, 255, 0.04) !important;
@@ -239,7 +232,6 @@ st.markdown("""
         width: fit-content !important;
         max-width: 80% !important;
     }
-
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
         border: 1px solid var(--glass-border) !important;
         box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.03) !important;
@@ -247,50 +239,31 @@ st.markdown("""
         width: fit-content !important;
         max-width: 80% !important;
     }
-
-    [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { 
-        display: none !important; 
-    }
+    [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
     [data-testid="stChatMessage"] > div { background-color: transparent !important; }
 
     /* =========================================
        CAJA DE TEXTO
        ========================================= */
     [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { 
-        background-color: transparent !important; 
-        background: transparent !important; 
+        background-color: transparent !important; background: transparent !important; 
     }
-    
-    [data-testid="stBottomBlockContainer"] { 
-        padding-bottom: 2rem !important; 
-        max-width: 800px !important; 
-        margin: 0 auto !important; 
-    }
+    [data-testid="stBottomBlockContainer"] { padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
     
     .stChatInput { 
-        background: rgba(24, 29, 40, 0.7) !important; 
-        backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(0, 229, 255, 0.2) !important; 
-        border-radius: 30px !important; 
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important; 
-        transition: all 0.3s ease !important;
+        background: rgba(24, 29, 40, 0.7) !important; backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(0, 229, 255, 0.2) !important; border-radius: 30px !important; 
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important; transition: all 0.3s ease !important;
     }
-    
     .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input { 
-        background-color: transparent !important; 
-        border: none !important; 
-        outline: none !important; 
-        box-shadow: none !important; 
-        color: var(--text-pure-white) !important; 
+        background-color: transparent !important; border: none !important; outline: none !important; 
+        box-shadow: none !important; color: var(--text-pure-white) !important; 
     }
-    
     .stChatInput textarea::placeholder { color: rgba(255, 255, 255, 0.5) !important; }
-    
     .stChatInput:focus-within { 
         border-color: var(--cyan-neon) !important; 
         box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 8px rgba(0, 229, 255, 0.3) !important; 
     }
-    
     [data-testid="stChatInput"] button { 
         background: transparent !important; border-radius: 50% !important; border: none !important; 
         margin: 5px !important; width: 35px !important; height: 35px !important; box-shadow: none !important;
@@ -333,6 +306,7 @@ if "audio_pendiente" not in st.session_state: st.session_state.audio_pendiente =
 if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
+if "sincronizado" not in st.session_state: st.session_state.sincronizado = False
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -385,7 +359,9 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
-    # PANEL DE GITHUB SIMÉTRICO
+    # =========================================
+    # PANEL DE GITHUB (CON NOTIFICACIONES Y AUTO-IA)
+    # =========================================
     if st.session_state.modo_actual == "Programación":
         with st.expander("GITHUB", expanded=True):
             token = st.secrets.get("GITHUB_TOKEN")
@@ -397,8 +373,13 @@ with st.sidebar:
                 arch_sel = None
                 
                 if repos:
+                    # Auto-seleccionar el repo de la IA
                     idx_repo = repos.index("Leiver-AI") if "Leiver-AI" in repos else 0
                     repo_sel = st.selectbox("Repositorio", repos, index=idx_repo)
+                    
+                    # Indicador visual si es el repo de la IA
+                    if repo_sel == "Leiver-AI":
+                        st.markdown("<p style='color: #00e5ff; font-size: 0.7rem; text-align: right; margin-top: -10px;'>🧠 Repositorio de la IA detectado</p>", unsafe_allow_html=True)
                     
                     archivos = obtener_archivos(usuario_github, repo_sel, token)
                     if archivos:
@@ -411,12 +392,13 @@ with st.sidebar:
                 
                 st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
                 
-                # Los botones agrupados abajo en paralelo
+                # Botones en paralelo
                 col1, col2 = st.columns(2)
                 
                 with col1:
                     if st.button("SINCRONIZAR", use_container_width=True):
                         st.cache_data.clear()
+                        st.session_state.toast_msg = ("Repositorios sincronizados", "🔄")
                         st.rerun()
                         
                 with col2:
@@ -426,12 +408,18 @@ with st.sidebar:
                             if exito:
                                 st.session_state.codigo_github = resultado
                                 st.session_state.archivo_cargado_nombre = arch_sel
+                                st.session_state.toast_msg = (f"Archivo {arch_sel} cargado", "✅")
                                 st.rerun()
                         else:
                             st.error("Selecciona un repo y archivo primero.")
                             
+                # Badge permanente si hay un archivo cargado
                 if st.session_state.archivo_cargado_nombre:
-                    st.success(f"✅ {st.session_state.archivo_cargado_nombre}")
+                    st.markdown(f"""
+                        <div style="background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; padding: 6px; border-radius: 6px; margin-top: 10px; text-align: center;">
+                            <span style="color: #00e5ff; font-size: 0.75rem; font-weight: 600;">✅ IA CARGADA: {st.session_state.archivo_cargado_nombre}</span>
+                        </div>
+                    """, unsafe_allow_html=True)
 
     with st.expander("Configuración", expanded=False):
         voz_activa = st.checkbox("Voz activa", value=True)
