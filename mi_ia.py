@@ -12,94 +12,84 @@ VOZ_FIJA = "es-MX-DaliaNeural"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS AVANZADO ---
+# --- CSS AVANZADO (ESTILO CYBERPUNK / HOLOGRÁFICO) ---
 st.markdown("""
 <style>
-    /* Reducir márgenes de la página para que todo quepa */
-    .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
-        max-width: 95% !important;
-    }
-
+    /* Fondo espacial profundo */
     .stApp {
-        background: radial-gradient(circle at 50% 50%, #0d1117 0%, #000000 100%);
+        background: radial-gradient(circle at 50% 50%, #050510 0%, #000000 100%);
         color: #e0e0e0;
     }
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header { background: transparent !important; }
+    .block-container { padding-top: 1rem !important; max-width: 95% !important; }
 
-    /* CONTENEDOR DEL ORBE (Más pequeño para no empujar) */
+    /* -----------------------------------------
+       EL ORBE HOLOGRÁFICO (Usando un GIF animado)
+       ----------------------------------------- */
     .orb-container {
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
         align-items: center;
-        height: 50vh; /* Reducido de 70vh a 50vh */
+        height: 50vh;
         position: relative;
-        padding-top: 10px;
+        margin-top: 20px;
     }
     
-    .orb {
-        width: 180px;  /* Reducido de 260px */
-        height: 180px;
+    .orb-gif {
+        width: 320px;
+        height: 320px;
         border-radius: 50%;
-        background: radial-gradient(circle at 30% 30%, #00f2fe 0%, #4facfe 40%, #ff0844 80%, transparent 100%);
-        box-shadow: 0 0 40px #00f2fe, 0 0 80px #ff0844, inset 0 0 30px #ffffff;
-        animation: pulse 2s infinite alternate ease-in-out, rotate 8s linear infinite;
-        filter: blur(3px);
+        /* Aquí usamos una imagen animada de plasma en lugar de un div CSS */
+        background-image: url('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z5Z3R6cXZ4Z3R6cXZ4Z3R6cXZ4Z3R6cXZ4Z3R6cXZ4Z3R6cXZ4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKr3nzbCg4rO5u8/giphy.gif');
+        background-size: cover;
+        background-position: center;
+        box-shadow: 0 0 50px rgba(0, 242, 254, 0.5), 0 0 100px rgba(255, 0, 128, 0.3);
+        animation: pulse 2s infinite alternate ease-in-out;
     }
 
     @keyframes pulse {
-        0% { transform: scale(0.92); opacity: 0.8; }
-        100% { transform: scale(1.08); opacity: 1; }
-    }
-    
-    @keyframes rotate {
-        0% { filter: hue-rotate(0deg) blur(3px); }
-        100% { filter: hue-rotate(360deg) blur(3px); }
+        0% { transform: scale(0.95); filter: brightness(0.8); }
+        100% { transform: scale(1.05); filter: brightness(1.2); }
     }
 
-    .orb-ring {
-        position: absolute;
-        width: 250px; /* Reducido */
-        height: 250px;
-        border-radius: 50%;
-        border: 2px solid rgba(0, 242, 254, 0.2);
-        animation: spin 15s linear infinite;
-    }
-    .orb-ring-2 {
-        position: absolute;
-        width: 300px; /* Reducido */
-        height: 300px;
-        border-radius: 50%;
-        border: 1px dashed rgba(255, 8, 68, 0.2);
-        animation: spin 25s linear infinite reverse;
-    }
-
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-
-    /* CHAT ESTILO CRISTAL */
+    /* -----------------------------------------
+       LOS PANELES DE CHAT (ESTILO HOLOGRAMA)
+       ----------------------------------------- */
+    /* Estilo general de las burbujas */
     div[data-testid="stChatMessage"] {
-        background: rgba(255, 255, 255, 0.03) !important;
-        backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 15px !important;
-        padding: 10px !important; /* Reducido el padding */
-        margin-bottom: 10px !important;
+        background: rgba(0, 0, 0, 0.6) !important;
+        backdrop-filter: blur(12px) !important;
+        border-radius: 10px !important;
+        padding: 15px !important;
+        margin-bottom: 15px !important;
     }
 
-    /* BARRA DE TEXTO */
+    /* Panel del Usuario (Borde Magenta) */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
+        border: 1px solid #ff00ff !important;
+        box-shadow: 0 0 15px rgba(255, 0, 255, 0.4), inset 0 0 10px rgba(255, 0, 255, 0.2) !important;
+    }
+
+    /* Panel de Nova (Borde Cian) */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
+        border: 1px solid #00f2fe !important;
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.4), inset 0 0 10px rgba(0, 242, 254, 0.2) !important;
+    }
+
+    /* Barra de texto estilo consola futurista */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
-        padding-bottom: 0rem !important; /* Pegado al fondo */
+        padding-bottom: 0rem !important;
     }
     .stChatInput {
-        background: rgba(20, 25, 35, 0.7) !important;
+        background: rgba(10, 15, 30, 0.8) !important;
         backdrop-filter: blur(15px) !important;
         border: 1px solid #00f2fe !important;
-        border-radius: 30px !important;
+        border-radius: 10px !important;
+        box-shadow: 0 0 20px rgba(0, 242, 254, 0.3) !important;
     }
 
     audio { display: none !important; }
@@ -148,30 +138,26 @@ with st.sidebar:
 try:
     api_key = st.secrets["GROQ_API_KEY"]
     cliente = Groq(api_key=api_key)
-    instrucciones = f"Eres {NOMBRE_IA}, un asistente experto. Responde de forma directa y concisa."
+    instrucciones = f"Eres {NOMBRE_IA}, un asistente experto. Responde de forma directa, elegante y concisa."
 
     # --- LAYOUT PRINCIPAL ---
-    col_izq, col_der = st.columns([1, 1.2])
+    col_izq, col_der = st.columns([1.1, 1])
 
     with col_izq:
         st.markdown("""
             <div class="orb-container">
-                <div class="orb-ring"></div>
-                <div class="orb-ring-2"></div>
-                <div class="orb"></div>
+                <div class="orb-gif"></div>
                 <div style="text-align: center; margin-top: 20px; z-index: 10;">
-                    <h2 style="color: #00f2fe; letter-spacing: 5px; text-shadow: 0 0 10px #00f2fe; margin-bottom: 0;">NOVA</h2>
-                    <p style="color: gray; font-size: 12px;">SISTEMAS OPERATIVOS</p>
+                    <h2 style="color: #00f2fe; letter-spacing: 8px; text-shadow: 0 0 15px #00f2fe; margin-bottom: 0;">NOVA</h2>
+                    <p style="color: #888; font-size: 12px; letter-spacing: 2px;">STATUS: ONLINE</p>
                 </div>
             </div>
         """, unsafe_allow_html=True)
 
     with col_der:
-        st.markdown("<h3 style='color: #00f2fe; margin-bottom: 10px; margin-top: 0;'>Registro de Misión</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='color: #00f2fe; margin-bottom: 10px; margin-top: 0; text-shadow: 0 0 5px #00f2fe;'>REGISTRO DE MISIÓN</h3>", unsafe_allow_html=True)
         
-        # CONTENEDOR CON ALTURA AJUSTADA Y SCROLL PROPIO
-        # Al reducirlo a 420px, obligamos al chat a tener su propia barra de scroll
-        chat_container = st.container(height=420)
+        chat_container = st.container(height=450)
         with chat_container:
             for message in st.session_state.messages:
                 avatar = "👤" if message["role"] == "user" else "🤖"
@@ -179,7 +165,7 @@ try:
                     st.markdown(message["content"])
 
     # --- LÓGICA DE ENTRADA ---
-    prompt = st.chat_input(f"Habla con {NOMBRE_IA}...")
+    prompt = st.chat_input(f"Escribe un comando para {NOMBRE_IA}...")
 
     if audio_grabado or prompt:
         texto_usuario = ""
