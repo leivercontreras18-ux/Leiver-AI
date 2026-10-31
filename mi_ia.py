@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v37.1 - Notifications & IA"
+VERSION = "v37.2 - Dropdowns HUD"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -86,7 +86,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS PREMIUM HUD ---
+# --- CSS PREMIUM HUD (CON FIX PARA DROPDOWNS Y BOTONES) ---
 st.markdown("""
 <style>
     /* Variables de Sistema */
@@ -155,7 +155,7 @@ st.markdown("""
     }
 
     /* =========================================
-       PANEL DE GITHUB SIMÉTRICO
+       PANEL DE GITHUB Y DROPDOWNS HUD
        ========================================= */
     [data-testid="stExpander"] summary {
         font-size: 0.8rem !important;
@@ -168,6 +168,7 @@ st.markdown("""
     [data-testid="stExpander"] summary:hover { color: #ffffff !important; }
     [data-testid="stExpander"] summary svg { display: none !important; }
 
+    /* Botones dentro del expander */
     [data-testid="stExpander"] button {
         background: rgba(0, 229, 255, 0.03) !important;
         border: 1px solid rgba(0, 229, 255, 0.2) !important;
@@ -189,19 +190,47 @@ st.markdown("""
     [data-testid="stExpander"] button img,
     [data-testid="stExpander"] button span[role="img"] { display: none !important; }
 
-    [data-testid="stExpander"] [data-baseweb="select"] {
+    /* 🔥 FIX PARA EL SELECTOR NATIVO (DROPDOWN) */
+    /* Caja principal del selector */
+    [data-testid="stExpander"] div[data-baseweb="select"] > div {
         background-color: rgba(10, 14, 22, 0.6) !important;
         border: 1px solid rgba(0, 229, 255, 0.1) !important;
+        color: #ffffff !important;
         border-radius: 6px !important;
     }
-    [data-testid="stExpander"] [data-baseweb="select"]:focus-within {
-        border-color: #00e5ff !important;
-        box-shadow: 0 0 8px rgba(0, 229, 255, 0.2) !important;
+    
+    [data-testid="stExpander"] div[data-baseweb="select"] > div:hover {
+        border-color: rgba(0, 229, 255, 0.3) !important;
     }
-    [data-testid="stExpander"] svg { color: #00e5ff !important; }
-    [data-testid="stExpander"] [data-baseweb="select"] div[data-testid="stMarkdownContainer"] p { color: #ffffff !important; }
 
-    /* Ajuste de columnas para botones */
+    /* El botón de la flechita */
+    [data-testid="stExpander"] div[data-baseweb="select"] > div > div:last-child {
+        background-color: transparent !important;
+        border-left: none !important;
+    }
+    [data-testid="stExpander"] div[data-baseweb="select"] svg {
+        fill: #00e5ff !important;
+        color: #00e5ff !important;
+    }
+
+    /* 🔥 FIX PARA EL MENÚ DESPLEGABLE (LAS OPCIONES) */
+    ul[data-baseweb="menu"] {
+        background-color: #131822 !important;
+        border: 1px solid rgba(0, 229, 255, 0.2) !important;
+        border-radius: 6px !important;
+    }
+    
+    ul[data-baseweb="menu"] li {
+        color: #ffffff !important;
+        font-size: 0.8rem !important;
+    }
+    
+    ul[data-baseweb="menu"] li:hover {
+        background-color: rgba(0, 229, 255, 0.1) !important;
+        color: #00e5ff !important;
+    }
+
+    /* Ajuste de columnas para botones (Sincronizar / Cargar) */
     [data-testid="stExpander"] [data-testid="stHorizontalBlock"] { gap: 8px !important; }
     [data-testid="stExpander"] [data-testid="stHorizontalBlock"] button {
         width: 100% !important;
@@ -306,7 +335,6 @@ if "audio_pendiente" not in st.session_state: st.session_state.audio_pendiente =
 if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
-if "sincronizado" not in st.session_state: st.session_state.sincronizado = False
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -360,7 +388,7 @@ with st.sidebar:
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
     # =========================================
-    # PANEL DE GITHUB (CON NOTIFICACIONES Y AUTO-IA)
+    # PANEL DE GITHUB (BOTONES CORREGIDOS Y DROPDOWN HUD)
     # =========================================
     if st.session_state.modo_actual == "Programación":
         with st.expander("GITHUB", expanded=True):
@@ -373,11 +401,9 @@ with st.sidebar:
                 arch_sel = None
                 
                 if repos:
-                    # Auto-seleccionar el repo de la IA
                     idx_repo = repos.index("Leiver-AI") if "Leiver-AI" in repos else 0
                     repo_sel = st.selectbox("Repositorio", repos, index=idx_repo)
                     
-                    # Indicador visual si es el repo de la IA
                     if repo_sel == "Leiver-AI":
                         st.markdown("<p style='color: #00e5ff; font-size: 0.7rem; text-align: right; margin-top: -10px;'>🧠 Repositorio de la IA detectado</p>", unsafe_allow_html=True)
                     
@@ -392,7 +418,7 @@ with st.sidebar:
                 
                 st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
                 
-                # Botones en paralelo
+                # Botones en paralelo (Texto corto para que no se corte)
                 col1, col2 = st.columns(2)
                 
                 with col1:
@@ -402,7 +428,7 @@ with st.sidebar:
                         st.rerun()
                         
                 with col2:
-                    if st.button("CARGAR ARCHIVO", use_container_width=True):
+                    if st.button("CARGAR", use_container_width=True):
                         if repo_sel and arch_sel:
                             exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
                             if exito:
@@ -413,7 +439,6 @@ with st.sidebar:
                         else:
                             st.error("Selecciona un repo y archivo primero.")
                             
-                # Badge permanente si hay un archivo cargado
                 if st.session_state.archivo_cargado_nombre:
                     st.markdown(f"""
                         <div style="background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; padding: 6px; border-radius: 6px; margin-top: 10px; text-align: center;">
