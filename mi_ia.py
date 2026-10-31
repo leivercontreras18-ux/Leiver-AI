@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v28.0 - Neural Core"
+VERSION = "v28.1 - Neural Radar"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="🧠", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="📡", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,7 +78,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS NEURAL CORE (DISEÑO OSCURO + ANIMACIÓN) ---
+# --- CSS NEURAL RADAR (DISEÑO OSCURO + NUEVO NÚCLEO) ---
 st.markdown("""
 <style>
     /* FONDO OSCURO ESPACIAL */
@@ -165,70 +165,65 @@ st.markdown("""
     audio, div[data-testid="stAudio"] { display: none !important; }
 
     /* =========================================
-       EL NÚCLEO NEURONAL (ANIMACIÓN CSS)
+       EL NUEVO NÚCLEO (RADAR GEOMÉTRICO)
        ========================================= */
     .neural-container {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        margin-top: 10vh; margin-bottom: 20px;
+        margin-top: 10vh; margin-bottom: 20px; position: relative;
     }
     
-    /* El núcleo con gradientes animados */
-    .neural-core {
-        width: 250px; height: 250px; border-radius: 50%;
-        background: radial-gradient(circle at 30% 30%, #00f2fe, #4facfe, #9d4edd, #1e1b4b);
-        box-shadow: 0 0 60px rgba(0, 242, 254, 0.6), inset 0 0 40px rgba(157, 78, 221, 0.8);
+    /* Contenedor circular principal */
+    .neural-radar {
+        width: 280px; height: 280px; border-radius: 50%;
         position: relative; overflow: hidden;
-        animation: pulse-glow 2.5s infinite alternate, spin-core 10s linear infinite;
+        /* Degradado base: Cian a la izquierda, Morado a la derecha */
+        background: linear-gradient(90deg, #00f2fe 0%, #00f2fe 35%, #9d4edd 65%, #9d4edd 100%);
+        box-shadow: 0 0 50px rgba(0, 242, 254, 0.4), 0 0 100px rgba(157, 78, 221, 0.3);
+        animation: pulse-glow 3s infinite alternate;
     }
 
-    /* Las "sinapsis" (líneas internas) */
-    .neural-core::before {
+    /* Líneas radiales (los "gajos" del radar) */
+    .neural-radar::before {
         content: ""; position: absolute; inset: 0;
         background: repeating-conic-gradient(
             from 0deg,
-            transparent 0deg 15deg,
-            rgba(255,255,255,0.4) 15deg 20deg,
-            transparent 20deg 30deg
+            transparent 0deg 14deg,
+            rgba(255, 255, 255, 0.4) 14deg 15deg,
+            transparent 15deg 30deg
         );
-        border-radius: 50%; mix-blend-mode: overlay;
-        animation: spin-synapse 15s linear infinite reverse;
+        border-radius: 50%;
     }
     
-    .neural-core::after {
-        content: ""; position: absolute; inset: 20px;
+    /* Círculos concéntricos */
+    .neural-radar::after {
+        content: ""; position: absolute; inset: 0;
         background: repeating-radial-gradient(
             circle at 50% 50%,
-            transparent 0px 10px,
-            rgba(0, 242, 254, 0.5) 10px 12px
+            transparent 0px,
+            transparent 18px,
+            rgba(255, 255, 255, 0.4) 18px,
+            rgba(255, 255, 255, 0.4) 19px
         );
-        border-radius: 50%; mix-blend-mode: screen;
-        animation: expand-synapse 3s ease-in-out infinite alternate;
+        border-radius: 50%;
     }
-
-    /* Anillos orbitantes */
+    
+    /* Borde exterior brillante */
     .neural-ring {
         position: absolute; width: 300px; height: 300px;
-        border: 1px solid rgba(0, 242, 254, 0.3); border-radius: 50%;
-        animation: spin-ring 20s linear infinite;
-    }
-    .neural-ring-2 {
-        position: absolute; width: 350px; height: 350px;
-        border: 1px dashed rgba(157, 78, 221, 0.3); border-radius: 50%;
-        animation: spin-ring 30s linear infinite reverse;
+        border: 2px solid rgba(0, 242, 254, 0.5); border-radius: 50%;
+        box-shadow: inset 0 0 20px rgba(0, 242, 254, 0.2);
+        animation: spin-ring 10s linear infinite;
     }
 
     .neural-text {
-        margin-top: 40px; font-size: 14px; letter-spacing: 3px; color: #00f2fe; text-transform: uppercase;
-        text-shadow: 0 0 10px rgba(0,242,254,0.5); z-index: 10;
+        margin-top: 40px; font-size: 16px; letter-spacing: 4px; color: #00f2fe; text-transform: uppercase;
+        text-shadow: 0 0 10px rgba(0,242,254,0.8); z-index: 10; font-weight: bold;
     }
 
     @keyframes pulse-glow {
-        0% { transform: scale(0.95); filter: brightness(0.8); }
-        100% { transform: scale(1.05); filter: brightness(1.2); }
+        0% { transform: scale(0.98); filter: brightness(0.9); }
+        100% { transform: scale(1.02); filter: brightness(1.1); }
     }
-    @keyframes spin-core { 100% { transform: rotate(360deg); } }
-    @keyframes spin-synapse { 100% { transform: rotate(360deg); } }
-    @keyframes expand-synapse { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.1); opacity: 1; } }
     @keyframes spin-ring { 100% { transform: rotate(360deg); } }
 </style>
 """, unsafe_allow_html=True)
@@ -244,7 +239,7 @@ if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_ca
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h3>🧠 Lili AI</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>📡 Lili AI</h3>", unsafe_allow_html=True)
     st.caption(f"{VERSION}")
     
     if st.button("+ Nuevo Chat", use_container_width=True):
@@ -310,13 +305,12 @@ for message in mensajes_actuales:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Si no hay mensajes, mostramos el Núcleo Neuronal
+# Si no hay mensajes, mostramos el NÚCLEO RADAR
 if len(mensajes_actuales) == 0:
     st.markdown("""
         <div class="neural-container">
             <div class="neural-ring"></div>
-            <div class="neural-ring-2"></div>
-            <div class="neural-core"></div>
+            <div class="neural-radar"></div>
             <div class="neural-text">Neural Core Active</div>
         </div>
         <div style="text-align: center; margin-top: 20px;">
@@ -364,7 +358,6 @@ if audio_grabado or prompt:
         mensajes_para_groq.append({"role": "user", "content": texto_usuario})
 
         try:
-            # Mostramos un spinner que dice "Pensando..." mientras el núcleo late
             with st.spinner("Pensando..."):
                 respuesta = cliente.chat.completions.create(
                     model="openai/gpt-oss-20b", messages=mensajes_para_groq, temperature=0.8, max_tokens=1024
