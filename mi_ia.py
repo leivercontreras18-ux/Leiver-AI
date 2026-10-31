@@ -232,48 +232,51 @@ if "messages" not in st.session_state:
 if "audio_pendiente" not in st.session_state:
     st.session_state.audio_pendiente = None
 
-# --- CONFIGURACIÓN DEL CEREBRO ---
-try:
-    api_key = st.secrets["GROQ_API_KEY"]
-    cliente = Groq(api_key=api_key)
-    instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Tu pareja es Winderly Espinoza. Responde de forma concisa."
+# --- CONTROL DE LLAVE DE SEGURIDAD (Groq) ---
+if "GROQ_API_KEY" not in st.secrets:
+    st.error("Error: Falta la credencial `GROQ_API_KEY` en los secretos de tu entorno de Streamlit.")
+    st.stop()
 
-    # --- LAYOUT PRINCIPAL SEPARADO EN COLUMNAS ---
-    col_izq, col_der = st.columns([5, 4], gap="large")
+# --- INSTANCIAR CLIENTE ---
+api_key = st.secrets["GROQ_API_KEY"]
+cliente = Groq(api_key=api_key)
+instrucciones = f"Eres {NOMBRE_IA}, una inteligencia artificial avanzada, con una personalidad sumamente elegante, sofisticada y servicial. Responde siempre de forma clara y muy concisa."
 
-    # COLUMNA IZQUIERDA: Orbe Holográfico
-    with col_izq:
-        st.markdown(f"""
-        <div class="orb-container">
-            <div class="orb-wrapper">
-                <div class="orb-glow"></div>
-                <div class="orb-body">
-                    <div class="orb-inner"></div>
-                </div>
+# --- LAYOUT PRINCIPAL EN COLUMNAS ---
+col_izq, col_der = st.columns([1, 1], gap="large")
+
+# COLUMNA IZQUIERDA: Orbe Holográfico Animado
+with col_izq:
+    st.markdown(f"""
+    <div class="orb-container">
+        <div class="orb-wrapper">
+            <div class="orb-glow"></div>
+            <div class="orb-body">
+                <div class="orb-inner"></div>
             </div>
-            <div class="nova-title">{NOMBRE_IA.upper()}</div>
-            <div class="nova-subtitle">How can I help you today?</div>
         </div>
-        """, unsafe_allow_html=True)
+        <div class="nova-title">{NOMBRE_IA.upper()}</div>
+        <div class="nova-subtitle">How can I help you today?</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # COLUMNA DERECHA: Chat con Glassmorphism
-    with col_der:
-        st.markdown('<div class="chat-header">Conversación Activa</div>', unsafe_allow_html=True)
-        
-        # Contenedor simulado para agrupar burbujas nativas con CSS personalizado
-        with st.container():
-            st.markdown('<div class="chat-panel">', unsafe_allow_html=True)
-            for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.write(message["content"])
-            st.markdown('</div>', unsafe_allow_html=True)
+# COLUMNA DERECHA: Registro de Chat Estilo Cristal
+with col_der:
+    st.markdown('<div class="chat-header">Conversación Activa</div>', unsafe_allow_html=True)
+    
+    with st.container():
+        st.markdown('<div class="chat-panel">', unsafe_allow_html=True)
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.write(message["content"])
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- CAPTURA DE ENTRADA (BOTÓN DE CHAT INFERIOR) ---
-    prompt = st.chat_input("Ask Nova...")
+# --- BARRA DE ENTRADA DE TEXTO ---
+prompt = st.chat_input("Ask Nova...")
 
-    if prompt:
-        # 1. Guardar y mostrar mensaje del usuario
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        # Preparar mensajes para la API de Groq
-        mensajes_api = [{"role": "system", "content": instrucciones}]
+if prompt:
+    # 1. Registrar mensaje del usuario
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    
+    # Preparar el contexto histórico para Groq
+    mensajes_api = [{"role": "system", "content": instrucciones}]
