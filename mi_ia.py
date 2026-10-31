@@ -12,59 +12,36 @@ VOZ_FIJA = "es-MX-DaliaNeural"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS AVANZADO (LAYOUT PERFECTO Y FIJO) ---
+# --- CSS AVANZADO ---
 st.markdown("""
 <style>
-    /* 1. RESET Y BLOQUEO DEL SCROLL GLOBAL */
-    html, body, .stApp, [data-testid="stAppViewContainer"] {
-        height: 100vh !important;
-        overflow: hidden !important;
+    /* 1. FONDO Y GLOWS (Fijos en la pantalla) */
+    .stApp {
         background-color: #121214 !important;
     }
     
-    /* Ocultar menús y footers */
+    .glow-1 { position: fixed; top: 25%; left: 25%; width: 384px; height: 384px; border-radius: 50%; background: rgba(88, 28, 135, 0.2); filter: blur(120px); pointer-events: none; z-index: 0; }
+    .glow-2 { position: fixed; bottom: 33%; right: 25%; width: 400px; height: 400px; border-radius: 50%; background: rgba(131, 24, 67, 0.1); filter: blur(150px); pointer-events: none; z-index: 0; }
+    .glow-3 { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; height: 320px; border-radius: 50%; background: rgba(49, 46, 129, 0.2); filter: blur(100px); pointer-events: none; z-index: 0; }
+
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* 2. CONTENEDOR PRINCIPAL CENTRADO */
+    header { background: transparent !important; }
+
+    /* Ajustar el contenedor principal para que ocupe la pantalla sin scroll global */
     .block-container { 
-        padding-top: 0 !important; 
-        padding-bottom: 0 !important;
-        max-width: 1200px !important; 
-        margin: 0 auto !important;
+        padding-top: 3rem !important; 
+        padding-bottom: 6rem !important; /* Espacio para la barra de texto */
+        max-width: 95% !important; 
         height: 100vh !important;
-        display: flex !important;
-        align-items: center !important; /* Centra verticalmente */
-        justify-content: center !important;
+        overflow: hidden !important;
     }
 
-    /* Fondo con Glows */
-    .stApp::before {
-        content: "";
-        position: fixed; inset: 0;
-        background: 
-            radial-gradient(circle at 30% 30%, rgba(88, 28, 135, 0.15), transparent 40%),
-            radial-gradient(circle at 70% 70%, rgba(131, 24, 67, 0.1), transparent 40%),
-            radial-gradient(circle at 50% 50%, rgba(49, 46, 129, 0.15), transparent 50%);
-        pointer-events: none;
-        z-index: 0;
-    }
-
-    /* 3. EL ORBE (Perfectamente centrado) */
+    /* 2. EL ORBE (Animación fluida) */
     @keyframes blob {
         0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; transform: scale(1); }
         33% { border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%; transform: scale(1.03) rotate(4deg); }
         66% { border-radius: 28% 72% 35% 65% / 40% 60% 30% 70%; transform: scale(0.97) rotate(-4deg); }
-    }
-
-    .orb-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
     }
 
     .orb-wrapper {
@@ -74,6 +51,7 @@ st.markdown("""
         justify-content: center;
         width: 300px;
         height: 300px;
+        margin: 0 auto; /* Centrado horizontalmente */
     }
 
     .orb-glow {
@@ -86,7 +64,7 @@ st.markdown("""
     }
 
     .orb-body {
-        width: 260px; height: 260px;
+        width: 256px; height: 256px;
         background: linear-gradient(to right, rgba(192, 132, 252, 0.4), rgba(249, 168, 212, 0.5), rgba(129, 140, 248, 0.4));
         backdrop-filter: blur(12px);
         box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.2);
@@ -125,33 +103,17 @@ st.markdown("""
         margin-top: 5px;
     }
 
-    /* 4. EL PANEL DE CHAT (Altura calculada) */
-    .chat-panel {
-        height: 75vh; /* Ocupa el 75% de la pantalla */
-        max-height: 800px;
+    /* 3. EL PANEL DE CHAT (Streamlit nativo con scroll) */
+    /* Estilo para el contenedor que Streamlit crea con height */
+    [data-testid="stVerticalBlockBorderWrapper"]:has(div[data-testid="stChatMessage"]) {
         background: rgba(255, 255, 255, 0.02) !important;
         border: 1px solid rgba(255, 255, 255, 0.05) !important;
         backdrop-filter: blur(24px) !important;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
         border-radius: 24px !important;
-        padding: 20px !important;
-        display: flex;
-        flex-direction: column;
     }
-    
-    /* Área con scroll interno */
-    .chat-scroll {
-        flex: 1;
-        overflow-y: auto !important;
-        padding-right: 10px;
-    }
-    
-    /* Scrollbar personalizada */
-    .chat-scroll::-webkit-scrollbar { width: 6px; }
-    .chat-scroll::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.3); border-radius: 10px; }
-    .chat-scroll::-webkit-scrollbar-track { background: transparent; }
 
-    /* Ocultar avatares y botones de Streamlit */
+    /* Ocultar avatares de Streamlit */
     div[data-testid="stChatMessageAvatarUser"],
     div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
     div[data-testid="stChatMessage"] button { display: none !important; }
@@ -182,17 +144,10 @@ st.markdown("""
         margin-bottom: 15px !important;
     }
 
-    /* 5. BARRA DE ENTRADA FLOATING */
+    /* 4. BARRA DE ENTRADA (Flotante pero respetando el layout) */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
-        position: fixed !important;
-        bottom: 25px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        width: 100% !important;
-        max-width: 600px !important;
-        padding: 0 !important;
-        z-index: 1000;
+        padding-bottom: 2rem !important;
     }
     
     .stChatInput {
@@ -201,7 +156,6 @@ st.markdown("""
         border-radius: 30px !important;
         backdrop-filter: blur(24px) !important;
         box-shadow: 0 0 20px rgba(168, 85, 247, 0.1) !important;
-        transition: all 0.3s ease !important;
     }
     
     .stChatInput:focus-within {
@@ -209,15 +163,18 @@ st.markdown("""
         box-shadow: 0 0 25px rgba(168, 85, 247, 0.25) !important;
     }
 
-    /* Ocultar reproductores de audio */
+    /* Ocultar audio nativo */
     audio, div[data-testid="stAudio"] { display: none !important; }
 
-    /* Personalizar Sidebar */
+    /* Sidebar */
     [data-testid="stSidebar"] { background-color: #1a1a1e !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- PROCESADORES DE AUDIO ---
+# --- INYECTAR GLOWS ---
+st.markdown('<div class="glow-1"></div><div class="glow-2"></div><div class="glow-3"></div>', unsafe_allow_html=True)
+
+# --- FUNCIONES DE AUDIO ---
 async def generar_audio_edge(texto, voz):
     comunicar = edge_tts.Communicate(texto, voz)
     audio_buffer = io.BytesIO()
@@ -233,7 +190,7 @@ def autoplay_audio(audio_buffer):
     audio_html = f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}"></audio>'
     st.markdown(audio_html, unsafe_allow_html=True)
 
-# --- ESTADO DE SESIÓN ---
+# --- ESTADO ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "audio_pendiente" not in st.session_state:
@@ -245,36 +202,27 @@ if "mic_key" not in st.session_state:
 with st.sidebar:
     st.title("⚙️ System")
     voz_activa = st.checkbox("🔊 Voz activa", value=True)
-    
     st.subheader("🎤 Hablar")
-    audio_grabado = st.audio_input("Graba tu mensaje", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
-    
+    audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
     st.subheader("📁 Código")
-    uploaded_file = st.file_uploader("Upload", type=["py", "txt", "json", "js"], label_visibility="collapsed")
+    uploaded_file = st.file_uploader("Upload", type=["py", "txt"], label_visibility="collapsed")
     codigo_actual = uploaded_file.read().decode("utf-8") if uploaded_file else ""
-    if uploaded_file:
-        st.success(f"Cargado: {uploaded_file.name}")
-        
-    st.markdown("---")
     if st.button("🗑️ Limpiar Chat"):
         st.session_state.messages = []
         st.session_state.mic_key += 1
         st.rerun()
 
-# --- CONEXIÓN CON GROQ ---
-if "GROQ_API_KEY" not in st.secrets:
-    st.error("Error: Falta la API Key de Groq en los Secrets.")
-    st.stop()
-
+# --- CONEXIÓN GROQ ---
 cliente = Groq(api_key=st.secrets["GROQ_API_KEY"])
-instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa."
+instrucciones = f"Eres {NOMBRE_IA}, una IA elegante y servicial. Responde de forma concisa."
 
-# --- GRID PRINCIPAL (2 Columnas Centradas) ---
-col_izq, col_der = st.columns([1.2, 1], gap="large")
+# --- LAYOUT PRINCIPAL ---
+col_izq, col_der = st.columns([1, 1], gap="large")
 
 with col_izq:
+    # Aquí metemos el orbe en un contenedor para asegurar que se centre
     st.markdown(f"""
-    <div class="orb-container">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 70vh;">
         <div class="orb-wrapper">
             <div class="orb-glow"></div>
             <div class="orb-body">
@@ -287,57 +235,39 @@ with col_izq:
     """, unsafe_allow_html=True)
 
 with col_der:
-    # Contenedor del panel de chat
-    st.markdown('<div class="chat-panel">', unsafe_allow_html=True)
-    st.markdown('<div class="chat-scroll">', unsafe_allow_html=True)
-    
-    # Mensajes
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-            
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Creamos el contenedor nativo de Streamlit con altura fija y scroll
+    chat_container = st.container(height=550)
+    with chat_container:
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-# --- ENTRADA DE TEXTO ---
+# --- PROCESAMIENTO ---
 prompt = st.chat_input(f"Ask {NOMBRE_IA}...")
 
-# --- LÓGICA DE PROCESAMIENTO ---
 if audio_grabado or prompt:
-    texto_usuario = ""
+    texto_usuario = prompt if prompt else ""
     
     if audio_grabado and not prompt:
         with st.spinner("Escuchando..."):
             try:
                 transcripcion = cliente.audio.transcriptions.create(
-                    file=("audio.wav", audio_grabado.read()),
-                    model="whisper-large-v3",
-                    language="es"
+                    file=("audio.wav", audio_grabado.read()), model="whisper-large-v3", language="es"
                 )
                 texto_usuario = transcripcion.text
             except Exception as e:
-                st.error(f"Error de audio: {e}")
-    elif prompt:
-        texto_usuario = prompt
-        
+                st.error(f"Error audio: {e}")
+                
     if texto_usuario:
         st.session_state.messages.append({"role": "user", "content": texto_usuario})
-
-        contexto_ia = texto_usuario
-        if codigo_actual:
-            contexto_ia = f"Código:\n```python\n{codigo_actual}\n```\nPetición: {texto_usuario}"
+        contexto_ia = f"Código:\n```python\n{codigo_actual}\n```\nPetición: {texto_usuario}" if codigo_actual else texto_usuario
 
         try:
             respuesta = cliente.chat.completions.create(
                 model="openai/gpt-oss-120b",
-                messages=[
-                    {"role": "system", "content": instrucciones},
-                    {"role": "user", "content": contexto_ia}
-                ],
-                temperature=0.7,
-                max_tokens=2048
+                messages=[{"role": "system", "content": instrucciones}, {"role": "user", "content": contexto_ia}],
+                temperature=0.7, max_tokens=2048
             )
-            
             texto_respuesta = respuesta.choices[0].message.content
             st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
             
@@ -345,16 +275,13 @@ if audio_grabado or prompt:
                 try:
                     audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
                     st.session_state.audio_pendiente = audio_buffer
-                except Exception:
-                    pass
+                except Exception: pass
             
             st.session_state.mic_key += 1
             st.rerun()
-            
         except Exception as e:
-            st.error(f"Error de Groq: {e}")
+            st.error(f"Error Groq: {e}")
 
-# --- REPRODUCIR AUDIO PENDIENTE ---
 if st.session_state.audio_pendiente:
     autoplay_audio(st.session_state.audio_pendiente)
     st.session_state.audio_pendiente = None
