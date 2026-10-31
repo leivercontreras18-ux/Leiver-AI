@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v31.2 - Self-Aware Dev"
+VERSION = "v31.3 - Isolated Modes"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💻", layout="wide")
@@ -81,20 +81,10 @@ def descargar_archivo_github(usuario, repo, archivo, token):
 # --- CSS ESTILOS DINÁMICOS ---
 st.markdown("""
 <style>
-    :root {
-        --accent-color: #00f2fe; 
-        --bg-glow: rgba(0, 242, 254, 0.1);
-    }
-
-    .stApp {
-        background: radial-gradient(circle at 50% 50%, #0f172a 0%, #050810 100%) !important;
-        color: #f8fafc !important;
-    }
-
+    :root { --accent-color: #00f2fe; --bg-glow: rgba(0, 242, 254, 0.1); }
+    .stApp { background: radial-gradient(circle at 50% 50%, #0f172a 0%, #050810 100%) !important; color: #f8fafc !important; }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
-
-    /* BARRA LATERAL */
     [data-testid="stSidebar"] { background-color: #0b1120 !important; border-right: 1px solid #1e293b !important; }
     [data-testid="stSidebar"] .stRadio > div { gap: 5px; }
     [data-testid="stSidebar"] .stRadio label { background: transparent !important; color: #cbd5e1 !important; border: 1px solid transparent !important; padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.2s ease !important; cursor: pointer; }
@@ -102,16 +92,12 @@ st.markdown("""
     [data-testid="stSidebar"] button { background: transparent !important; color: #cbd5e1 !important; border: 1px solid #1e293b !important; text-align: left !important; padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.2s ease !important; }
     [data-testid="stSidebar"] button:hover { background: #1e293b !important; color: #ffffff !important; border-color: #334155 !important;}
     [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button { background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%) !important; color: #000000 !important; text-align: center !important; font-weight: bold !important; border: none !important; }
-
-    /* CHAT */
     div[data-testid="stChatMessage"] { background-color: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 20px !important; display: flex !important; }
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) { flex-direction: row-reverse !important; justify-content: flex-start !important; margin-left: auto !important; width: fit-content !important; max-width: 80% !important; }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] { background: #1e293b !important; color: #ffffff !important; border-radius: 16px 16px 0 16px !important; padding: 12px 18px !important; border: 1px solid #334155 !important; }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) { flex-direction: row !important; justify-content: flex-start !important; margin-right: auto !important; width: fit-content !important; max-width: 80% !important; }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] { background: var(--bg-glow) !important; color: #ffffff !important; border-radius: 16px 16px 16px 0 !important; padding: 12px 18px !important; border: 1px solid var(--accent-color) !important; }
-
-    /* CAJA DE TEXTO */
     [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { background-color: transparent !important; background: transparent !important; }
     [data-testid="stBottomBlockContainer"] { padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
     .stChatInput { background: #0f172a !important; border: 1px solid var(--accent-color) !important; border-radius: 30px !important; box-shadow: 0 0 15px var(--bg-glow) !important; }
@@ -121,8 +107,6 @@ st.markdown("""
     [data-testid="stChatInput"] button { background: var(--accent-color) !important; border-radius: 50% !important; border: none !important; margin: 5px !important; width: 35px !important; height: 35px !important; }
     [data-testid="stChatInput"] button svg { fill: #000000 !important; }
     audio, div[data-testid="stAudio"] { display: none !important; }
-
-    /* REACTOR */
     .center-display { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10vh; margin-bottom: 30px; position: relative; }
     .reactor { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
     .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0, 242, 254, 0.3); border-top: 2px solid var(--accent-color); border-bottom: 2px solid var(--accent-color); animation: spin 3s linear infinite; box-shadow: 0 0 30px var(--bg-glow); }
@@ -135,15 +119,27 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- INICIALIZACIÓN DE ESTADO ---
-if "todos_los_chats" not in st.session_state: st.session_state.todos_los_chats = cargar_todos_los_chats()
-if "chat_actual_id" not in st.session_state: st.session_state.chat_actual_id = datetime.datetime.now().strftime("%H:%M:%S")
-if st.session_state.chat_actual_id not in st.session_state.todos_los_chats: st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
+# --- INICIALIZACIÓN DE ESTADO Y MIGRACIÓN ---
+if "todos_los_chats" not in st.session_state: 
+    st.session_state.todos_los_chats = cargar_todos_los_chats()
+    
+    # Migración: Si los chats antiguos no tienen el prefijo del modo, se los ponemos (ej: "💻 Programación|17:00")
+    for key in list(st.session_state.todos_los_chats.keys()):
+        if "|" not in key:
+            new_key = f"💻 Programación|{key}"
+            st.session_state.todos_los_chats[new_key] = st.session_state.todos_los_chats.pop(key)
+    guardar_todos_los_chats(st.session_state.todos_los_chats)
+
+if "modo_actual" not in st.session_state: 
+    st.session_state.modo_actual = "💻 Programación"
+    
+if "chat_actual_id" not in st.session_state: 
+    st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
+
 if "audio_pendiente" not in st.session_state: st.session_state.audio_pendiente = None
 if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
-if "modo_actual" not in st.session_state: st.session_state.modo_actual = "💻 Programación"
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -152,24 +148,39 @@ with st.sidebar:
     
     st.markdown("### Modo de Trabajo")
     modos = ["💻 Programación", "💬 Chat General", "🎨 Creativo", "📊 Análisis"]
-    st.session_state.modo_actual = st.radio("", modos, index=modos.index(st.session_state.modo_actual), label_visibility="collapsed")
+    
+    # Manejo del cambio de modo: Autocambia al último chat de ese modo o crea uno nuevo
+    seleccion = st.radio("", modos, index=modos.index(st.session_state.modo_actual), label_visibility="collapsed")
+    if seleccion != st.session_state.modo_actual:
+        st.session_state.modo_actual = seleccion
+        # Buscar si hay chats en este modo
+        chats_del_modo = [k for k in st.session_state.todos_los_chats.keys() if k.startswith(f"{st.session_state.modo_actual}|")]
+        if chats_del_modo:
+            st.session_state.chat_actual_id = sorted(chats_del_modo)[-1] # El más reciente
+        else:
+            st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
+            st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
+        st.rerun()
 
     st.markdown("---")
     
     if st.button("+ Nuevo Chat", use_container_width=True):
-        nuevo_id = datetime.datetime.now().strftime("%H:%M:%S")
+        nuevo_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
         st.session_state.chat_actual_id = nuevo_id
         st.session_state.todos_los_chats[nuevo_id] = []
         guardar_todos_los_chats(st.session_state.todos_los_chats)
         st.rerun()
 
     st.markdown("**Historial**")
+    # FILTRO: Solo mostramos los chats que empiezan con el nombre del modo actual
     for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
-        if len(st.session_state.todos_los_chats[chat_id]) > 0:
+        if chat_id.startswith(f"{st.session_state.modo_actual}|") and len(st.session_state.todos_los_chats[chat_id]) > 0:
             col1, col2 = st.columns([0.8, 0.2])
             with col1:
                 icono = "▸" if chat_id == st.session_state.chat_actual_id else "▫"
-                if st.button(f"{icono} {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
+                # Mostramos solo la hora, no el nombre del modo entero
+                hora_chat = chat_id.split("|")[1]
+                if st.button(f"{icono} {hora_chat}", key=f"btn_{chat_id}", use_container_width=True):
                     st.session_state.chat_actual_id = chat_id
                     st.rerun()
             with col2:
@@ -177,7 +188,7 @@ with st.sidebar:
                     del st.session_state.todos_los_chats[chat_id]
                     guardar_todos_los_chats(st.session_state.todos_los_chats)
                     if chat_id == st.session_state.chat_actual_id:
-                        nuevo_id = datetime.datetime.now().strftime("%H:%M:%S")
+                        nuevo_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
                         st.session_state.chat_actual_id = nuevo_id
                         st.session_state.todos_los_chats[nuevo_id] = []
                         guardar_todos_los_chats(st.session_state.todos_los_chats)
@@ -198,13 +209,11 @@ with st.sidebar:
                 
             repos = obtener_repositorios(token, usuario_github)
             if repos:
-                # 🔥 Autoseleccionar el repositorio "Leiver-AI"
                 idx_repo = repos.index("Leiver-AI") if "Leiver-AI" in repos else 0
                 repo_sel = st.selectbox("Repositorio", repos, index=idx_repo)
                 
                 archivos = obtener_archivos(usuario_github, repo_sel, token)
                 if archivos:
-                    # 🔥 Autoseleccionar el archivo "mi_ia.py"
                     idx_archivo = archivos.index("mi_ia.py") if "mi_ia.py" in archivos else 0
                     arch_sel = st.selectbox("Archivo", archivos, index=idx_archivo)
                     
@@ -232,6 +241,12 @@ if "GROQ_API_KEY" not in st.secrets:
 cliente = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # --- LAYOUT PRINCIPAL ---
+# Aseguramos que el chat actual exista (por si se borró o hubo un error)
+if st.session_state.chat_actual_id not in st.session_state.todos_los_chats:
+    st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
+    st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
+    guardar_todos_los_chats(st.session_state.todos_los_chats)
+
 mensajes_actuales = st.session_state.todos_los_chats[st.session_state.chat_actual_id]
 
 for message in mensajes_actuales:
@@ -293,6 +308,18 @@ if audio_grabado or prompt:
             else:
                 instrucciones += "\n\nNOTA: Aún no tienes ningún archivo cargado. Pídele al usuario que cargue uno desde la barra lateral."
                 
+        elif st.session_state.modo_actual == "🎨 Creativo":
+            instrucciones = """Eres Lili Creative, una IA imaginativa, poética y apasionada por el arte.
+            REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
+            CONTEXTO: Te habla Leiver. Estás en MODO CREATIVO.
+            Tu objetivo es inspirar, escribir historias, brainstorming y pensar fuera de la caja. Usa un tono entusiasta."""
+            
+        elif st.session_state.modo_actual == "📊 Análisis":
+            instrucciones = """Eres Lili Analyst, una IA lógica y estructurada.
+            REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
+            CONTEXTO: Te habla Leiver. Estás en MODO ANÁLISIS.
+            Tu objetivo es resumir, extraer datos clave y dar respuestas lógicas y concisas."""
+            
         else:
             instrucciones = """Eres Lili, una IA avanzada y carismática. REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL."""
 
