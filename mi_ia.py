@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v15.1 - Time Zone"
+VERSION = "v15.2 - Natural Speed"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -142,7 +142,8 @@ st.markdown('<div class="glow-1"></div><div class="glow-2"></div><div class="glo
 
 # --- FUNCIONES DE AUDIO ---
 async def generar_audio_edge(texto, voz):
-    comunicar = edge_tts.Communicate(texto, voz, rate="+10%")
+    # 🔥 AQUÍ ESTÁ EL CAMBIO: Subimos de +10% a +25%
+    comunicar = edge_tts.Communicate(texto, voz, rate="+25%")
     audio_buffer = io.BytesIO()
     async for chunk in comunicar.stream():
         if chunk["type"] == "audio":
@@ -282,19 +283,13 @@ if prompt:
         else:
             codigo_actual_para_groq = codigo_actual
 
-        # 🔥 AQUÍ AGREGAMOS LA ZONA HORARIA 🔥
         tz_venezuela = timezone(timedelta(hours=-4))
         ahora = datetime.datetime.now(tz_venezuela)
-        # Formato: Jueves, 30 de Octubre de 2026, a las 01:50 AM
         fecha_hora_str = ahora.strftime("%A, %d de %B de %Y, a las %I:%M %p")
-        # Traducir el día de la semana y mes al español (opcional pero recomendado)
         dias = {"Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles", "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo"}
         meses = {"January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto", "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"}
-        
-        for en, es in dias.items():
-            fecha_hora_str = fecha_hora_str.replace(en, es)
-        for en, es in meses.items():
-            fecha_hora_str = fecha_hora_str.replace(en, es)
+        for en, es in dias.items(): fecha_hora_str = fecha_hora_str.replace(en, es)
+        for en, es in meses.items(): fecha_hora_str = fecha_hora_str.replace(en, es)
 
         instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis. Tienes un toque de humor seco y eres muy leal a tu usuario.
         
@@ -310,9 +305,10 @@ if prompt:
         2. Luego, dale el bloque de código exacto que debe pegar.
         Sé muy preciso con los números de línea.
         
-        CÓMO DEBES HABLAR:
+        CÓMO DEBES HABLAR (MUY IMPORTANTE PARA EL AUDIO):
         - Háblale como una persona real, no como un robot.
-        - Sé directa y fluida. Evita el uso excesivo de comas y puntos suspensivos."""
+        - Sé directa, fluida y usa oraciones cortas para que no haya pausas largas.
+        - Evita el uso excesivo de comas y puntos suspensivos."""
         
         if codigo_actual_para_groq:
             instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```\n{codigo_actual_para_groq}\n```"
