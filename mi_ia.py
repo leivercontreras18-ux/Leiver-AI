@@ -15,6 +15,13 @@ st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 # --- CSS AVANZADO ---
 st.markdown("""
 <style>
+    /* Reducir márgenes de la página para que todo quepa */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+        max-width: 95% !important;
+    }
+
     .stApp {
         background: radial-gradient(circle at 50% 50%, #0d1117 0%, #000000 100%);
         color: #e0e0e0;
@@ -23,22 +30,23 @@ st.markdown("""
     footer {visibility: hidden;}
     header { background: transparent !important; }
 
-    /* CONTENEDOR DEL ORBE */
+    /* CONTENEDOR DEL ORBE (Más pequeño para no empujar) */
     .orb-container {
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: flex-start;
         align-items: center;
-        height: 70vh;
+        height: 50vh; /* Reducido de 70vh a 50vh */
         position: relative;
+        padding-top: 10px;
     }
     
     .orb {
-        width: 260px;
-        height: 260px;
+        width: 180px;  /* Reducido de 260px */
+        height: 180px;
         border-radius: 50%;
         background: radial-gradient(circle at 30% 30%, #00f2fe 0%, #4facfe 40%, #ff0844 80%, transparent 100%);
-        box-shadow: 0 0 60px #00f2fe, 0 0 120px #ff0844, inset 0 0 40px #ffffff;
+        box-shadow: 0 0 40px #00f2fe, 0 0 80px #ff0844, inset 0 0 30px #ffffff;
         animation: pulse 2s infinite alternate ease-in-out, rotate 8s linear infinite;
         filter: blur(3px);
     }
@@ -55,16 +63,16 @@ st.markdown("""
 
     .orb-ring {
         position: absolute;
-        width: 360px;
-        height: 360px;
+        width: 250px; /* Reducido */
+        height: 250px;
         border-radius: 50%;
         border: 2px solid rgba(0, 242, 254, 0.2);
         animation: spin 15s linear infinite;
     }
     .orb-ring-2 {
         position: absolute;
-        width: 420px;
-        height: 420px;
+        width: 300px; /* Reducido */
+        height: 300px;
         border-radius: 50%;
         border: 1px dashed rgba(255, 8, 68, 0.2);
         animation: spin 25s linear infinite reverse;
@@ -78,14 +86,14 @@ st.markdown("""
         backdrop-filter: blur(10px) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 15px !important;
-        padding: 15px !important;
-        margin-bottom: 15px !important;
+        padding: 10px !important; /* Reducido el padding */
+        margin-bottom: 10px !important;
     }
 
     /* BARRA DE TEXTO */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
-        padding-bottom: 2rem !important;
+        padding-bottom: 0rem !important; /* Pegado al fondo */
     }
     .stChatInput {
         background: rgba(20, 25, 35, 0.7) !important;
@@ -94,7 +102,6 @@ st.markdown("""
         border-radius: 30px !important;
     }
 
-    /* Ocultar cualquier reproductor nativo de audio */
     audio { display: none !important; }
     div[data-testid="stAudio"] { display: none !important; }
 </style>
@@ -129,9 +136,7 @@ with st.sidebar:
     st.markdown(f"### 🌌 {NOMBRE_IA} System")
     st.divider()
     activar_voz = st.checkbox("🔊 Voz activa", value=True)
-    
     audio_grabado = st.audio_input("🎤 Hablar", key=f"mic_{st.session_state.mic_key}")
-    
     archivo_subido = st.file_uploader("📂 Código")
     codigo_actual = archivo_subido.read().decode("utf-8") if archivo_subido else ""
     if st.button("🗑️ Reiniciar Sistema"):
@@ -143,10 +148,10 @@ with st.sidebar:
 try:
     api_key = st.secrets["GROQ_API_KEY"]
     cliente = Groq(api_key=api_key)
-    instrucciones = f"Eres {NOMBRE_IA}, un asistente experto. Responde de forma directa y concisa. No des listas infinitas a menos que sea estrictamente necesario."
+    instrucciones = f"Eres {NOMBRE_IA}, un asistente experto. Responde de forma directa y concisa."
 
     # --- LAYOUT PRINCIPAL ---
-    col_izq, col_der = st.columns([1.2, 1])
+    col_izq, col_der = st.columns([1, 1.2])
 
     with col_izq:
         st.markdown("""
@@ -154,18 +159,19 @@ try:
                 <div class="orb-ring"></div>
                 <div class="orb-ring-2"></div>
                 <div class="orb"></div>
-                <div style="text-align: center; margin-top: 30px; z-index: 10;">
-                    <h2 style="color: #00f2fe; letter-spacing: 5px; text-shadow: 0 0 10px #00f2fe;">NOVA</h2>
-                    <p style="color: gray;">SISTEMAS OPERATIVOS</p>
+                <div style="text-align: center; margin-top: 20px; z-index: 10;">
+                    <h2 style="color: #00f2fe; letter-spacing: 5px; text-shadow: 0 0 10px #00f2fe; margin-bottom: 0;">NOVA</h2>
+                    <p style="color: gray; font-size: 12px;">SISTEMAS OPERATIVOS</p>
                 </div>
             </div>
         """, unsafe_allow_html=True)
 
     with col_der:
-        st.markdown("<h3 style='color: #00f2fe; margin-bottom: 20px;'>Registro de Misión</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='color: #00f2fe; margin-bottom: 10px; margin-top: 0;'>Registro de Misión</h3>", unsafe_allow_html=True)
         
-        # CONTENEDOR CON SCROLL PARA EL CHAT
-        chat_container = st.container(height=550)
+        # CONTENEDOR CON ALTURA AJUSTADA Y SCROLL PROPIO
+        # Al reducirlo a 420px, obligamos al chat a tener su propia barra de scroll
+        chat_container = st.container(height=420)
         with chat_container:
             for message in st.session_state.messages:
                 avatar = "👤" if message["role"] == "user" else "🤖"
@@ -215,23 +221,21 @@ try:
                 
                 if activar_voz: 
                     try:
-                        # Guardamos el audio en el estado de la sesión
                         audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
                         st.session_state.audio_pendiente = audio_buffer
                     except Exception:
                         pass
                 
-                # Recargamos para que se dibuje el chat. El audio se reproducirá al final.
                 st.session_state.mic_key += 1
                 st.rerun()
                 
             except Exception as e:
                 st.error(f"Error de Groq: {e}")
 
-    # --- REPRODUCCIÓN DEL AUDIO PENDIENTE (SE EJECUTA AL FINAL DE LA CARGA) ---
+    # --- AUDIO PENDIENTE AL FINAL ---
     if st.session_state.audio_pendiente:
         autoplay_audio(st.session_state.audio_pendiente)
-        st.session_state.audio_pendiente = None # Limpiamos para que no se repita
+        st.session_state.audio_pendiente = None
 
 except KeyError:
     st.warning("⚠️ Falta la API Key de Groq.")
