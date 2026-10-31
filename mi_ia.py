@@ -4,10 +4,12 @@ import io
 import asyncio
 import edge_tts
 import base64
+import streamlit.components.v1 as components
 from groq import Groq
 
 # --- ¡AQUÍ PONES EL NOMBRE DE TU IA! ---
 NOMBRE_IA = "Nova"
+VOZ_FIJA = "es-MX-DaliaNeural" # Voz única en español latino
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🤖", layout="wide")
@@ -33,6 +35,9 @@ st.markdown("""
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) { flex-direction: row !important; justify-content: flex-start !important; margin-right: auto !important; width: fit-content !important; max-width: 80% !important; }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] { background-color: transparent !important; padding: 10px 15px !important; text-align: left !important; }
     
+    /* Ocultar cualquier reproductor de audio nativo */
+    div[data-testid="stAudio"] { display: none !important; }
+    
     [data-testid="stBottomBlockContainer"] { background-color: #1a1a1a !important; padding-bottom: 1.5rem !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -47,16 +52,27 @@ async def generar_audio_edge(texto, voz):
     audio_buffer.seek(0)
     return audio_buffer
 
-# --- FUNCIÓN PARA REPRODUCIR AUDIO (Con texto de ayuda) ---
+# --- FUNCIÓN PARA REPRODUCIR AUDIO (FORZADO) ---
 def autoplay_audio(audio_buffer, format="audio/mp3"):
     audio_bytes = audio_buffer.read()
     b64 = base64.b64encode(audio_bytes).decode()
-    md = f"""
-        <audio autoplay="true" hidden="true">
-        <source src="data:{format};base64,{b64}" type="{format}">
+    # Usamos un iframe invisible con JavaScript para forzar al navegador a reproducir
+    audio_html = f"""
+        <audio id="nova-voice" autoplay>
+            <source src="data:{format};base64,{b64}" type="{format}">
         </audio>
-        """
-    st.markdown(md, unsafe_allow_html=True)
+        <script>
+            var audio = document.getElementById("nova-voice");
+            var playPromise = audio.play();
+            if (playPromise !== undefined) {{
+                playPromise.catch(error => {{
+                    // Si se bloquea, intentamos de nuevo tras un mini retraso
+                    setTimeout(() => {{ audio.play(); }}, 500);
+                }});
+            }}
+        </script>
+    """
+    components.html(audio_html, height=0, width=0)
 
 # --- BARRA LATERAL ---
 with st.sidebar:
@@ -66,12 +82,6 @@ with st.sidebar:
     
     st.subheader("⚙️ Configuración")
     activar_voz = st.checkbox("🔊 Hablar respuestas en voz alta", value=True)
-    
-    voz_seleccionada = st.selectbox(
-        "🎙️ Selecciona la voz", 
-        options=["es-MX-DaliaNeural", "es-ES-ElviraNeural", "en-GB-SoniaNeural"], 
-        index=0
-    )
     
     st.divider()
     st.subheader("📂 Sube tu código")
@@ -138,10 +148,10 @@ try:
                     st.markdown(texto_respuesta)
                     st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
                     
-                    # Reproducir voz de Nova (Sin límite de 600 caracteres)
+                    # Reproducir voz de Nova
                     if activar_voz: 
                         try:
-                            audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, voz_seleccionada))
+                            audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
                             autoplay_audio(audio_buffer, format="audio/mp3")
                         except Exception as e:
                             st.warning(f"No se pudo generar la voz: {e}")
