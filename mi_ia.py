@@ -12,27 +12,24 @@ VOZ_FIJA = "es-MX-DaliaNeural"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS AVANZADO (EL ALMA DE LA INTERFAZ SCI-FI) ---
+# --- CSS AVANZADO ---
 st.markdown("""
 <style>
-    /* Fondo espacial profundo */
     .stApp {
         background: radial-gradient(circle at 50% 50%, #0d1117 0%, #000000 100%);
         color: #e0e0e0;
     }
-    
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header { background: transparent !important; }
 
-    /* -----------------------------------------
-       EL NÚCLEO (ORBE CENTRAL)
-       ----------------------------------------- */
+    /* CONTENEDOR DEL ORBE */
     .orb-container {
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
-        height: 60vh;
+        height: 70vh;
         position: relative;
     }
     
@@ -47,8 +44,8 @@ st.markdown("""
     }
 
     @keyframes pulse {
-        0% { transform: scale(0.92); opacity: 0.8; box-shadow: 0 0 40px #00f2fe, 0 0 80px #ff0844; }
-        100% { transform: scale(1.08); opacity: 1; box-shadow: 0 0 80px #00f2fe, 0 0 150px #ff0844; }
+        0% { transform: scale(0.92); opacity: 0.8; }
+        100% { transform: scale(1.08); opacity: 1; }
     }
     
     @keyframes rotate {
@@ -73,13 +70,9 @@ st.markdown("""
         animation: spin 25s linear infinite reverse;
     }
 
-    @keyframes spin {
-        100% { transform: rotate(360deg); }
-    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    /* -----------------------------------------
-       EL CHAT
-       ----------------------------------------- */
+    /* CHAT ESTILO CRISTAL */
     div[data-testid="stChatMessage"] {
         background: rgba(255, 255, 255, 0.03) !important;
         backdrop-filter: blur(10px) !important;
@@ -87,12 +80,9 @@ st.markdown("""
         border-radius: 15px !important;
         padding: 15px !important;
         margin-bottom: 15px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
     }
 
-    /* -----------------------------------------
-       BARRA DE TEXTO Y AUDIO
-       ----------------------------------------- */
+    /* BARRA DE TEXTO */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
         padding-bottom: 2rem !important;
@@ -102,9 +92,11 @@ st.markdown("""
         backdrop-filter: blur(15px) !important;
         border: 1px solid #00f2fe !important;
         border-radius: 30px !important;
-        box-shadow: 0 0 20px rgba(0, 242, 254, 0.2) !important;
     }
+
+    /* Ocultar cualquier reproductor nativo de audio */
     audio { display: none !important; }
+    div[data-testid="stAudio"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -124,9 +116,13 @@ def autoplay_audio(audio_buffer):
     audio_html = f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}"></audio>'
     st.markdown(audio_html, unsafe_allow_html=True)
 
-# --- INICIALIZAR ESTADO PARA EL MICRÓFONO ---
+# --- INICIALIZAR ESTADO ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 if "mic_key" not in st.session_state:
     st.session_state.mic_key = 0
+if "audio_pendiente" not in st.session_state:
+    st.session_state.audio_pendiente = None
 
 # --- BARRA LATERAL ---
 with st.sidebar:
@@ -134,27 +130,23 @@ with st.sidebar:
     st.divider()
     activar_voz = st.checkbox("🔊 Voz activa", value=True)
     
-    # AQUÍ ESTÁ EL TRUCO: Le damos una key única al micrófono
     audio_grabado = st.audio_input("🎤 Hablar", key=f"mic_{st.session_state.mic_key}")
     
     archivo_subido = st.file_uploader("📂 Código")
     codigo_actual = archivo_subido.read().decode("utf-8") if archivo_subido else ""
     if st.button("🗑️ Reiniciar Sistema"):
         st.session_state.messages = []
-        st.session_state.mic_key += 1 # Resetea el micrófono
+        st.session_state.mic_key += 1
         st.rerun()
 
 # --- CONFIGURACIÓN DEL CEREBRO ---
 try:
     api_key = st.secrets["GROQ_API_KEY"]
     cliente = Groq(api_key=api_key)
-    instrucciones = f"Eres {NOMBRE_IA}, un asistente experto, elegante, amable y directo. Siempre respondes en español de forma clara."
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    instrucciones = f"Eres {NOMBRE_IA}, un asistente experto. Responde de forma directa y concisa. No des listas infinitas a menos que sea estrictamente necesario."
 
     # --- LAYOUT PRINCIPAL ---
-    col_izq, col_der = st.columns([1.5, 1])
+    col_izq, col_der = st.columns([1.2, 1])
 
     with col_izq:
         st.markdown("""
@@ -162,21 +154,23 @@ try:
                 <div class="orb-ring"></div>
                 <div class="orb-ring-2"></div>
                 <div class="orb"></div>
-            </div>
-            <div style="text-align: center; margin-top: -50px;">
-                <h2 style="color: #00f2fe; letter-spacing: 5px; text-shadow: 0 0 10px #00f2fe;">NOVA</h2>
-                <p style="color: gray;">SISTEMAS OPERATIVOS</p>
+                <div style="text-align: center; margin-top: 30px; z-index: 10;">
+                    <h2 style="color: #00f2fe; letter-spacing: 5px; text-shadow: 0 0 10px #00f2fe;">NOVA</h2>
+                    <p style="color: gray;">SISTEMAS OPERATIVOS</p>
+                </div>
             </div>
         """, unsafe_allow_html=True)
 
     with col_der:
         st.markdown("<h3 style='color: #00f2fe; margin-bottom: 20px;'>Registro de Misión</h3>", unsafe_allow_html=True)
         
-        # Quitamos el límite de altura para que el chat fluya
-        for message in st.session_state.messages:
-            avatar = "👤" if message["role"] == "user" else "🤖"
-            with st.chat_message(message["role"], avatar=avatar):
-                st.markdown(message["content"])
+        # CONTENEDOR CON SCROLL PARA EL CHAT
+        chat_container = st.container(height=550)
+        with chat_container:
+            for message in st.session_state.messages:
+                avatar = "👤" if message["role"] == "user" else "🤖"
+                with st.chat_message(message["role"], avatar=avatar):
+                    st.markdown(message["content"])
 
     # --- LÓGICA DE ENTRADA ---
     prompt = st.chat_input(f"Habla con {NOMBRE_IA}...")
@@ -213,7 +207,7 @@ try:
                         {"role": "user", "content": contexto_ia}
                     ],
                     temperature=0.7,
-                    max_tokens=4096
+                    max_tokens=2048
                 )
                 
                 texto_respuesta = respuesta.choices[0].message.content
@@ -221,17 +215,23 @@ try:
                 
                 if activar_voz: 
                     try:
+                        # Guardamos el audio en el estado de la sesión
                         audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
-                        autoplay_audio(audio_buffer)
+                        st.session_state.audio_pendiente = audio_buffer
                     except Exception:
                         pass
                 
-                # TRUCO CLAVE: Cambiamos la key del micrófono y recargamos
+                # Recargamos para que se dibuje el chat. El audio se reproducirá al final.
                 st.session_state.mic_key += 1
                 st.rerun()
                 
             except Exception as e:
                 st.error(f"Error de Groq: {e}")
+
+    # --- REPRODUCCIÓN DEL AUDIO PENDIENTE (SE EJECUTA AL FINAL DE LA CARGA) ---
+    if st.session_state.audio_pendiente:
+        autoplay_audio(st.session_state.audio_pendiente)
+        st.session_state.audio_pendiente = None # Limpiamos para que no se repita
 
 except KeyError:
     st.warning("⚠️ Falta la API Key de Groq.")
