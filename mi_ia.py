@@ -12,7 +12,7 @@ VOZ_FIJA = "es-MX-DaliaNeural"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS AVANZADO ---
+# --- CSS AVANZADO (CRISTAL FLOTANTE PURO) ---
 st.markdown("""
 <style>
     /* 1. FONDO Y GLOWS */
@@ -102,52 +102,72 @@ st.markdown("""
         margin-top: 5px;
     }
 
-    /* 4. CAJA DEL CHAT (Estilo Cristal) */
+    /* =======================================================
+       4. CAJA DEL CHAT (El verdadero Cristal Flotante)
+       ======================================================= */
     div[data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(255, 255, 255, 0.02) !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(24px) !important;
-        border-radius: 24px !important;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
-        padding: 10px !important;
+        background: rgba(255, 255, 255, 0.01) !important; /* Casi invisible */
+        border: 1px solid rgba(255, 255, 255, 0.08) !important; /* Borde muy sutil */
+        backdrop-filter: blur(30px) !important; /* Más difuminado */
+        border-radius: 30px !important; /* Más redondeado */
+        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5) !important;
+        padding: 20px !important;
+        overflow: hidden !important;
     }
     
     div[data-testid="stVerticalBlockBorderWrapper"] > div { background: transparent !important; }
 
+    /* Ocultar Avatares y botones de Streamlit */
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
     div[data-testid="stChatMessage"] button { display: none !important; }
 
-    /* Burbujas */
+    /* Burbujas (Estilo Píldora) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
-        background: rgba(147, 51, 234, 0.1) !important;
-        border: 1px solid rgba(168, 85, 247, 0.2) !important;
+        background: linear-gradient(135deg, rgba(147, 51, 234, 0.3), rgba(88, 28, 135, 0.3)) !important;
+        border: 1px solid rgba(168, 85, 247, 0.4) !important;
         color: #f3e8ff !important;
-        border-radius: 16px 16px 0 16px !important;
+        border-radius: 25px 25px 5px 25px !important; /* Curva pronunciada */
         margin-left: auto !important;
         width: fit-content !important;
         max-width: 85% !important;
-        padding: 12px 16px !important;
+        padding: 14px 20px !important;
         margin-bottom: 15px !important;
+        backdrop-filter: blur(10px) !important;
     }
 
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
-        background: rgba(255, 255, 255, 0.04) !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
-        color: rgba(252, 231, 243, 0.9) !important;
-        border-radius: 16px 16px 16px 0 !important;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: rgba(252, 231, 243, 0.95) !important;
+        border-radius: 25px 25px 25px 5px !important;
         margin-right: auto !important;
         width: fit-content !important;
         max-width: 85% !important;
-        padding: 12px 16px !important;
+        padding: 14px 20px !important;
         margin-bottom: 15px !important;
+        backdrop-filter: blur(10px) !important;
+    }
+
+    /* EL TRUCO DEL SCROLL: Barra morada fina y elegante */
+    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar {
+        width: 6px !important;
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-track {
+        background: transparent !important;
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-thumb {
+        background: rgba(168, 85, 247, 0.4) !important;
+        border-radius: 10px !important;
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-thumb:hover {
+        background: rgba(168, 85, 247, 0.8) !important;
     }
 
     /* =======================================================
-       5. BARRA DE TEXTO (ELIMINANDO EL FONDO GRIS INTERNO)
+       5. BARRA DE TEXTO
        ======================================================= */
     [data-testid="stBottom"], [data-testid="stBottom"] > div {
         background: transparent !important;
-        background-color: transparent !important;
     }
 
     [data-testid="stBottomBlockContainer"] {
@@ -157,17 +177,14 @@ st.markdown("""
         margin: 0 auto !important; 
     }
     
-    /* El contenedor principal de la barra (borde morado y blur) */
     [data-testid="stChatInput"] {
-        background: rgba(20, 20, 30, 0.4) !important; /* Muy transparente */
+        background: rgba(20, 20, 30, 0.4) !important;
         border: 1px solid rgba(168, 85, 247, 0.4) !important;
         border-radius: 30px !important;
         backdrop-filter: blur(20px) !important;
         box-shadow: 0 0 20px rgba(168, 85, 247, 0.15) !important;
-        transition: all 0.3s ease !important;
     }
 
-    /* EL TRUCO MAESTRO: Forzar transparencia en TODOS los divs y textareas internos */
     [data-testid="stChatInput"] > div,
     [data-testid="stChatInput"] div,
     [data-testid="stChatInput"] div[data-baseweb="base-input"],
@@ -175,23 +192,18 @@ st.markdown("""
     [data-testid="stChatInput"] textarea,
     [data-testid="stChatInput"] input {
         background-color: transparent !important;
-        background: transparent !important;
         border: none !important;
         outline: none !important;
         box-shadow: none !important;
         color: #ffffff !important;
     }
 
-    /* Al hacer clic, el borde exterior se ilumina en morado */
     [data-testid="stChatInput"]:focus-within {
         border: 1px solid rgba(168, 85, 247, 0.8) !important;
         box-shadow: 0 0 25px rgba(168, 85, 247, 0.3) !important;
     }
 
-    /* Ocultar audio nativo */
     audio, div[data-testid="stAudio"] { display: none !important; }
-
-    /* Sidebar */
     [data-testid="stSidebar"] { background-color: #1a1a1e !important; }
 </style>
 """, unsafe_allow_html=True)
