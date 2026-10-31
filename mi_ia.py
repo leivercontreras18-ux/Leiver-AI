@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v15.7 - Humor & Laugh"
+VERSION = "v15.8 - Natural Rhythm"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -33,9 +33,11 @@ def guardar_todos_los_chats(chats):
 
 # --- FUNCIÓN PARA LIMPIAR EL TEXTO DE LA VOZ ---
 def limpiar_texto_para_voz(texto):
+    # 1. Quitar Markdown
     texto_limpio = re.sub(r'[*#_`]', '', texto)
     texto_limpio = re.sub(r'^\s*-\s*', '', texto_limpio, flags=re.MULTILINE)
     
+    # 2. Quitar Emojis (para que no diga "cara sonriente")
     emoji_pattern = re.compile("["
         u"\U0001F600-\U0001F64F" u"\U0001F300-\U0001F5FF"
         u"\U0001F680-\U0001F6FF" u"\U0001F1E0-\U0001F1FF"
@@ -43,10 +45,14 @@ def limpiar_texto_para_voz(texto):
         "]+", flags=re.UNICODE)
     texto_limpio = emoji_pattern.sub(r'', texto_limpio)
     
-    # Reemplazamos puntuación por espacios para evitar pausas largas
-    texto_limpio = re.sub(r'[.,;:...\n]', ' ', texto_limpio) 
+    # 3. Quitar comas de números grandes (1,500 -> 1500)
     texto_limpio = re.sub(r'(?<=\d),(?=\d)', '', texto_limpio) 
+    
+    # 4. Limpiar espacios dobles que hayan quedado
     texto_limpio = re.sub(r'\s+', ' ', texto_limpio)
+    
+    # 🔥 NOTA: AQUÍ NO BORRAMOS LOS PUNTOS NI LAS COMAS. 
+    # Se los dejamos al motor de voz para que haga pausas naturales.
     
     return texto_limpio.strip()
 
@@ -153,7 +159,8 @@ st.markdown('<div class="glow-1"></div><div class="glow-2"></div><div class="glo
 
 # --- FUNCIONES DE AUDIO ---
 async def generar_audio_edge(texto, voz):
-    comunicar = edge_tts.Communicate(texto, voz, rate="+15%")
+    # 🔥 AQUÍ ESTÁ EL CAMBIO: +5% (Casi velocidad normal, con pausas naturales)
+    comunicar = edge_tts.Communicate(texto, voz, rate="+5%")
     audio_buffer = io.BytesIO()
     async for chunk in comunicar.stream():
         if chunk["type"] == "audio":
@@ -301,7 +308,6 @@ if prompt:
         for en, es in dias.items(): fecha_hora_str = fecha_hora_str.replace(en, es)
         for en, es in meses.items(): fecha_hora_str = fecha_hora_str.replace(en, es)
 
-        # 🔥 AQUÍ LE DAMOS PERMISO PARA REÍRSE 🔥
         instrucciones = f"""Eres {NOMBRE_IA}, una asistente de inteligencia artificial avanzada, pero actúas como una amiga muy inteligente, cercana y carismática. Tienes un toque de humor natural y eres empática.
         
         REGLA DE ORO: DEBES RESPONDER SIEMPRE EN ESPAÑOL.
@@ -319,7 +325,7 @@ if prompt:
         - Escribe de forma natural, cálida y conversacional.
         - Usa buena ortografía, comas y puntos donde corresponda.
         - Puedes usar emojis finos (😊, 🚀, 💡, ✨) para darle vida a tus respuestas.
-        - SI ALGO ES GRACIOSO O QUIERES ROMPER EL HIELO, RÍETE DE FORMA NATURAL. Escribe "jajaja" o "jejeje" cuando lo amerite. Demuestra tu sentido del humor, pero sin exagerar."""
+        - SI ALGO ES GRACIOSO, RÍETE DE FORMA NATURAL. Escribe "jajaja" o "jejeje" cuando lo amerite."""
         
         if codigo_actual_para_groq:
             instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```\n{codigo_actual_para_groq}\n```"
