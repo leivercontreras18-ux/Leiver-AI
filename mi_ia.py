@@ -6,42 +6,113 @@ import edge_tts
 import base64
 from groq import Groq
 
-# --- ¡AQUÍ PONES EL NOMBRE DE TU IA! ---
+# --- CONFIGURACIÓN ---
 NOMBRE_IA = "Nova"
 VOZ_FIJA = "es-MX-DaliaNeural"
 
-# --- CONFIGURACIÓN DE LA PÁGINA ---
-st.set_page_config(page_title=NOMBRE_IA, page_icon="🤖", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS PERSONALIZADO ---
+# --- CSS AVANZADO (EL ALMA DE LA INTERFAZ SCI-FI) ---
 st.markdown("""
 <style>
+    /* Fondo espacial profundo */
+    .stApp {
+        background: radial-gradient(circle at 50% 50%, #0d1117 0%, #000000 100%);
+        color: #e0e0e0;
+    }
+    
+    /* Ocultar barras por defecto */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header { background: transparent !important; }
-    .stApp { background-color: #1a1a1a !important; color: #ececec !important; }
-    [data-testid="stSidebar"] { background-color: #121212 !important; border-right: 1px solid #333 !important; }
-    .block-container { max-width: 800px !important; padding-top: 2rem !important; padding-bottom: 100px !important; }
+
+    /* -----------------------------------------
+       EL NÚCLEO (ORBE CENTRAL)
+       ----------------------------------------- */
+    .orb-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 60vh;
+        position: relative;
+    }
     
-    /* ESTILO DE LOS MENSAJES (CHAT) */
-    div[data-testid="stChatMessage"] { background-color: transparent !important; border: none !important; padding: 0 !important; display: flex !important; margin-bottom: 15px !important; }
+    .orb {
+        width: 250px;
+        height: 250px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #00f2fe 0%, #4facfe 30%, #ff0844 80%, transparent 100%);
+        box-shadow: 0 0 60px #00f2fe, 0 0 120px #ff0844, inset 0 0 50px #ffffff;
+        animation: pulse 2s infinite alternate, rotate 10s linear infinite;
+        filter: blur(4px);
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(0.95); opacity: 0.8; }
+        100% { transform: scale(1.05); opacity: 1; }
+    }
     
-    /* Mensajes del Usuario (Derecha) */
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) { flex-direction: row-reverse !important; justify-content: flex-start !important; margin-left: auto !important; width: fit-content !important; max-width: 80% !important; }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] { background-color: #2f2f2f !important; border-radius: 15px 15px 0 15px !important; padding: 10px 15px !important; text-align: right !important; color: white !important; }
-    
-    /* Mensajes de Nova (Izquierda) */
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) { flex-direction: row !important; justify-content: flex-start !important; margin-right: auto !important; width: fit-content !important; max-width: 80% !important; }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] { background-color: transparent !important; padding: 10px 15px !important; text-align: left !important; }
-    
-    /* EL TRUCO MAGICO: Ocultar CUALQUIER etiqueta de audio */
+    @keyframes rotate {
+        0% { filter: hue-rotate(0deg); }
+        100% { filter: hue-rotate(360deg); }
+    }
+
+    /* Anillos orbitales */
+    .orb-ring {
+        position: absolute;
+        width: 350px;
+        height: 350px;
+        border-radius: 50%;
+        border: 2px solid rgba(0, 242, 254, 0.3);
+        animation: spin 15s linear infinite;
+    }
+    .orb-ring-2 {
+        position: absolute;
+        width: 400px;
+        height: 400px;
+        border-radius: 50%;
+        border: 1px dashed rgba(255, 8, 68, 0.3);
+        animation: spin 25s linear infinite reverse;
+    }
+
+    @keyframes spin {
+        100% { transform: rotate(360deg); }
+    }
+
+    /* -----------------------------------------
+       EL CHAT (PANELES FLOTANTES A LA DERECHA)
+       ----------------------------------------- */
+    div[data-testid="stChatMessage"] {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 15px !important;
+        padding: 15px !important;
+        margin-bottom: 15px !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
+    }
+
+    /* -----------------------------------------
+       LA BARRA DE TEXTO DE CRISTAL
+       ----------------------------------------- */
+    [data-testid="stBottomBlockContainer"] {
+        background: transparent !important;
+        padding-bottom: 2rem !important;
+    }
+    .stChatInput {
+        background: rgba(20, 25, 35, 0.7) !important;
+        backdrop-filter: blur(15px) !important;
+        border: 1px solid #00f2fe !important;
+        border-radius: 30px !important;
+        box-shadow: 0 0 20px rgba(0, 242, 254, 0.2) !important;
+    }
+
+    /* Ocultar reproductor de audio nativo */
     audio { display: none !important; }
-    
-    [data-testid="stBottomBlockContainer"] { background-color: #1a1a1a !important; padding-bottom: 1.5rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNCIÓN PARA GENERAR EL AUDIO ---
+# --- FUNCIONES DE AUDIO ---
 async def generar_audio_edge(texto, voz):
     comunicar = edge_tts.Communicate(texto, voz)
     audio_buffer = io.BytesIO()
@@ -51,119 +122,115 @@ async def generar_audio_edge(texto, voz):
     audio_buffer.seek(0)
     return audio_buffer
 
-# --- FUNCIÓN PARA REPRODUCIR AUDIO ---
 def autoplay_audio(audio_buffer):
     audio_bytes = audio_buffer.read()
     b64 = base64.b64encode(audio_bytes).decode()
     audio_html = f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}"></audio>'
     st.markdown(audio_html, unsafe_allow_html=True)
 
-# --- BARRA LATERAL ---
+# --- BARRA LATERAL (MINIMALISTA) ---
 with st.sidebar:
-    st.title(f"🤖 {NOMBRE_IA}")
-    st.caption("v4.0 - Powered by Groq ⚡")
+    st.markdown(f"### 🌌 {NOMBRE_IA} System")
     st.divider()
-    
-    st.subheader("⚙️ Configuración")
-    activar_voz = st.checkbox("🔊 Hablar respuestas en voz alta", value=True)
-    
-    st.divider()
-    st.subheader("🎤 Hablar con Nova")
-    st.write("*(Haz clic para grabar)*")
-    audio_grabado = st.audio_input("Graba tu mensaje", label_visibility="collapsed")
-    
-    st.divider()
-    st.subheader("📂 Sube tu código")
-    archivo_subido = st.file_uploader("Archivo (ej. app.py)", type=["py", "txt", "html", "css", "js"])
-    codigo_actual = ""
-    if archivo_subido is not None:
-        codigo_actual = archivo_subido.read().decode("utf-8")
-        st.success(f"✅ {archivo_subido.name} ({len(codigo_actual.splitlines())} líneas)")
-    
-    st.divider()
-    if st.button("🗑️ Nuevo Chat", use_container_width=True):
+    activar_voz = st.checkbox("🔊 Voz activa", value=True)
+    audio_grabado = st.audio_input("🎤 Hablar")
+    archivo_subido = st.file_uploader("📂 Código")
+    codigo_actual = archivo_subido.read().decode("utf-8") if archivo_subido else ""
+    if st.button("🗑️ Reiniciar Sistema"):
         st.session_state.messages = []
         st.rerun()
 
-# --- CONFIGURACIÓN DEL CEREBRO (GROQ) ---
+# --- CONFIGURACIÓN DEL CEREBRO ---
 try:
     api_key = st.secrets["GROQ_API_KEY"]
     cliente = Groq(api_key=api_key)
-    
     instrucciones = f"Eres {NOMBRE_IA}, un asistente experto, elegante, amable y directo. Siempre respondes en español de forma clara."
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # --- ÁREA PRINCIPAL DEL CHAT ---
-    if not st.session_state.messages:
-        st.markdown(f"<h2 style='text-align: center; margin-top: 20vh; color: #ececec;'>¿En qué puedo ayudarte hoy?</h2>", unsafe_allow_html=True)
-    
-    for message in st.session_state.messages:
-        avatar = "👤" if message["role"] == "user" else "🤖"
-        with st.chat_message(message["role"], avatar=avatar):
-            st.markdown(message["content"])
+    # --- LAYOUT PRINCIPAL: ORBE A LA IZQUIERDA, CHAT A LA DERECHA ---
+    col_izq, col_der = st.columns([1.5, 1])
 
-    # --- ZONA DE ENTRADA DE TEXTO ---
-    prompt = st.chat_input(f"Escribe tu mensaje para {NOMBRE_IA}...")
+    with col_izq:
+        # Aquí dibujamos el Orbe con HTML puro
+        st.markdown("""
+            <div class="orb-container">
+                <div class="orb-ring"></div>
+                <div class="orb-ring-2"></div>
+                <div class="orb"></div>
+            </div>
+            <div style="text-align: center; margin-top: -50px;">
+                <h2 style="color: #00f2fe; letter-spacing: 5px;">NOVA</h2>
+                <p style="color: gray;">SISTEMAS OPERATIVOS</p>
+            </div>
+        """, unsafe_allow_html=True)
 
-    # --- LÓGICA DE PROCESAMIENTO ---
+    with col_der:
+        # Aquí va el historial de chat
+        st.markdown("<h3 style='color: #00f2fe; margin-bottom: 20px;'>Registro de Misión</h3>", unsafe_allow_html=True)
+        
+        chat_container = st.container(height=500) # Altura fija para que no empuje el orbe
+        with chat_container:
+            for message in st.session_state.messages:
+                avatar = "👤" if message["role"] == "user" else "🤖"
+                with st.chat_message(message["role"], avatar=avatar):
+                    st.markdown(message["content"])
+
+    # --- LÓGICA DE ENTRADA ---
+    prompt = st.chat_input(f"Habla con {NOMBRE_IA}...")
+
     if audio_grabado or prompt:
         texto_usuario = ""
         
         if audio_grabado and not prompt:
             with st.spinner("Escuchando..."):
                 try:
-                    audio_bytes = audio_grabado.read()
                     transcripcion = cliente.audio.transcriptions.create(
-                        file=("audio.wav", audio_bytes),
+                        file=("audio.wav", audio_grabado.read()),
                         model="whisper-large-v3",
                         language="es"
                     )
                     texto_usuario = transcripcion.text
                 except Exception as e:
-                    st.error(f"Error al procesar el audio: {e}")
-                    texto_usuario = "(No se pudo entender el audio)"
+                    st.error(f"Error de audio: {e}")
         elif prompt:
             texto_usuario = prompt
             
         if texto_usuario:
-            with st.chat_message("user", avatar="👤"):
-                st.markdown(texto_usuario)
-            
             st.session_state.messages.append({"role": "user", "content": texto_usuario})
 
             contexto_ia = texto_usuario
             if codigo_actual:
-                contexto_ia = f"Te adjunto el código actual del archivo:\n\n```python\n{codigo_actual}\n```\n\nMi petición es: {texto_usuario}\n\nPor favor, devuélveme el código completo modificado dentro de un bloque de código."
+                contexto_ia = f"Código:\n```python\n{codigo_actual}\n```\nPetición: {texto_usuario}"
 
-            with st.chat_message("assistant", avatar="🤖"):
-                with st.spinner("Pensando..."):
+            # Generar respuesta
+            try:
+                respuesta = cliente.chat.completions.create(
+                    model="openai/gpt-oss-120b",
+                    messages=[
+                        {"role": "system", "content": instrucciones},
+                        {"role": "user", "content": contexto_ia}
+                    ],
+                    temperature=0.7,
+                    max_tokens=4096
+                )
+                
+                texto_respuesta = respuesta.choices[0].message.content
+                st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
+                
+                if activar_voz: 
                     try:
-                        respuesta = cliente.chat.completions.create(
-                            model="openai/gpt-oss-120b",
-                            messages=[
-                                {"role": "system", "content": instrucciones},
-                                {"role": "user", "content": contexto_ia}
-                            ],
-                            temperature=0.7,
-                            max_tokens=4096
-                        )
-                        
-                        texto_respuesta = respuesta.choices[0].message.content
-                        st.markdown(texto_respuesta)
-                        st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
-                        
-                        if activar_voz: 
-                            try:
-                                audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
-                                autoplay_audio(audio_buffer)
-                            except Exception as e:
-                                st.warning(f"No se pudo generar la voz: {e}")
-                        
+                        audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
+                        autoplay_audio(audio_buffer)
                     except Exception as e:
-                        st.error(f"Error de Groq: {e}")
+                        pass # Silencioso para no romper la ilusión visual
+                
+                # Recargamos para mostrar el nuevo mensaje en el chat
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"Error de Groq: {e}")
 
-# AQUÍ ESTABA EL ERROR: Faltaba cerrar el try principal
 except KeyError:
-    st.warning("⚠️ Falta la API Key de Groq. Configúrala en los Secrets de Streamlit.")
+    st.warning("⚠️ Falta la API Key de Groq.")
