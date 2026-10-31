@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v25.1 - Serious Interface"
+VERSION = "v26.0 - Aether Light"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="💠", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,102 +78,100 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS NEÓN SERIO (VIERNES + COLOR) ---
+# --- CSS ESTILO AETHER LIGHT (GLASSMORPHISM CLARO) ---
 st.markdown("""
 <style>
-    /* 1. FONDO OSCURO CON DEGRADADO VIOLETA */
+    /* 1. FONDO IRIDISCENTE CLARO */
     .stApp {
-        background: radial-gradient(circle at 50% 0%, #2e1065 0%, #0f0518 100%) !important; 
-        color: #ffffff !important;
+        background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 50%, #fae8ff 100%) !important;
+        color: #1e293b !important;
     }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
     /* =========================================
-       BARRA LATERAL (MORADO PROFUNDO)
+       BARRA LATERAL (CRISTAL BLANCO)
        ========================================= */
     [data-testid="stSidebar"] {
-        background-color: #170b26 !important; 
-        border-right: 1px solid #4c1d95 !important; 
+        background: rgba(255, 255, 255, 0.4) !important;
+        backdrop-filter: blur(20px) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.6) !important;
+        margin: 15px !important;
+        border-radius: 20px !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05) !important;
     }
     
-    /* Título de la barra lateral */
     [data-testid="stSidebar"] h3 {
-        color: #f472b6 !important; 
+        color: #4c1d95 !important;
         text-align: center;
-        text-shadow: 0 0 10px rgba(244, 114, 182, 0.5);
-        font-weight: 500 !important;
-        letter-spacing: 1px;
+        font-weight: 600;
     }
     
-    /* Subtítulos y textos de la barra lateral */
-    [data-testid="stSidebar"] .stCaption {
-        color: #a78bfa !important;
-        text-align: center;
-        font-size: 12px !important;
-    }
-    
-    [data-testid="stSidebar"] p {
-        color: #d8b4fe !important;
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] .stCaption {
+        color: #6d28d9 !important;
     }
 
-    /* Botones del sidebar */
     [data-testid="stSidebar"] button {
-        background: transparent !important; color: #d8b4fe !important; border: 1px solid transparent !important;
+        background: transparent !important; color: #475569 !important; border: 1px solid transparent !important;
         text-align: left !important; padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.3s ease !important;
     }
     [data-testid="stSidebar"] button:hover {
-        background: rgba(244, 114, 182, 0.1) !important; color: #f472b6 !important; 
-        border: 1px solid rgba(244, 114, 182, 0.3) !important;
+        background: rgba(255, 255, 255, 0.6) !important; color: #1e293b !important; 
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
     }
     
     /* Botón Nuevo Chat */
     [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
-        background: linear-gradient(90deg, #ec4899 0%, #8b5cf6 100%) !important; 
-        color: #ffffff !important; 
+        background: #ffffff !important; 
+        color: #4c1d95 !important; 
         text-align: center !important; 
-        font-weight: bold !important;
-        border: none !important;
-        box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4) !important;
+        font-weight: 600 !important;
+        border: 1px solid rgba(255,255,255,0.8) !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
     }
 
     /* =========================================
-       CHAT (BURBUJAS VIBRANTES)
+       CHAT (BURBUJAS DE CRISTAL)
        ========================================= */
     div[data-testid="stChatMessage"] {
         background-color: transparent !important; border: none !important; padding: 0 !important;
         margin-bottom: 20px !important; display: flex !important;
     }
-    div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
+    div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { 
+        display: none !important; 
+    }
 
-    /* TUS MENSAJES (Derecha - Rosa Neón) */
+    /* TUS MENSAJES (Derecha) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         flex-direction: row-reverse !important; justify-content: flex-start !important;
         margin-left: auto !important; width: fit-content !important; max-width: 80% !important;
     }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
-        background: linear-gradient(135deg, #ec4899 0%, #be185d 100%) !important; 
-        color: #ffffff !important; 
+        background: rgba(255, 255, 255, 0.7) !important; 
+        border: 1px solid rgba(255, 255, 255, 0.9) !important;
+        color: #1e293b !important; 
         border-radius: 20px 20px 0 20px !important; padding: 14px 20px !important;
-        box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4) !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
+        backdrop-filter: blur(10px) !important;
     }
 
-    /* MENSAJES DE LILI (Izquierda - Cian Eléctrico) */
+    /* MENSAJES DE LILI (Izquierda) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
         flex-direction: row !important; justify-content: flex-start !important;
         margin-right: auto !important; width: fit-content !important; max-width: 80% !important;
     }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
-        background: linear-gradient(135deg, #0891b2 0%, #164e63 100%) !important; 
-        color: #ffffff !important; 
+        background: rgba(243, 232, 255, 0.7) !important; /* Lila muy suave */
+        border: 1px solid rgba(216, 180, 254, 0.5) !important;
+        color: #1e293b !important; 
         border-radius: 20px 20px 20px 0 !important; padding: 14px 20px !important;
-        border: 1px solid #06b6d4 !important;
-        box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3) !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
+        backdrop-filter: blur(10px) !important;
     }
 
     /* =========================================
-       CAJA DE TEXTO (CÁPSULA BRILLANTE)
+       CAJA DE TEXTO (CÁPSULA DE LUZ)
        ========================================= */
     
     [data-testid="stBottom"], 
@@ -190,11 +188,11 @@ st.markdown("""
     }
     
     .stChatInput {
-        background: rgba(23, 11, 38, 0.8) !important; 
-        border: 2px solid #f472b6 !important; 
+        background: rgba(255, 255, 255, 0.6) !important; 
+        border: 1px solid rgba(255, 255, 255, 1) !important; 
         border-radius: 30px !important; 
-        box-shadow: 0 0 20px rgba(244, 114, 182, 0.2) !important;
-        backdrop-filter: blur(10px) !important;
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15) !important;
+        backdrop-filter: blur(15px) !important;
     }
     
     .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input {
@@ -203,24 +201,31 @@ st.markdown("""
         border: none !important;
         outline: none !important;
         box-shadow: none !important;
-        color: #ffffff !important;
+        color: #1e293b !important; /* Texto oscuro */
+    }
+    
+    .stChatInput textarea::placeholder {
+        color: #94a3b8 !important;
     }
     
     .stChatInput:focus-within { 
-        border: 2px solid #ec4899 !important; 
-        box-shadow: 0 0 25px rgba(236, 72, 153, 0.4) !important;
+        border: 1px solid #c4b5fd !important; 
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.25) !important;
     }
 
+    /* Botón de enviar (Avión de papel) */
     [data-testid="stChatInput"] button {
-        background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%) !important; 
+        background: #ffffff !important; 
         border-radius: 50% !important;
         border: none !important;
         margin: 5px !important;
-        width: 38px !important;
-        height: 38px !important;
-        box-shadow: 0 0 10px rgba(6, 182, 212, 0.5) !important;
+        width: 35px !important;
+        height: 35px !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
     }
-    [data-testid="stChatInput"] button svg { fill: #ffffff !important; }
+    [data-testid="stChatInput"] button svg { 
+        fill: #8b5cf6 !important; /* Icono morado */
+    }
 
     audio, div[data-testid="stAudio"] { display: none !important; }
 </style>
@@ -235,9 +240,9 @@ if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
 
-# --- SIDEBAR (SERIA) ---
+# --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h3>💠 Lili AI</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>✨ AETHER AI</h3>", unsafe_allow_html=True)
     st.caption(f"{VERSION}")
     
     if st.button("+ Nuevo Chat", use_container_width=True):
@@ -248,19 +253,17 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    st.markdown("**Historial**")
+    st.markdown("**Conversaciones**")
     
     for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
         if len(st.session_state.todos_los_chats[chat_id]) > 0:
             col1, col2 = st.columns([0.8, 0.2])
             with col1:
-                # Indicadores minimalistas
                 icono = "▸" if chat_id == st.session_state.chat_actual_id else "▫"
                 if st.button(f"{icono} {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
                     st.session_state.chat_actual_id = chat_id
                     st.rerun()
             with col2:
-                # Botón de borrar con una 'X' limpia
                 if st.button("✕", key=f"del_{chat_id}", use_container_width=True):
                     del st.session_state.todos_los_chats[chat_id]
                     guardar_todos_los_chats(st.session_state.todos_los_chats)
@@ -272,7 +275,7 @@ with st.sidebar:
                     st.rerun()
 
     st.markdown("---")
-    with st.expander("Sistema"):
+    with st.expander("Proyectos / Sistema"):
         voz_activa = st.checkbox("Voz activa", value=True)
         token = st.secrets.get("GITHUB_TOKEN")
         usuario_github = "leivercontreras18-ux"
@@ -308,13 +311,13 @@ for message in mensajes_actuales:
 if len(mensajes_actuales) == 0:
     st.markdown("""
         <div style="text-align: center; margin-top: 25vh;">
-            <h1 style="font-size: 32px; font-weight: 300; color: #f472b6; text-shadow: 0 0 20px rgba(244, 114, 182, 0.6);">Sistemas en Línea</h1>
-            <p style="font-size: 16px; color: #a78bfa;">Bienvenido de nuevo, Leiver. ¿Cuál es la misión de hoy?</p>
+            <h1 style="font-size: 36px; font-weight: 300; color: #4c1d95;">Bienvenido a Aether</h1>
+            <p style="font-size: 16px; color: #6d28d9;">Hola Leiver. Estoy lista para crear algo nuevo contigo.</p>
         </div>
     """, unsafe_allow_html=True)
 
 # --- PROCESAMIENTO DE ENTRADA ---
-prompt = st.chat_input("Escribe tu mensaje...")
+prompt = st.chat_input("Write your request...")
 
 with st.sidebar:
     with st.expander("Micrófono"):
