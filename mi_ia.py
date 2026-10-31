@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v28.2 - Radar Sweep"
+VERSION = "v29.0 - Arc Reactor"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="📡", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="🔵", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,7 +78,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS NEURAL RADAR SWEEP (DISEÑO OSCURO) ---
+# --- CSS ARC REACTOR (DISEÑO LIMPIO Y ELEGANTE) ---
 st.markdown("""
 <style>
     /* FONDO OSCURO ESPACIAL */
@@ -165,81 +165,75 @@ st.markdown("""
     audio, div[data-testid="stAudio"] { display: none !important; }
 
     /* =========================================
-       EL NÚCLEO RADAR CON ESCANEO
+       EL ARC REACTOR (CÍRCULOS CONCÉNTRICOS LIMPIOS)
        ========================================= */
-    .neural-container {
+    .reactor-container {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        margin-top: 10vh; margin-bottom: 20px; position: relative;
+        margin-top: 10vh; margin-bottom: 30px; position: relative;
     }
     
-    /* Contenedor circular principal */
-    .neural-radar {
-        width: 280px; height: 280px; border-radius: 50%;
-        position: relative; overflow: hidden;
-        background: linear-gradient(135deg, #00f2fe 0%, #00f2fe 40%, #9d4edd 60%, #9d4edd 100%);
-        box-shadow: 0 0 60px rgba(0, 242, 254, 0.4), inset 0 0 40px rgba(157, 78, 221, 0.6);
-        animation: pulse-glow 3s infinite alternate;
+    /* Contenedor principal */
+    .reactor {
+        position: relative;
+        width: 250px; height: 250px;
+        display: flex; align-items: center; justify-content: center;
     }
 
-    /* Líneas radiales (los "gajos" del radar) */
-    .neural-radar::before {
-        content: ""; position: absolute; inset: 0;
-        background: repeating-conic-gradient(
-            from 0deg,
-            transparent 0deg 14deg,
-            rgba(255, 255, 255, 0.3) 14deg 15deg,
-            transparent 15deg 30deg
-        );
-        border-radius: 50%;
-    }
-    
-    /* Círculos concéntricos punteados */
-    .neural-radar::after {
-        content: ""; position: absolute; inset: 0;
-        background: repeating-radial-gradient(
-            circle at 50% 50%,
-            transparent 0px,
-            transparent 18px,
-            rgba(255, 255, 255, 0.5) 18px,
-            rgba(255, 255, 255, 0.5) 19px
-        );
-        border-radius: 50%;
-    }
-
-    /* 🔥 LA LÍNEA DE ESCANEO GIRATORIA */
-    .radar-sweep {
+    /* Anillo exterior giratorio */
+    .reactor-ring-outer {
         position: absolute; inset: 0;
         border-radius: 50%;
-        background: conic-gradient(
-            from 0deg,
-            rgba(0, 242, 254, 0.8) 0deg,
-            transparent 60deg,
-            transparent 360deg
-        );
-        animation: sweep 3s linear infinite;
-        mix-blend-mode: screen;
-        pointer-events: none;
-    }
-    
-    /* Borde exterior brillante */
-    .neural-ring {
-        position: absolute; width: 300px; height: 300px;
-        border: 1px solid rgba(0, 242, 254, 0.5); border-radius: 50%;
-        box-shadow: inset 0 0 30px rgba(0, 242, 254, 0.2);
-        animation: spin-ring 15s linear infinite reverse;
+        border: 2px solid rgba(0, 242, 254, 0.3);
+        border-top: 2px solid #00f2fe;
+        border-bottom: 2px solid #00f2fe;
+        animation: spin 4s linear infinite;
+        box-shadow: 0 0 30px rgba(0, 242, 254, 0.2);
     }
 
-    .neural-text {
-        margin-top: 40px; font-size: 16px; letter-spacing: 4px; color: #00f2fe; text-transform: uppercase;
-        text-shadow: 0 0 10px rgba(0,242,254,0.8); z-index: 10; font-weight: bold;
+    /* Anillo medio punteado */
+    .reactor-ring-mid {
+        position: absolute; inset: 20px;
+        border-radius: 50%;
+        border: 1px dashed rgba(157, 78, 221, 0.6);
+        animation: spin-reverse 10s linear infinite;
     }
 
-    @keyframes pulse-glow {
-        0% { transform: scale(0.98); filter: brightness(0.9); }
-        100% { transform: scale(1.02); filter: brightness(1.1); }
+    /* Núcleo central brillante */
+    .reactor-core {
+        width: 100px; height: 100px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 50% 50%, #ffffff 0%, #00f2fe 40%, #4facfe 100%);
+        box-shadow: 0 0 50px #00f2fe, inset 0 0 20px #ffffff;
+        animation: pulse 2s ease-in-out infinite;
+        z-index: 10;
     }
-    @keyframes spin-ring { 100% { transform: rotate(360deg); } }
-    @keyframes sweep { 100% { transform: rotate(360deg); } }
+
+    /* Pequeños nodos orbitando */
+    .reactor-node {
+        position: absolute; width: 8px; height: 8px;
+        background-color: #00f2fe; border-radius: 50%;
+        box-shadow: 0 0 10px #00f2fe;
+        top: -4px; left: 50%; transform: translateX(-50%);
+    }
+    .reactor-node-2 {
+        position: absolute; width: 6px; height: 6px;
+        background-color: #9d4edd; border-radius: 50%;
+        box-shadow: 0 0 10px #9d4edd;
+        bottom: -3px; left: 50%; transform: translateX(-50%);
+    }
+
+    .reactor-text {
+        margin-top: 30px; font-size: 14px; letter-spacing: 5px; color: #00f2fe; text-transform: uppercase;
+        text-shadow: 0 0 15px rgba(0,242,254,0.8); z-index: 10; font-weight: 600;
+    }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+    @keyframes pulse { 
+        0% { transform: scale(0.95); box-shadow: 0 0 30px #00f2fe, inset 0 0 15px #ffffff; }
+        50% { transform: scale(1.05); box-shadow: 0 0 60px #00f2fe, inset 0 0 30px #ffffff; }
+        100% { transform: scale(0.95); box-shadow: 0 0 30px #00f2fe, inset 0 0 15px #ffffff; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -254,7 +248,7 @@ if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_ca
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h3>📡 Lili AI</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>🔵 Lili AI</h3>", unsafe_allow_html=True)
     st.caption(f"{VERSION}")
     
     if st.button("+ Nuevo Chat", use_container_width=True):
@@ -320,18 +314,19 @@ for message in mensajes_actuales:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Si no hay mensajes, mostramos el NÚCLEO RADAR
+# Si no hay mensajes, mostramos el ARC REACTOR
 if len(mensajes_actuales) == 0:
     st.markdown("""
-        <div class="neural-container">
-            <div class="neural-ring"></div>
-            <div class="neural-radar">
-                <div class="radar-sweep"></div>
+        <div class="reactor-container">
+            <div class="reactor">
+                <div class="reactor-ring-outer"><div class="reactor-node"></div></div>
+                <div class="reactor-ring-mid"><div class="reactor-node-2"></div></div>
+                <div class="reactor-core"></div>
             </div>
-            <div class="neural-text">Neural Core Active</div>
+            <div class="reactor-text">System Online</div>
         </div>
         <div style="text-align: center; margin-top: 20px;">
-            <p style="font-size: 16px; color: #94a3b8;">Hola Leiver. El núcleo está listo. ¿Qué misión tenemos hoy?</p>
+            <p style="font-size: 16px; color: #94a3b8;">Hola Leiver. El reactor está estable. ¿Qué construimos hoy?</p>
         </div>
     """, unsafe_allow_html=True)
 
