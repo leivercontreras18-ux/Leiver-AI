@@ -39,19 +39,40 @@ st.markdown("""
         padding-bottom: 100px;
     }
 
-    /* Burbujas de chat */
+    /* Burbujas de chat generales */
     .stChatMessage {
         background-color: transparent !important;
         border: none !important;
         padding: 0.5rem 0 !important;
     }
 
-    /* Mensaje del usuario resaltado */
-    .stChatMessage[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
+    /* =========================================
+       MENSAJES DEL USUARIO (A LA DERECHA)
+       ========================================= */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         background-color: #2b2b2b !important;
         border-radius: 15px !important;
         padding: 1rem !important;
         margin-bottom: 1rem !important;
+        flex-direction: row-reverse; /* Invierte el avatar y el texto */
+        text-align: right;
+        width: fit-content;          /* La burbuja se ajusta al texto */
+        margin-left: auto;           /* Empuja la burbuja a la derecha */
+    }
+
+    /* Forzar que el texto interior también se alinee a la derecha */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) p {
+        text-align: right;
+    }
+
+    /* =========================================
+       MENSAJES DE LA IA (A LA IZQUIERDA)
+       ========================================= */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
+        background-color: transparent !important;
+        text-align: left;
+        width: fit-content;
+        margin-right: auto;          /* Empuja la burbuja a la izquierda */
     }
 
     /* Forzar que la caja de texto se pegue al fondo */
@@ -135,12 +156,11 @@ try:
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
-    # --- ZONA DE ENTRADA (Caja de texto pegada al fondo) ---
+    # --- ZONA DE ENTRADA ---
     prompt = st.chat_input(f"Habla con {NOMBRE_IA}...")
 
     # --- LÓGICA DE PROCESAMIENTO ---
     if audio_grabado or prompt:
-        # Determinamos el texto
         if prompt:
             texto_usuario = prompt
             contexto_ia = prompt
@@ -153,9 +173,7 @@ try:
                 {"mime_type": "audio/wav", "data": audio_bytes}
             ]
             tipo_entrada = "voz"
-            # El audio ya no se renderiza en el chat para que se vea limpio
 
-        # Mostramos el mensaje del usuario
         with st.chat_message("user", avatar="👤"):
             st.markdown(texto_usuario)
         
@@ -164,7 +182,6 @@ try:
         if codigo_actual and tipo_entrada == "texto":
             contexto_ia = f"Te adjunto el código actual del archivo:\n\n```python\n{codigo_actual}\n```\n\nMi petición es: {prompt}\n\nPor favor, devuélveme el código completo modificado dentro de un bloque de código."
 
-        # Generamos la respuesta
         with st.chat_message("assistant", avatar="🤖"):
             with st.spinner("Pensando..."):
                 max_reintentos = 3
@@ -196,7 +213,7 @@ try:
                         else:
                             st.error(f"Error: {e}")
                             break
-        # Hacemos un pequeño rerun para que la caja de texto se mantenga abajo
+        
         if prompt:
             st.rerun()
 
