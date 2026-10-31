@@ -143,16 +143,13 @@ st.markdown("""
     }
 
     /* =======================================================
-       5. ELIMINAR LA FRANJA NEGRA Y ARREGLAR LA BARRA DE TEXTO
+       5. BARRA DE TEXTO (Eliminando el borde rojo)
        ======================================================= */
-    
-    /* Quitar el fondo negro al contenedor inferior de Streamlit */
     [data-testid="stBottom"], [data-testid="stBottom"] > div {
         background: transparent !important;
         background-color: transparent !important;
     }
 
-    /* Centrar y limitar el ancho de la barra de texto */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
         padding-bottom: 2rem !important;
@@ -160,21 +157,41 @@ st.markdown("""
         margin: 0 auto !important; 
     }
     
-    /* Diseño de la barra (Efecto Cristal puro) */
+    /* La caja principal */
     .stChatInput {
-        background: rgba(20, 20, 30, 0.5) !important; /* Fondo semi-transparente */
-        border: 1px solid rgba(168, 85, 247, 0.4) !important;
+        background: rgba(20, 20, 30, 0.5) !important;
+        border: 1px solid rgba(168, 85, 247, 0.3) !important;
         border-radius: 30px !important;
-        backdrop-filter: blur(20px) !important; /* Desenfoque de cristal */
-        box-shadow: 0 0 20px rgba(168, 85, 247, 0.2) !important;
+        backdrop-filter: blur(20px) !important;
+        box-shadow: 0 0 20px rgba(168, 85, 247, 0.1) !important;
+        transition: all 0.3s ease !important;
     }
 
-    /* Asegurar que el campo de texto interno no tenga fondo sólido */
-    div[data-testid="stChatInput"] > div {
+    /* EL TRUCO: Quitar el borde rojo interno de Streamlit y ponerlo morado */
+    .stChatInput div[data-baseweb="base-input"],
+    .stChatInput div[data-baseweb="textarea"] {
+        border: none !important; 
+        outline: none !important;
+        box-shadow: none !important;
         background-color: transparent !important;
     }
+
+    /* Cuando haces clic (focus), el borde exterior se ilumina en morado */
+    .stChatInput:focus-within {
+        border: 1px solid rgba(168, 85, 247, 0.8) !important;
+        box-shadow: 0 0 25px rgba(168, 85, 247, 0.4) !important;
+    }
+
+    /* Ocultar el contorno (outline) rojo del navegador al escribir */
+    .stChatInput textarea:focus, 
+    .stChatInput input:focus {
+        outline: none !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Color del texto dentro de la barra */
     .stChatInput textarea {
-        background-color: transparent !important;
         color: white !important;
     }
 
