@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v17.0 - Exact SaaS Replica"
+VERSION = "v17.1 - Stable SaaS UI"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -78,126 +78,138 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS AVANZADO (RÉPLICA EXACTA DE LA FOTO) ---
+# --- CSS AVANZADO (RÉPLICA SEGURA) ---
 st.markdown("""
 <style>
-    /* 1. FONDO CON MONTAÑA Y CAPA OSCURA */
+    /* Fondo de la montaña/espacio */
     .stApp {
         background-image: url('https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=2094&auto=format&fit=crop'); 
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
-        background-color: #000000; 
+        background-color: #0c0c10; 
     }
+    /* Capa oscura para que resalte la UI */
     .stApp::before {
         content: "";
         position: fixed; inset: 0;
-        background: rgba(20, 10, 35, 0.6); /* Tinte morado oscuro */
+        background: rgba(15, 10, 25, 0.6);
         z-index: -1;
     }
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
-    .block-container { padding: 0 !important; max-width: 100% !important; }
 
-    /* 2. BARRA LATERAL FLOTANTE (Como en la foto) */
-    [data-testid="stSidebar"] {
-        background-color: #1a1a1f !important;
-        border: 1px solid #2d2d35 !important;
-        border-radius: 16px !important;
-        margin: 20px 0 20px 20px !important;
-        height: calc(100vh - 40px) !important;
-        padding: 15px !important;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
-    }
-    [data-testid="stSidebar"] > div:first-child { padding-top: 0 !important; }
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
     
-    /* Títulos de la barra lateral */
+    /* Centrar el contenido principal (deja espacio para el sidebar) */
+    .block-container { 
+        padding-top: 5vh !important; 
+        max-width: 800px !important; 
+        margin: 0 auto !important;
+    }
+
+    /* =========================================
+       BARRA LATERAL (ESTILO FOTO)
+       ========================================= */
+    [data-testid="stSidebar"] {
+        background-color: #18181b !important;
+        border-right: 1px solid #27272a !important;
+    }
+    
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { 
         font-weight: 600 !important; color: #a1a1aa !important; font-size: 11px !important; 
-        text-transform: uppercase; letter-spacing: 1px !important; margin: 15px 0 5px 0 !important;
+        text-transform: uppercase; letter-spacing: 1px !important; margin-top: 20px !important; margin-bottom: 10px !important;
     }
     
-    /* Botones de la barra lateral (Texto plano como en la foto) */
+    /* Botones transparentes en el sidebar */
     [data-testid="stSidebar"] button {
         background: transparent !important; color: #e4e4e7 !important; border: none !important;
         text-align: left !important; border-radius: 8px !important; padding: 8px 10px !important;
-        margin-bottom: 2px !important; font-weight: 500 !important; font-size: 13px !important;
+        margin-bottom: 2px !important; font-weight: 500 !important; font-size: 14px !important;
     }
     [data-testid="stSidebar"] button:hover { background: #27272a !important; color: white !important; }
     
-    /* Botón de Nuevo Chat (Destacado) */
+    /* Botón Nuevo Chat resaltado */
     [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
         background: #27272a !important; color: white !important; border: 1px solid #3f3f46 !important;
-        text-align: center !important; font-size: 13px !important; margin-bottom: 20px !important;
+        text-align: center !important; font-size: 14px !important; margin-bottom: 15px !important;
     }
 
-    /* 3. ÁREA CENTRAL (Orbe, texto, input, tarjetas) */
-    .main-container {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin-left: 280px; /* Espacio para la barra lateral */
-        padding-bottom: 80px;
+    /* =========================================
+       ÁREA DE BIENVENIDA (ORBE Y TEXTO)
+       ========================================= */
+    .welcome-area {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center; margin-top: 10vh; margin-bottom: 30px;
     }
-
+    
+    /* El orbe brillante */
     .saas-orb {
-        width: 40px; height: 40px; border-radius: 50%;
+        width: 65px; height: 65px; border-radius: 50%;
         background: radial-gradient(circle at 30% 30%, #ffffff, #a78bfa, #4c1d95);
-        box-shadow: 0 0 30px #8b5cf6, inset 0 0 10px #ffffff;
+        box-shadow: 0 0 40px #8b5cf6, inset 0 0 15px #ffffff;
+        animation: float 4s ease-in-out infinite;
         margin-bottom: 20px;
     }
-    .welcome-text { font-size: 26px; font-weight: 500; color: white; margin-bottom: 30px; font-family: sans-serif; }
     
-    /* Píldoras de arriba del input */
-    .pill-container { display: flex; gap: 10px; margin-bottom: 15px; }
+    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+    
+    .welcome-text {
+        font-size: 28px; font-weight: 500; color: white; font-family: sans-serif; letter-spacing: -0.5px;
+    }
+    
+    /* Píldoras sugerentes */
+    .pill-container { display: flex; gap: 10px; justify-content: center; margin-top: 20px; margin-bottom: 40px; flex-wrap: wrap; }
     .pill { 
         background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); 
-        padding: 6px 14px; border-radius: 20px; color: #d4d4d8; font-size: 12px;
+        padding: 8px 16px; border-radius: 20px; color: #d4d4d8; font-size: 13px; cursor: pointer;
     }
+    .pill:hover { background: rgba(255, 255, 255, 0.1); color: white; }
 
-    /* 4. EL INPUT DE CHAT FLOTANTE */
-    [data-testid="stBottomBlockContainer"] {
-        background: transparent !important;
-        position: fixed !important;
-        top: 55% !important; /* Lo ponemos en el medio */
-        left: 60% !important;
-        transform: translate(-50%, -50%) !important;
-        width: 100% !important; max-width: 650px !important;
-        padding: 0 !important;
-        z-index: 1000;
-    }
-    .stChatInput {
-        background: #131316 !important;
-        border: 1px solid #3f3f46 !important;
-        border-radius: 16px !important;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.8) !important;
-        padding: 5px !important;
-    }
-    [data-testid="stChatInput"] textarea { color: white !important; font-size: 14px !important; padding: 15px !important; }
-    [data-testid="stChatInput"] button {
-        background: #8b5cf6 !important; color: white !important; border-radius: 10px !important;
-        width: 35px !important; height: 35px !important; margin: 10px !important;
-    }
-
-    /* 5. TARJETAS INFERIORES */
-    .card-container { display: flex; gap: 15px; position: fixed; bottom: 30px; left: 60%; transform: translateX(-50%); width: 100%; max-width: 700px; z-index: 10; }
+    /* =========================================
+       TARJETAS INFERIORES (BENTO BOX)
+       ========================================= */
+    .card-container { display: flex; gap: 15px; justify-content: center; margin-top: 30px; width: 100%; }
     .saas-card {
-        background: rgba(24, 24, 27, 0.8); border: 1px solid #27272a; border-radius: 12px;
-        padding: 15px; flex: 1; backdrop-filter: blur(10px);
+        background: rgba(24, 24, 27, 0.7); border: 1px solid #27272a; border-radius: 16px;
+        padding: 20px; flex: 1; text-align: left; backdrop-filter: blur(10px); max-width: 250px;
     }
-    .card-title { color: white; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
-    .card-desc { color: #a1a1aa; font-size: 10px; line-height: 1.3; margin-bottom: 10px; }
-    .card-btn { background: #27272a; color: #e4e4e7; font-size: 9px; padding: 4px 8px; border-radius: 4px; border: 1px solid #3f3f46; display: inline-block; }
+    .card-title { color: white; font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .card-desc { color: #a1a1aa; font-size: 12px; line-height: 1.4; margin-bottom: 15px; }
+    .card-btn { 
+        background: #27272a; color: #e4e4e7; font-size: 11px; padding: 6px 12px; border-radius: 6px; 
+        display: inline-block; border: 1px solid #3f3f46; font-weight: 500;
+    }
+
+    /* =========================================
+       BARRA DE TEXTO (CHAT INPUT)
+       ========================================= */
+    [data-testid="stBottom"], [data-testid="stBottom"] > div { background: transparent !important; }
+    [data-testid="stBottomBlockContainer"] {
+        background: transparent !important; padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important;
+    }
     
-    /* Ocultar audios y ajustar chat cuando ya hay mensajes */
+    .stChatInput {
+        background: #18181b !important;
+        border: 1px solid #3f3f46 !important;
+        border-radius: 20px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+    }
+    .stChatInput:focus-within { border: 1px solid #8b5cf6 !important; }
+    [data-testid="stChatInput"] textarea { color: white !important; font-size: 15px !important; padding: 15px !important; }
+    
+    /* Botón de enviar */
+    [data-testid="stChatInput"] button {
+        background: #8b5cf6 !important; color: white !important; border-radius: 12px !important;
+        border: none !important; width: 35px !important; height: 35px !important; margin: 8px !important;
+    }
+    [data-testid="stChatInput"] button svg { fill: white !important; }
+
+    /* Ocultar audios nativos */
     audio, div[data-testid="stAudio"] { display: none !important; }
     
-    /* Si hay mensajes, movemos el input abajo de nuevo */
-    .chat-mode [data-testid="stBottomBlockContainer"] {
-        top: auto !important;
-        bottom: 20px !important;
-    }
+    /* Estilos de los mensajes del chat */
+    div[data-testid="stChatMessage"] { background: rgba(24, 24, 27, 0.7) !important; border-radius: 15px !important; padding: 15px !important; margin-bottom: 10px !important; border: 1px solid #27272a !important; backdrop-filter: blur(10px); }
+    div[data-testid="stChatMessageAvatarUser"] { background: #8b5cf6 !important; border-radius: 10px !important; }
+    div[data-testid="stChatMessageAvatarAssistant"] { background: #27272a !important; border-radius: 10px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -266,10 +278,10 @@ cliente = Groq(api_key=st.secrets["GROQ_API_KEY"])
 # --- LAYOUT PRINCIPAL ---
 mensajes_actuales = st.session_state.todos_los_chats[st.session_state.chat_actual_id]
 
-# Si no hay mensajes, mostramos la interfaz exacta de la foto
+# Si no hay mensajes, mostramos la pantalla de bienvenida (FOTO)
 if len(mensajes_actuales) == 0:
     st.markdown("""
-        <div class="main-container">
+        <div class="welcome-area">
             <div class="saas-orb"></div>
             <div class="welcome-text">Ready to Create Something New?</div>
             <div class="pill-container">
@@ -280,7 +292,7 @@ if len(mensajes_actuales) == 0:
         </div>
     """, unsafe_allow_html=True)
     
-    # Las 3 tarjetas de abajo
+    # Las 3 tarjetas inferiores
     st.markdown("""
         <div class="card-container">
             <div class="saas-card">
@@ -301,21 +313,17 @@ if len(mensajes_actuales) == 0:
         </div>
     """, unsafe_allow_html=True)
 
-# Si ya hay mensajes, mostramos el chat normal
+# Si ya hay mensajes, los mostramos
 else:
-    # Clase CSS para bajar el input cuando ya hay chat
-    st.markdown("<style>.stChatInput { top: auto !important; bottom: 20px !important; }</style>", unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-left: 280px; padding: 20px; max-width: 800px; margin-top: 20px;'>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
     for message in mensajes_actuales:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # --- PROCESAMIENTO DE ENTRADA ---
 prompt = st.chat_input("Ask Anything...")
 
-# Micrófono oculto en el sidebar pero funcional
+# Micrófono oculto en el sidebar
 with st.sidebar:
     with st.expander("🎤 Voz"):
         audio_grabado = st.audio_input("Graba tu mensaje", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
