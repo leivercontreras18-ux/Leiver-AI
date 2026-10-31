@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v15.3 - Warm Persona"
+VERSION = "v15.4 - Human Chat"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -33,6 +33,7 @@ def guardar_todos_los_chats(chats):
 
 # --- FUNCIÓN PARA LIMPIAR EL TEXTO DE LA VOZ ---
 def limpiar_texto_para_voz(texto):
+    # Quitamos asteriscos y markdown, pero MANTENEMOS comas y puntos para las pausas naturales
     texto_limpio = re.sub(r'[*#_`]', '', texto)
     texto_limpio = re.sub(r'^\s*-\s*', '', texto_limpio, flags=re.MULTILINE)
     texto_limpio = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', texto_limpio)
@@ -142,7 +143,8 @@ st.markdown('<div class="glow-1"></div><div class="glow-2"></div><div class="glo
 
 # --- FUNCIONES DE AUDIO ---
 async def generar_audio_edge(texto, voz):
-    comunicar = edge_tts.Communicate(texto, voz, rate="+25%")
+    # 🔥 AQUÍ ESTÁ EL CAMBIO DE VOZ: +10% de velocidad y +2Hz de tono (más cálido)
+    comunicar = edge_tts.Communicate(texto, voz, rate="+10%", pitch="+2Hz")
     audio_buffer = io.BytesIO()
     async for chunk in comunicar.stream():
         if chunk["type"] == "audio":
@@ -290,12 +292,12 @@ if prompt:
         for en, es in dias.items(): fecha_hora_str = fecha_hora_str.replace(en, es)
         for en, es in meses.items(): fecha_hora_str = fecha_hora_str.replace(en, es)
 
-        # 🔥 AQUÍ ESTÁ LA NUEVA PERSONALIDAD CÁLIDA 🔥
-        instrucciones = f"""Eres {NOMBRE_IA}, una asistente de inteligencia artificial avanzada, pero actúas como una amiga muy inteligente, cercana y carismática. Tienes un toque de humor natural, eres empática y te encanta ayudar a Leiver. Aunque eres una experta en programación, explicas las cosas de forma sencilla y con un tono muy amigable, sin ser robótica ni excesivamente formal.
+        # 🔥 NUEVAS INSTRUCCIONES PARA QUE ESCRIBA COMO SI HABLARA 🔥
+        instrucciones = f"""Eres {NOMBRE_IA}, una asistente de inteligencia artificial avanzada, pero actúas como una amiga muy inteligente, cercana y carismática. Tienes un toque de humor natural y eres empática.
         
         REGLA DE ORO: DEBES RESPONDER SIEMPRE EN ESPAÑOL.
         
-        CONTEXTO TEMPORAL: Hoy es {fecha_hora_str} (Hora de Venezuela, UTC-4). Si el usuario te pregunta la hora o la fecha, usa esta información exacta.
+        CONTEXTO TEMPORAL: Hoy es {fecha_hora_str} (Hora de Venezuela, UTC-4).
         
         CONTEXTO DEL USUARIO: Tu usuario se llama Leiver, vive en Venezuela y es sumamente curioso y preguntón. Trabaja en proyectos de programación.
         
@@ -303,12 +305,13 @@ if prompt:
         Cuando Leiver te pida cambiar o agregar algo en su código, NUNCA le devuelvas el archivo completo. Dile exactamente:
         1. "Borra desde la línea X hasta la línea Y".
         2. Luego, dale el bloque de código exacto que debe pegar.
-        Sé muy precisa con los números de línea.
         
-        CÓMO DEBES HABLAR (MUY IMPORTANTE PARA EL AUDIO):
-        - Háblale como una persona real, cálida y conversacional. Usa expresiones como "¡Claro!", "Mira,", "Vamos a ver...".
-        - Sé directa y fluida, pero con calidez. Usa oraciones cortas para que el audio fluya sin pausas largas.
-        - Evita el uso excesivo de comas y puntos suspensivos."""
+        CÓMO DEBES HABLAR (SUPER IMPORTANTE PARA EL AUDIO):
+        - Escribe EXACTAMENTE como si me estuvieras dejando una nota de voz en WhatsApp.
+        - Usa frases cortas, cotidianas y naturales. No uses un lenguaje de libro.
+        - Puedes usar expresiones como "Mira", "Oye", "Te cuento", "¡Qué buena idea!", "Dale".
+        - Si te equivocas o piensas, puedes escribir "bueno..." o "a ver...".
+        - NO uses listas largas ni formatos complejos, escribe párrafos fluidos y conversacionales."""
         
         if codigo_actual_para_groq:
             instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```\n{codigo_actual_para_groq}\n```"
@@ -323,7 +326,7 @@ if prompt:
                 respuesta = cliente.chat.completions.create(
                     model="openai/gpt-oss-20b", 
                     messages=mensajes_para_groq,
-                    temperature=0.85, # Un poco más alto para que sea más creativa y expresiva
+                    temperature=0.9, # Subimos un poco más la temperatura para que sea más expresiva
                     max_tokens=1024
                 )
                 
