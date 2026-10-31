@@ -16,7 +16,7 @@ from PIL import Image
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v38.0 - Vision & Clean History"
+VERSION = "v39.0 - Chat Image Upload"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -84,7 +84,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS PREMIUM HUD (CON FIX DE HISTORIAL) ---
+# --- CSS PREMIUM HUD ---
 st.markdown("""
 <style>
     /* Variables de Sistema */
@@ -112,7 +112,7 @@ st.markdown("""
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
     /* =========================================
-       BARRA LATERAL Y MENÚ
+       BARRA LATERAL
        ========================================= */
     [data-testid="stSidebar"] {
         background-color: #131822 !important;
@@ -155,111 +155,98 @@ st.markdown("""
     /* =========================================
        HISTORIAL DE CHATS LIMPIO
        ========================================= */
-    /* Botón del chat (Ocultamos el borde por defecto) */
     div[data-testid="stSidebar"] button[key^="btn_"] {
-        background-color: transparent !important;
-        border: none !important;
+        background-color: transparent !important; border: none !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-        border-radius: 0 !important;
-        color: var(--text-muted) !important;
-        font-size: 0.8rem !important;
-        font-family: monospace !important;
-        text-align: left !important;
-        padding: 8px 10px !important;
+        border-radius: 0 !important; color: var(--text-muted) !important;
+        font-size: 0.8rem !important; font-family: monospace !important;
+        text-align: left !important; padding: 8px 10px !important;
         transition: all 0.2s ease !important;
     }
     div[data-testid="stSidebar"] button[key^="btn_"]:hover {
-        color: var(--cyan-neon) !important;
-        background-color: rgba(0, 229, 255, 0.05) !important;
+        color: var(--cyan-neon) !important; background-color: rgba(0, 229, 255, 0.05) !important;
     }
-    
-    /* Botón de borrar (X) */
     div[data-testid="stSidebar"] button[key^="del_"] {
-        background-color: transparent !important;
-        border: none !important;
-        color: #56667a !important;
-        font-size: 0.9rem !important;
-        padding: 0 !important;
+        background-color: transparent !important; border: none !important;
+        color: #56667a !important; font-size: 0.9rem !important; padding: 0 !important;
         transition: all 0.2s ease !important;
     }
     div[data-testid="stSidebar"] button[key^="del_"]:hover {
-        color: #ff4d4d !important;
-        background-color: transparent !important;
+        color: #ff4d4d !important; background-color: transparent !important;
         text-shadow: 0 0 8px rgba(255, 77, 77, 0.5) !important;
     }
 
     /* =========================================
-       PANEL DE GITHUB Y DROPDOWNS HUD
+       PANEL DE GITHUB
        ========================================= */
     [data-testid="stExpander"] summary {
-        font-size: 0.8rem !important;
-        font-weight: 600 !important;
-        letter-spacing: 1.5px !important;
-        text-transform: uppercase !important;
-        color: #8a99ad !important;
-        padding: 10px !important;
+        font-size: 0.8rem !important; font-weight: 600 !important;
+        letter-spacing: 1.5px !important; text-transform: uppercase !important;
+        color: #8a99ad !important; padding: 10px !important;
     }
     [data-testid="stExpander"] summary:hover { color: #ffffff !important; }
     [data-testid="stExpander"] summary svg { display: none !important; }
-
     [data-testid="stExpander"] button {
         background: rgba(0, 229, 255, 0.03) !important;
         border: 1px solid rgba(0, 229, 255, 0.2) !important;
-        border-radius: 6px !important;
-        color: #00e5ff !important;
-        font-size: 0.75rem !important;
-        font-weight: 600 !important;
-        letter-spacing: 1px !important;
-        text-transform: uppercase !important;
+        border-radius: 6px !important; color: #00e5ff !important;
+        font-size: 0.75rem !important; font-weight: 600 !important;
+        letter-spacing: 1px !important; text-transform: uppercase !important;
         height: auto !important;
     }
-
     [data-testid="stExpander"] button:hover {
-        border-color: #00e5ff !important;
-        background: rgba(0, 229, 255, 0.08) !important;
-        color: #ffffff !important;
+        border-color: #00e5ff !important; background: rgba(0, 229, 255, 0.08) !important; color: #ffffff !important;
     }
-
-    [data-testid="stExpander"] button img,
-    [data-testid="stExpander"] button span[role="img"] { display: none !important; }
-
+    [data-testid="stExpander"] button img, [data-testid="stExpander"] button span[role="img"] { display: none !important; }
     [data-testid="stExpander"] div[data-baseweb="select"] > div {
         background-color: rgba(10, 14, 22, 0.6) !important;
         border: 1px solid rgba(0, 229, 255, 0.1) !important;
-        color: #ffffff !important;
-        border-radius: 6px !important;
+        color: #ffffff !important; border-radius: 6px !important;
     }
     [data-testid="stExpander"] div[data-baseweb="select"] > div:focus-within {
-        border-color: #00e5ff !important;
-        box-shadow: 0 0 8px rgba(0, 229, 255, 0.2) !important;
+        border-color: #00e5ff !important; box-shadow: 0 0 8px rgba(0, 229, 255, 0.2) !important;
     }
-    [data-testid="stExpander"] div[data-baseweb="select"] svg {
-        fill: #00e5ff !important;
-        color: #00e5ff !important;
-    }
-    ul[data-baseweb="menu"] {
-        background-color: #131822 !important;
-        border: 1px solid rgba(0, 229, 255, 0.2) !important;
-        border-radius: 6px !important;
-    }
-    ul[data-baseweb="menu"] li {
-        color: #ffffff !important;
-        font-size: 0.8rem !important;
-    }
-    ul[data-baseweb="menu"] li:hover {
-        background-color: rgba(0, 229, 255, 0.1) !important;
-        color: #00e5ff !important;
-    }
-
+    [data-testid="stExpander"] div[data-baseweb="select"] svg { fill: #00e5ff !important; color: #00e5ff !important; }
+    ul[data-baseweb="menu"] { background-color: #131822 !important; border: 1px solid rgba(0, 229, 255, 0.2) !important; border-radius: 6px !important; }
+    ul[data-baseweb="menu"] li { color: #ffffff !important; font-size: 0.8rem !important; }
+    ul[data-baseweb="menu"] li:hover { background-color: rgba(0, 229, 255, 0.1) !important; color: #00e5ff !important; }
     [data-testid="stExpander"] [data-testid="stHorizontalBlock"] { gap: 8px !important; }
     [data-testid="stExpander"] [data-testid="stHorizontalBlock"] button {
+        width: 100% !important; padding: 10px 4px !important;
+        font-size: 0.7rem !important; white-space: nowrap !important;
+        display: flex !important; justify-content: center !important; align-items: center !important;
+    }
+
+    /* =========================================
+       SUBIDA DE IMAGEN EN EL CHAT
+       ========================================= */
+    /* Ocultar el texto de "Drag and drop" por defecto y hacerlo minimalista */
+    [data-testid="stFileUploader"] {
+        background-color: transparent !important;
+        border: 1px dashed rgba(0, 229, 255, 0.2) !important;
+        border-radius: 12px !important;
+        padding: 10px !important;
+        margin-bottom: 10px !important;
         width: 100% !important;
-        padding: 10px 4px !important;
-        font-size: 0.7rem !important;
-        white-space: nowrap !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
+    }
+    [data-testid="stFileUploader"] label {
+        color: #8a99ad !important;
+        font-size: 0.8rem !important;
+    }
+    [data-testid="stFileUploader"] section {
+        background-color: transparent !important;
+    }
+    [data-testid="stFileUploader"] button {
+        background: transparent !important;
+        border: 1px solid rgba(0, 229, 255, 0.3) !important;
+        color: #00e5ff !important;
+        border-radius: 8px !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        padding: 5px 15px !important;
+    }
+    [data-testid="stFileUploader"] button:hover {
+        background: rgba(0, 229, 255, 0.1) !important;
     }
 
     /* =========================================
@@ -277,16 +264,12 @@ st.markdown("""
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         background: rgba(255, 255, 255, 0.04) !important;
-        margin-left: auto !important;
-        width: fit-content !important;
-        max-width: 80% !important;
+        margin-left: auto !important; width: fit-content !important; max-width: 80% !important;
     }
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
         border: 1px solid var(--glass-border) !important;
         box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.03) !important;
-        margin-right: auto !important;
-        width: fit-content !important;
-        max-width: 80% !important;
+        margin-right: auto !important; width: fit-content !important; max-width: 80% !important;
     }
     [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
     [data-testid="stChatMessage"] > div { background-color: transparent !important; }
@@ -298,7 +281,6 @@ st.markdown("""
         background-color: transparent !important; background: transparent !important; 
     }
     [data-testid="stBottomBlockContainer"] { padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
-    
     .stChatInput { 
         background: rgba(24, 29, 40, 0.7) !important; backdrop-filter: blur(10px) !important;
         border: 1px solid rgba(0, 229, 255, 0.2) !important; border-radius: 30px !important; 
@@ -309,10 +291,7 @@ st.markdown("""
         box-shadow: none !important; color: var(--text-pure-white) !important; 
     }
     .stChatInput textarea::placeholder { color: rgba(255, 255, 255, 0.5) !important; }
-    .stChatInput:focus-within { 
-        border-color: var(--cyan-neon) !important; 
-        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 8px rgba(0, 229, 255, 0.3) !important; 
-    }
+    .stChatInput:focus-within { border-color: var(--cyan-neon) !important; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 8px rgba(0, 229, 255, 0.3) !important; }
     [data-testid="stChatInput"] button { 
         background: transparent !important; border-radius: 50% !important; border: none !important; 
         margin: 5px !important; width: 35px !important; height: 35px !important; box-shadow: none !important;
@@ -386,7 +365,6 @@ with st.sidebar:
 
     st.markdown("<p style='color: #8a99ad; font-size: 0.8rem; margin-top: 20px; margin-bottom: 10px; padding-left: 20px;'>HISTORIAL</p>", unsafe_allow_html=True)
     
-    # Historial con diseño limpio
     for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
         if chat_id.startswith(f"{st.session_state.modo_actual}|") and len(st.session_state.todos_los_chats[chat_id]) > 0:
             col1, col2 = st.columns([0.8, 0.2], vertical_alignment="center")
@@ -409,9 +387,7 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
-    # =========================================
     # PANEL DE GITHUB
-    # =========================================
     if st.session_state.modo_actual == "Programación":
         with st.expander("GITHUB", expanded=True):
             token = st.secrets.get("GITHUB_TOKEN")
@@ -471,15 +447,9 @@ with st.sidebar:
                         </div>
                     """, unsafe_allow_html=True)
 
-    # --- SUBIDA DE IMÁGENES Y CONFIGURACIÓN ---
-    with st.expander("Multimedia y Voz", expanded=False):
-        imagen_subida = st.file_uploader("Sube una imagen para Lili", type=["png", "jpg", "jpeg"])
-        if imagen_subida:
-            st.image(imagen_subida, caption="Imagen lista para analizar", use_container_width=True)
-            
-        st.markdown("---")
+    with st.expander("Configuración", expanded=False):
         voz_activa = st.checkbox("Voz activa", value=True)
-        audio_grabado = st.audio_input("Graba un mensaje de voz", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
+        audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
 
 # --- CONEXIÓN CON GROQ ---
 if "GROQ_API_KEY" not in st.secrets:
@@ -499,6 +469,7 @@ for message in mensajes_actuales:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# Si no hay mensajes, mostramos el Reactor
 if len(mensajes_actuales) == 0:
     texto_reactor = "DEV ENVIRONMENT" if st.session_state.modo_actual == "Programación" else "SYSTEM ONLINE"
     mensaje_bienvenida = "Entorno de Desarrollo listo. Carga un archivo de GitHub para comenzar." if st.session_state.modo_actual == "Programación" else "Hola Leiver. ¿Qué hacemos hoy?"
@@ -516,6 +487,11 @@ if len(mensajes_actuales) == 0:
             <p style="font-size: 16px; color: #8a99ad;">{mensaje_bienvenida}</p>
         </div>
     """, unsafe_allow_html=True)
+
+# --- CAJA DE SUBIDA DE IMAGEN (JUSTO ENCIMA DEL CHAT) ---
+imagen_subida = st.file_uploader("Adjuntar imagen para análisis visual", type=["png", "jpg", "jpeg"], label_visibility="visible")
+if imagen_subida:
+    st.image(imagen_subida, caption="Imagen adjunta lista", use_container_width=True)
 
 # --- PROCESAMIENTO DE ENTRADA ---
 placeholder_texto = "Pídeme un cambio de código..." if st.session_state.modo_actual == "Programación" else "Escribe tu mensaje..."
@@ -535,23 +511,19 @@ if audio_grabado or prompt:
                 st.error(f"Error de audio: {e}")
                 
     if texto_usuario:
-        # Determinamos qué modelo usar dependiendo de si hay imagen
         modelo_a_usar = "openai/gpt-oss-20b"
         mensaje_para_groq_content = texto_usuario
         
         if imagen_subida:
-            # Codificamos la imagen a Base64
             bytes_imagen = imagen_subida.getvalue()
             imagen_b64 = base64.b64encode(bytes_imagen).decode('utf-8')
             
-            # Preparamos el formato especial para modelos de visión
             mensaje_para_groq_content = [
                 {"type": "text", "text": texto_usuario},
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{imagen_b64}"}}
             ]
-            modelo_a_usar = "llama-3.2-11b-vision-preview" # Modelo de visión de Groq
+            modelo_a_usar = "llama-3.2-11b-vision-preview" 
             
-            # Guardamos en el historial local que se envió una imagen
             st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "user", "content": f"{texto_usuario} [Imagen Adjunta]"})
         else:
             st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "user", "content": texto_usuario})
@@ -586,7 +558,6 @@ if audio_grabado or prompt:
 
         mensajes_para_groq = [{"role": "system", "content": instrucciones}]
         for msg in mensajes_actuales:
-            # Si el mensaje anterior tenía imagen, el historial guardado tiene "[Imagen Adjunta]", lo limpiamos
             contenido_historial = msg["content"].replace(" [Imagen Adjunta]", "")
             mensajes_para_groq.append({"role": msg["role"], "content": contenido_historial})
             
