@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v23.0 - Friday HUD"
+VERSION = "v23.1 - Friday HUD Fixed"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌐", layout="wide")
@@ -78,12 +78,12 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS FUTURISTA (ESTILO F.R.I.D.A.Y.) ---
+# --- CSS FUTURISTA (ESTILO F.R.I.D.A.Y. CORREGIDO) ---
 st.markdown("""
 <style>
-    /* 1. FONDO OSCURO PROFUNDO (Azul Noche) */
+    /* FONDO OSCURO PROFUNDO (Azul Noche) */
     .stApp {
-        background-color: #0a0f1a !important; /* Azul muy oscuro */
+        background-color: #0a0f1a !important; 
         background-image: radial-gradient(circle at 50% 0%, #111d33 0%, #0a0f1a 80%) !important;
         color: #ffffff !important;
     }
@@ -92,130 +92,100 @@ st.markdown("""
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
     /* =========================================
-       BARRA LATERAL (MANTENIDA Y MEJORADA)
+       BARRA LATERAL
        ========================================= */
     [data-testid="stSidebar"] {
         background-color: #0d1421 !important;
-        border-right: 1px solid rgba(0, 242, 254, 0.2) !important; /* Borde cian sutil */
+        border-right: 1px solid rgba(0, 242, 254, 0.2) !important;
     }
-    
     [data-testid="stSidebar"] h3 {
-        color: #00f2fe !important; /* Título cian */
-        text-align: center;
-        text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+        color: #00f2fe !important; text-align: center; text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
     }
-
     [data-testid="stSidebar"] button {
-        background: transparent !important; 
-        color: #a1a1aa !important; 
-        border: 1px solid transparent !important;
-        text-align: left !important; 
-        padding: 8px 12px !important; 
-        border-radius: 8px !important;
-        transition: all 0.3s ease !important;
+        background: transparent !important; color: #a1a1aa !important; border: 1px solid transparent !important;
+        text-align: left !important; padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.3s ease !important;
     }
     [data-testid="stSidebar"] button:hover {
-        background: rgba(0, 242, 254, 0.1) !important; 
-        color: #00f2fe !important;
-        border: 1px solid rgba(0, 242, 254, 0.3) !important;
+        background: rgba(0, 242, 254, 0.1) !important; color: #00f2fe !important; border: 1px solid rgba(0, 242, 254, 0.3) !important;
     }
-    
-    /* Botón Nuevo Chat resaltado */
     [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
-        background: rgba(0, 242, 254, 0.15) !important;
-        color: #00f2fe !important;
-        border: 1px solid rgba(0, 242, 254, 0.4) !important;
-        text-align: center !important;
-        font-weight: bold !important;
+        background: rgba(0, 242, 254, 0.15) !important; color: #00f2fe !important; border: 1px solid rgba(0, 242, 254, 0.4) !important;
+        text-align: center !important; font-weight: bold !important;
     }
 
     /* =========================================
        CHAT FUTURISTA (BURBUJAS HUD)
        ========================================= */
     div[data-testid="stChatMessage"] {
-        background-color: transparent !important;
-        border: none !important;
-        padding: 0 !important;
-        margin-bottom: 20px !important;
-        display: flex !important;
+        background-color: transparent !important; border: none !important; padding: 0 !important;
+        margin-bottom: 20px !important; display: flex !important;
     }
-    div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { 
-        display: none !important; 
-    }
+    div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
 
     /* TUS MENSAJES (Derecha - Cian Neón) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
-        flex-direction: row-reverse !important;
-        justify-content: flex-start !important;
-        margin-left: auto !important;
-        width: fit-content !important;
-        max-width: 80% !important;
+        flex-direction: row-reverse !important; justify-content: flex-start !important;
+        margin-left: auto !important; width: fit-content !important; max-width: 80% !important;
     }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
-        background: rgba(0, 242, 254, 0.1) !important; /* Fondo cian translúcido */
-        border: 1px solid rgba(0, 242, 254, 0.4) !important;
-        color: #ffffff !important;
-        border-radius: 15px 15px 0 15px !important; 
-        padding: 12px 18px !important;
+        background: rgba(0, 242, 254, 0.1) !important; border: 1px solid rgba(0, 242, 254, 0.4) !important;
+        color: #ffffff !important; border-radius: 15px 15px 0 15px !important; padding: 12px 18px !important;
         box-shadow: 0 0 15px rgba(0, 242, 254, 0.1) !important;
     }
 
     /* MENSAJES DE LILI (Izquierda - Morado Holográfico) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
-        flex-direction: row !important;
-        justify-content: flex-start !important;
-        margin-right: auto !important;
-        width: fit-content !important;
-        max-width: 80% !important;
+        flex-direction: row !important; justify-content: flex-start !important;
+        margin-right: auto !important; width: fit-content !important; max-width: 80% !important;
     }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
-        background: rgba(139, 92, 246, 0.1) !important; /* Fondo morado translúcido */
-        border: 1px solid rgba(139, 92, 246, 0.4) !important;
-        color: #e5e5e5 !important;
-        border-radius: 15px 15px 15px 0 !important; 
-        padding: 12px 18px !important;
+        background: rgba(139, 92, 246, 0.1) !important; border: 1px solid rgba(139, 92, 246, 0.4) !important;
+        color: #e5e5e5 !important; border-radius: 15px 15px 15px 0 !important; padding: 12px 18px !important;
         box-shadow: 0 0 15px rgba(139, 92, 246, 0.1) !important;
-    }
-    
-    /* Texto dentro de las burbujas */
-    div[data-testid="stChatMessage"] p {
-        font-size: 15px !important;
-        line-height: 1.5 !important;
-        margin: 0 !important;
     }
 
     /* =========================================
-       CAJA DE TEXTO (HUD CÁPSULA)
+       CAJA DE TEXTO (HUD CÁPSULA) - ¡AQUÍ ESTÁ EL FIX!
        ========================================= */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important; padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important;
     }
     
+    /* El contenedor principal de la barra */
     .stChatInput {
-        background: rgba(13, 20, 33, 0.9) !important;
-        border: 1px solid #00f2fe !important; /* Borde cian neón */
-        border-radius: 30px !important; /* Cápsula */
+        background: rgba(13, 20, 33, 0.8) !important;
+        border: 1px solid #00f2fe !important; 
+        border-radius: 30px !important; 
         box-shadow: 0 0 20px rgba(0, 242, 254, 0.2) !important;
-        transition: all 0.3s ease !important;
+        backdrop-filter: blur(10px) !important;
     }
+    
+    /* 🔥 EL TRUCO: Obligar a que todo lo que esté dentro sea transparente */
+    .stChatInput > div,
+    .stChatInput div,
+    .stChatInput div[data-baseweb="base-input"],
+    .stChatInput div[data-baseweb="textarea"],
+    .stChatInput textarea,
+    .stChatInput input {
+        background-color: transparent !important;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        color: #ffffff !important;
+    }
+    
+    /* Mantener el borde cian cuando hacemos clic */
     .stChatInput:focus-within { 
         border: 1px solid #00f2fe !important; 
         box-shadow: 0 0 30px rgba(0, 242, 254, 0.4) !important;
     }
-    [data-testid="stChatInput"] textarea { 
-        color: #ffffff !important; font-size: 16px !important; padding: 12px 20px !important; 
-    }
-    
+
     /* Botón de enviar */
     [data-testid="stChatInput"] button {
-        background: transparent !important; 
-        color: #00f2fe !important; 
-        border: none !important; 
+        background: transparent !important; color: #00f2fe !important; border: none !important; 
     }
     [data-testid="stChatInput"] button svg { fill: #00f2fe !important; }
-    [data-testid="stChatInput"] button:hover {
-        background: rgba(0, 242, 254, 0.1) !important;
-    }
 
     audio, div[data-testid="stAudio"] { display: none !important; }
 </style>
@@ -244,7 +214,6 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**Historial**")
     
-    # Historial con botón de borrar
     for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
         if len(st.session_state.todos_los_chats[chat_id]) > 0:
             col1, col2 = st.columns([0.8, 0.2])
