@@ -8,26 +8,27 @@ import json
 import os
 import re
 import requests
+import datetime
 from groq import Groq
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v13.7 - Clean Reader"
-ARCHIVO_HISTORIAL = "historial_lili.json"
+VERSION = "v14.0 - Multi-Chat"
+ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
 
-# --- FUNCIONES PARA LA MEMORIA ---
-def cargar_historial():
-    if os.path.exists(ARCHIVO_HISTORIAL):
-        with open(ARCHIVO_HISTORIAL, "r", encoding="utf-8") as f:
+# --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
+def cargar_todos_los_chats():
+    if os.path.exists(ARCHIVO_CHATS):
+        with open(ARCHIVO_CHATS, "r", encoding="utf-8") as f:
             return json.load(f)
-    return []
+    return {}
 
-def guardar_historial(mensajes):
-    with open(ARCHIVO_HISTORIAL, "w", encoding="utf-8") as f:
-        json.dump(mensajes, f, ensure_ascii=False, indent=4)
+def guardar_todos_los_chats(chats):
+    with open(ARCHIVO_CHATS, "w", encoding="utf-8") as f:
+        json.dump(chats, f, ensure_ascii=False, indent=4)
 
 # --- FUNCIÓN PARA LIMPIAR EL TEXTO DE LA VOZ ---
 def limpiar_texto_para_voz(texto):
@@ -64,7 +65,6 @@ def obtener_archivos(usuario, repo, token):
         return archivos
     return []
 
-# 🔥 AQUÍ ESTÁ EL ARREGLO: Ahora devuelve True/False en lugar de revisar si dice "Error"
 def descargar_archivo_github(usuario, repo, archivo, token):
     headers = {"Authorization": f"token {token}"}
     url = f"https://api.github.com/repos/{usuario}/{repo}/contents/{archivo}"
@@ -111,8 +111,30 @@ st.markdown("""
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { font-weight: 200 !important; letter-spacing: 2px; color: #e9d5ff !important; text-transform: uppercase; font-size: 14px !important; }
     [data-testid="stFileUploader"] { display: none !important; }
     [data-testid="stAudioInput"] { background-color: rgba(0, 242, 254, 0.05) !important; border: 1px solid rgba(0, 242, 254, 0.2) !important; border-radius: 15px !important; padding: 10px !important; }
-    [data-testid="stSidebar"] button { background: rgba(255, 0, 85, 0.1) !important; color: #ff3366 !important; border: 1px solid rgba(255, 0, 85, 0.3) !important; border-radius: 10px !important; font-weight: bold !important; letter-spacing: 1px !important; transition: all 0.3s ease !important; }
-    [data-testid="stSidebar"] button:hover { background: rgba(255, 0, 85, 0.3) !important; box-shadow: 0 0 15px rgba(255, 0, 85, 0.5) !important; color: white !important; border: 1px solid rgba(255, 0, 85, 0.8) !important; }
+    
+    /* BOTONES DE CHAT EN LA BARRA LATERAL */
+    [data-testid="stSidebar"] button {
+        background: transparent !important;
+        color: #a78bfa !important; /* Color lila */
+        border: 1px solid transparent !important;
+        border-radius: 8px !important;
+        font-weight: normal !important;
+        text-align: left !important;
+        padding: 5px 10px !important;
+        margin-bottom: 2px !important;
+        transition: all 0.2s ease !important;
+    }
+    [data-testid="stSidebar"] button:hover {
+        background: rgba(168, 85, 247, 0.1) !important;
+        color: #e9d5ff !important;
+    }
+    /* Estilo especial para el botón de borrar/limpiar */
+    [data-testid="stSidebar"] button:contains("Limpiar") {
+        background: rgba(255, 0, 85, 0.1) !important;
+        color: #ff3366 !important;
+        border: 1px solid rgba(255, 0, 85, 0.3) !important;
+        margin-top: 20px !important;
+    }
     [data-testid="stSidebar"] .stCheckbox p { font-size: 13px !important; color: #a78bfa !important; }
     
     @media (max-width: 768px) {
@@ -144,9 +166,18 @@ def autoplay_audio(audio_buffer):
     audio_html = f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}"></audio>'
     st.markdown(audio_html, unsafe_allow_html=True)
 
-# --- CARGAR MEMORIA AL INICIAR ---
-if "messages" not in st.session_state:
-    st.session_state.messages = cargar_historial()
+# --- LÓGICA MULTI-CHAT ---
+if "todos_los_chats" not in st.session_state:
+    st.session_state.todos_los_chats = cargar_todos_los_chats()
+    
+if "chat_actual_id" not in st.session_state:
+    st.session_state.chat_actual_id = datetime.datetime.now().strftime("%d/%m %H:%M")
+
+# Si el chat actual no existe en el diccionario, lo creamos
+if st.session_state.chat_actual_id not in st.session_state.todos_los_chats:
+    st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
+
+# Variables de sesión para el audio y github
 if "audio_pendiente" not in st.session_state:
     st.session_state.audio_pendiente = None
 if "mic_key" not in st.session_state:
@@ -158,35 +189,46 @@ if "codigo_github" not in st.session_state:
 if "archivo_cargado_nombre" not in st.session_state:
     st.session_state.archivo_cargado_nombre = ""
 
-# --- SIDEBAR ---
+# --- SIDEBAR (HISTORIAL Y CONFIGURACIÓN) ---
 with st.sidebar:
-    st.title(f"🤖 {NOMBRE_IA} System")
-    st.caption(f"{VERSION} - Powered by Groq ⚡")
+    # 1. NUEVO CHAT
+    if st.button("➕ Nuevo Chat", use_container_width=True):
+        nuevo_id = datetime.datetime.now().strftime("%d/%m %H:%M")
+        st.session_state.chat_actual_id = nuevo_id
+        st.session_state.todos_los_chats[nuevo_id] = []
+        st.rerun()
+
     st.markdown("---")
     
+    # 2. HISTORIAL DE CHATS
+    st.subheader("Fijado")
+    # Ordenar los chats del más reciente al más antiguo
+    for chat_id in sorted(st.session_state.todos_los_chats.keys(), reverse=True):
+        # Si el chat está vacío, no lo mostramos en el historial (para evitar basura)
+        if len(st.session_state.todos_los_chats[chat_id]) > 0:
+            # Un pequeño truco para resaltar el chat activo
+            prefijo = "👉 " if chat_id == st.session_state.chat_actual_id else "💬 "
+            if st.button(f"{prefijo} {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
+                st.session_state.chat_actual_id = chat_id
+                st.rerun()
+    
+    st.markdown("---")
+
+    # 3. CONTROLES DE VOZ Y GITHUB
     voz_activa = st.checkbox("🔊 Voz activa", value=True)
     
-    st.subheader("🎤 Hablar")
-    audio_grabado = st.audio_input("Graba tu mensaje", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
-    
-    st.markdown("---")
     st.subheader("🐙 GitHub")
-    
     token = st.secrets.get("GITHUB_TOKEN")
     usuario_github = "leivercontreras18-ux"
 
     if token:
         repos = obtener_repositorios(token, usuario_github)
-        
         if repos:
             repo_seleccionado = st.selectbox("1. Repositorio", repos)
-            
             archivos = obtener_archivos(usuario_github, repo_seleccionado, token)
-            
             if archivos:
                 archivo_seleccionado = st.selectbox("2. Archivo", archivos)
-                
-                if st.button("Leer archivo seleccionado", use_container_width=True):
+                if st.button("Leer archivo", use_container_width=True):
                     with st.spinner("Descargando..."):
                         exito, resultado = descargar_archivo_github(usuario_github, repo_seleccionado, archivo_seleccionado, token)
                         if exito:
@@ -197,42 +239,17 @@ with st.sidebar:
                         else:
                             st.error(resultado)
             else:
-                st.info("No se encontraron archivos soportados en este repositorio.")
-        else:
-            st.warning("No se encontraron repositorios. Revisa el token.")
-            
-        if st.button("Sincronizar Descripciones", use_container_width=True):
-            with st.spinner("Conectando..."):
-                try:
-                    headers = {"Authorization": f"token {token}"}
-                    respuesta = requests.get(f"https://api.github.com/users/{usuario_github}/repos?per_page=100", headers=headers)
-                    if respuesta.status_code == 200:
-                        repos_data = respuesta.json()
-                        texto_repos = f"Aquí está la lista de repositorios de {usuario_github} en GitHub:\n"
-                        for r in repos_data:
-                            desc = r['description'] if r['description'] else "Sin descripción"
-                            texto_repos += f"- {r['name']}: {desc} (Lenguaje: {r['language']})\n"
-                        st.session_state.github_contexto = texto_repos
-                        st.success("¡Descripciones sincronizadas!")
-                    else:
-                        st.error("Error al conectar.")
-                except Exception as e:
-                    st.error(f"Error: {e}")
-    else:
-        st.warning("Falta GITHUB_TOKEN en los Secrets.")
-
-    # Mostramos un pequeño indicador de qué archivo está cargado
-    if st.session_state.archivo_cargado_nombre:
-        st.info(f"📄 En memoria: {st.session_state.archivo_cargado_nombre}")
-
+                st.info("No hay archivos válidos.")
+        
+    # Limpiar Chat Actual
     st.markdown("---")
-    if st.button("🗑️ Limpiar Chat", use_container_width=True):
-        st.session_state.messages = []
-        st.session_state.codigo_github = ""
-        st.session_state.archivo_cargado_nombre = ""
-        if os.path.exists(ARCHIVO_HISTORIAL):
-            os.remove(ARCHIVO_HISTORIAL)
-        st.session_state.mic_key += 1
+    if st.button("🗑️ Borrar este Chat", use_container_width=True):
+        if st.session_state.chat_actual_id in st.session_state.todos_los_chats:
+            del st.session_state.todos_los_chats[st.session_state.chat_actual_id]
+            guardar_todos_los_chats(st.session_state.todos_los_chats)
+        # Creamos uno nuevo automáticamente
+        st.session_state.chat_actual_id = datetime.datetime.now().strftime("%d/%m %H:%M")
+        st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
         st.rerun()
 
 # --- CONEXIÓN CON GROQ ---
@@ -261,61 +278,49 @@ with col_izq:
 
 with col_der:
     with st.container(border=True, height=550):
-        for message in st.session_state.messages:
+        # Mostrar SOLO los mensajes del chat actual
+        mensajes_actuales = st.session_state.todos_los_chats[st.session_state.chat_actual_id]
+        for message in mensajes_actuales:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
 # --- PROCESAMIENTO DE ENTRADA ---
 prompt = st.chat_input(f"Ask {NOMBRE_IA}...")
 
-if audio_grabado or prompt:
-    texto_usuario = prompt if prompt else ""
+if prompt:
+    texto_usuario = prompt
     
-    if audio_grabado and not prompt:
-        with st.spinner("Escuchando..."):
-            try:
-                transcripcion = cliente.audio.transcriptions.create(
-                    file=("audio.wav", audio_grabado.read()), 
-                    model="whisper-large-v3", 
-                    language="es"
-                )
-                texto_usuario = transcripcion.text
-            except Exception as e:
-                st.error(f"Error de audio: {e}")
-                
     if texto_usuario:
-        st.session_state.messages.append({"role": "user", "content": texto_usuario})
-        guardar_historial(st.session_state.messages)
+        # Añadir al chat actual
+        st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "user", "content": texto_usuario})
+        guardar_todos_los_chats(st.session_state.todos_los_chats)
         
         codigo_actual = st.session_state.codigo_github
         
         instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis. Tienes un toque de humor seco y eres muy leal a tu usuario.
         
         REGLA DE ORO: DEBES RESPONDER SIEMPRE EN ESPAÑOL.
-
-        CONTEXTO DEL USUARIO: 
-        Tu usuario se llama Leiver, vive en Venezuela y es sumamente curioso y preguntón. Trabaja en proyectos de programación.
-        
-        CONTEXTO DE GITHUB:
-        {st.session_state.github_contexto}
+        CONTEXTO DEL USUARIO: Tu usuario se llama Leiver, vive en Venezuela y es sumamente curioso y preguntón. Trabaja en proyectos de programación.
         
         REGLA DE PROGRAMACIÓN QUIRÚRGICA: 
-        Cuando Leiver te pida cambiar o agregar algo en su código, NUNCA le devuelvas el archivo completo. Actúa como un cirujano experto y dile exactamente:
-        1. "Borra desde la línea X hasta la línea Y" (indica el rango exacto de líneas que debe eliminar o reemplazar).
-        2. Luego, dale el bloque de código exacto que debe pegar en su lugar.
-        Sé muy preciso con los números de línea para que Leiver no tenga que adivinar.
+        Cuando Leiver te pida cambiar o agregar algo en su código, NUNCA le devuelvas el archivo completo. Dile exactamente:
+        1. "Borra desde la línea X hasta la línea Y".
+        2. Luego, dale el bloque de código exacto que debe pegar.
+        Sé muy preciso con los números de línea.
         
         CÓMO DEBES HABLAR:
         - Háblale como una persona real, no como un robot.
-        - Sé directa y fluida. Evita el uso excesivo de comas y puntos suspensivos.
-        - No uses listas largas. Prefiere párrafos fluidos."""
+        - Sé directa y fluida. Evita el uso excesivo de comas y puntos suspensivos."""
         
         if codigo_actual:
             instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```\n{codigo_actual}\n```"
 
         mensajes_para_groq = [{"role": "system", "content": instrucciones}]
-        for msg in st.session_state.messages:
+        # Le pasamos el historial SOLO de este chat
+        for msg in mensajes_actuales:
             mensajes_para_groq.append({"role": msg["role"], "content": msg["content"]})
+        # Añadimos el mensaje nuevo
+        mensajes_para_groq.append({"role": "user", "content": texto_usuario})
 
         try:
             with st.spinner("Pensando..."):
@@ -327,8 +332,10 @@ if audio_grabado or prompt:
                 )
                 
                 texto_respuesta = respuesta.choices[0].message.content
-                st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
-                guardar_historial(st.session_state.messages)
+                
+                # Guardar la respuesta en el chat actual
+                st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "assistant", "content": texto_respuesta})
+                guardar_todos_los_chats(st.session_state.todos_los_chats)
                 
                 if voz_activa: 
                     try:
