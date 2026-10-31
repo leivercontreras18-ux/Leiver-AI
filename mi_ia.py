@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v32.1 - Glass Forced"
+VERSION = "v33.0 - Premium HUD"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -78,152 +78,212 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS GLASS NAVIGATION (FUERZA BRUTA) ---
+# --- CSS PREMIUM HUD ---
 st.markdown("""
 <style>
-    /* FONDO OSCURO PROFUNDO */
-    .stApp { 
-        background: radial-gradient(circle at 50% 0%, #0f172a 0%, #050810 100%) !important; 
-        color: #f8fafc !important; 
+    /* Variables de Sistema */
+    :root {
+        --bg-deep-space: #121620;
+        --bg-sidebar: #181d28;
+        --bg-active-tab: rgba(0, 229, 255, 0.08);
+        --cyan-neon: #00e5ff;
+        --text-pure-white: #ffffff;
+        --text-muted: #8a99ad;
+        --glass-bubble: rgba(24, 29, 40, 0.65);
+        --glass-border: rgba(0, 229, 255, 0.15);
     }
 
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
+    /* Fondo Principal */
+    .stApp {
+        background: radial-gradient(circle at 60% 50%, #1a2233 0%, var(--bg-deep-space) 100%) !important;
+        color: var(--text-pure-white) !important;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    #MainMenu {visibility: hidden;} 
+    footer {visibility: hidden;} 
+    header { background: transparent !important; }
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
     /* =========================================
-       BARRA LATERAL (MENÚ ESTILO APP)
+       BARRA LATERAL
        ========================================= */
-    [data-testid="stSidebar"] { 
-        background-color: #0b1120 !important; 
-        border-right: 1px solid rgba(255, 255, 255, 0.05) !important; 
+    [data-testid="stSidebar"] {
+        background-color: var(--bg-sidebar) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.03) !important;
     }
-    
-    /* Ocultar los círculos de Streamlit (Ataque directo) */
+
+    /* MENÚ DE NAVEGACIÓN (Forzar estilo) */
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label > div:first-child {
-        display: none !important; 
+        display: none !important; /* Ocultar el círculo de Streamlit */
     }
 
-    /* Estilo base de las etiquetas del menú */
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label {
-        padding: 12px 15px !important;
-        border-radius: 8px !important;
-        margin-bottom: 5px !important;
-        border-left: 4px solid transparent !important;
+        display: block !important;
+        padding: 14px 24px !important;
+        border-radius: 0 !important;
         background-color: transparent !important;
-        transition: all 0.2s ease !important;
-        display: flex !important;
-        align-items: center !important;
+        border-left: 3px solid transparent !important;
+        transition: all 0.3s ease !important;
+        cursor: pointer !important;
     }
 
-    /* Texto del menú */
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label p {
-        color: #94a3b8 !important;
-        font-size: 15px !important;
+        color: var(--text-muted) !important;
+        text-transform: uppercase !important;
+        font-size: 0.85rem !important;
         font-weight: 500 !important;
+        letter-spacing: 1px !important;
         margin: 0 !important;
     }
 
-    /* Hover */
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label:hover {
-        background-color: rgba(255, 255, 255, 0.03) !important;
+        background-color: rgba(255, 255, 255, 0.02) !important;
     }
 
-    /* 🔥 ESTADO ACTIVO (Seleccionado) */
+    /* Estado Activo */
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) {
-        background-color: #334155 !important; /* Fondo gris */
-        border-left: 4px solid #00f2fe !important; /* Línea cian */
+        background-color: var(--bg-active-tab) !important;
+        border-left: 3px solid var(--cyan-neon) !important;
+        box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.05) !important;
     }
+
     [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) p {
-        color: #ffffff !important; /* Texto blanco */
+        color: var(--cyan-neon) !important;
         font-weight: 600 !important;
     }
 
-    /* Botones generales (Historial, etc) */
+    /* Botones Generales */
     [data-testid="stSidebar"] button { 
-        background: transparent !important; color: #cbd5e1 !important; border: 1px solid rgba(255,255,255,0.1) !important; 
-        text-align: left !important; padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.2s ease !important; 
+        background: transparent !important; 
+        color: var(--text-muted) !important; 
+        border: 1px solid rgba(255,255,255,0.1) !important; 
+        border-radius: 8px !important; 
+        text-align: left !important;
+        padding: 8px 12px !important;
+        transition: all 0.2s ease !important;
     }
-    [data-testid="stSidebar"] button:hover { background: #1e293b !important; color: #ffffff !important; }
-    
+    [data-testid="stSidebar"] button:hover { 
+        background: rgba(255, 255, 255, 0.05) !important; 
+        color: var(--text-pure-white) !important; 
+    }
+
     [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button { 
-        background: rgba(0, 242, 254, 0.1) !important; color: #00f2fe !important; 
-        border: 1px solid rgba(0, 242, 254, 0.3) !important; text-align: center !important; font-weight: bold !important; 
+        background: rgba(0, 229, 255, 0.1) !important; 
+        color: var(--cyan-neon) !important; 
+        border: 1px solid rgba(0, 229, 255, 0.3) !important; 
+        text-align: center !important; 
+        font-weight: 600 !important; 
     }
 
     /* =========================================
-       CHAT (TARJETAS DE CRISTAL FORZADAS)
+       CHAT (GLASSMORPHISM LIMPIO)
        ========================================= */
-    /* Forzar el fondo de las tarjetas */
     [data-testid="stChatMessage"] {
-        background: rgba(30, 41, 59, 0.7) !important;
-        backdrop-filter: blur(15px) !important;
-        border-radius: 16px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        padding: 16px !important;
+        background: var(--glass-bubble) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-radius: 12px !important;
+        padding: 16px 20px !important;
         margin-bottom: 20px !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
 
-    /* Eliminar fondos internos de Streamlit que tapan el cristal */
-    [data-testid="stChatMessage"] > div {
-        background-color: transparent !important;
-    }
-
-    /* TUS MENSAJES (Derecha - Brillo Cian) */
+    /* TUS MENSAJES (Derecha) */
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
-        border: 1px solid rgba(0, 242, 254, 0.4) !important;
-        box-shadow: 0 0 20px rgba(0, 242, 254, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        background: rgba(255, 255, 255, 0.04) !important;
         margin-left: auto !important;
         width: fit-content !important;
         max-width: 80% !important;
     }
 
-    /* MENSAJES DE LILI (Izquierda - Brillo Morado) */
+    /* MENSAJES DE LILI (Izquierda) */
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
-        border: 1px solid rgba(157, 78, 221, 0.4) !important;
-        box-shadow: 0 0 20px rgba(157, 78, 221, 0.1) !important;
+        border: 1px solid var(--glass-border) !important;
+        box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.03) !important;
         margin-right: auto !important;
         width: fit-content !important;
         max-width: 80% !important;
     }
-    
-    /* Ocultar avatares */
+
     [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { 
         display: none !important; 
     }
+    
+    [data-testid="stChatMessage"] > div {
+        background-color: transparent !important;
+    }
 
     /* =========================================
-       CAJA DE TEXTO
+       CAJA DE TEXTO (CÁPSULA FLOTANTE)
        ========================================= */
-    [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { background-color: transparent !important; background: transparent !important; }
-    [data-testid="stBottomBlockContainer"] { padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
+    [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { 
+        background-color: transparent !important; 
+        background: transparent !important; 
+    }
+    
+    [data-testid="stBottomBlockContainer"] { 
+        padding-bottom: 2rem !important; 
+        max-width: 800px !important; 
+        margin: 0 auto !important; 
+    }
     
     .stChatInput { 
-        background: rgba(15, 23, 42, 0.8) !important; 
+        background: rgba(24, 29, 40, 0.8) !important;
         backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(0, 242, 254, 0.4) !important; 
+        border: 1px solid rgba(0, 229, 255, 0.2) !important; 
         border-radius: 30px !important; 
-        box-shadow: 0 0 20px rgba(0, 242, 254, 0.1) !important; 
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 1px var(--cyan-neon) !important; 
+        transition: all 0.3s ease !important;
     }
-    .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input { background-color: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; color: #ffffff !important; }
-    .stChatInput textarea::placeholder { color: #64748b !important; }
     
-    [data-testid="stChatInput"] button { background: #00f2fe !important; border-radius: 50% !important; border: none !important; margin: 5px !important; width: 35px !important; height: 35px !important; }
-    [data-testid="stChatInput"] button svg { fill: #000000 !important; }
+    .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input { 
+        background-color: transparent !important; 
+        border: none !important; 
+        outline: none !important; 
+        box-shadow: none !important; 
+        color: var(--text-pure-white) !important; 
+    }
+    
+    .stChatInput textarea::placeholder { 
+        color: var(--text-muted) !important; 
+    }
+    
+    .stChatInput:focus-within { 
+        border-color: var(--cyan-neon) !important; 
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 8px rgba(0, 229, 255, 0.4) !important; 
+    }
+    
+    [data-testid="stChatInput"] button { 
+        background: var(--cyan-neon) !important; 
+        border-radius: 50% !important; 
+        border: none !important; 
+        margin: 5px !important; 
+        width: 35px !important; 
+        height: 35px !important; 
+        box-shadow: 0 0 10px rgba(0, 229, 255, 0.5) !important;
+    }
+    
+    [data-testid="stChatInput"] button svg { 
+        fill: #000000 !important; 
+    }
+    
     audio, div[data-testid="stAudio"] { display: none !important; }
 
     /* =========================================
-       REACTOR
+       REACTOR (PANTALLA DE BIENVENIDA)
        ========================================= */
     .center-display { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10vh; margin-bottom: 30px; position: relative; }
     .reactor { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
-    .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0, 242, 254, 0.3); border-top: 2px solid #00f2fe; border-bottom: 2px solid #00f2fe; animation: spin 3s linear infinite; box-shadow: 0 0 30px rgba(0, 242, 254, 0.1); }
-    .reactor-ring-mid { position: absolute; inset: 20px; border-radius: 50%; border: 1px dashed rgba(157, 78, 221, 0.6); animation: spin-reverse 8s linear infinite; }
-    .reactor-core { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #ffffff 0%, #00f2fe 40%, #4facfe 100%); box-shadow: 0 0 50px #00f2fe, inset 0 0 20px #ffffff; animation: pulse 2s ease-in-out infinite; z-index: 10; }
-    .display-text { margin-top: 30px; font-size: 14px; letter-spacing: 5px; color: #00f2fe; text-transform: uppercase; text-shadow: 0 0 15px rgba(0, 242, 254, 0.1); z-index: 10; font-weight: 600; font-family: monospace; }
+    .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0, 229, 255, 0.2); border-top: 2px solid var(--cyan-neon); border-bottom: 2px solid var(--cyan-neon); animation: spin 3s linear infinite; box-shadow: 0 0 30px rgba(0, 229, 255, 0.1); }
+    .reactor-ring-mid { position: absolute; inset: 20px; border-radius: 50%; border: 1px dashed rgba(0, 229, 255, 0.4); animation: spin-reverse 8s linear infinite; }
+    .reactor-core { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #ffffff 0%, var(--cyan-neon) 40%, #0077ff 100%); box-shadow: 0 0 50px var(--cyan-neon), inset 0 0 20px #ffffff; animation: pulse 2s ease-in-out infinite; z-index: 10; }
+    .display-text { margin-top: 30px; font-size: 14px; letter-spacing: 5px; color: var(--cyan-neon); text-transform: uppercase; text-shadow: 0 0 15px rgba(0, 229, 255, 0.3); z-index: 10; font-weight: 600; font-family: monospace; }
+    
     @keyframes spin { 100% { transform: rotate(360deg); } }
     @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
-    @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 30px #00f2fe, inset 0 0 15px #ffffff; } 50% { transform: scale(1.05); box-shadow: 0 0 60px #00f2fe, inset 0 0 30px #ffffff; } 100% { transform: scale(0.95); box-shadow: 0 0 30px #00f2fe, inset 0 0 15px #ffffff; } }
+    @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 30px var(--cyan-neon), inset 0 0 15px #ffffff; } 50% { transform: scale(1.05); box-shadow: 0 0 60px var(--cyan-neon), inset 0 0 30px #ffffff; } 100% { transform: scale(0.95); box-shadow: 0 0 30px var(--cyan-neon), inset 0 0 15px #ffffff; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -249,15 +309,19 @@ if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_ca
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h3>💠 Lili AI Hub</h3>", unsafe_allow_html=True)
-    st.caption(f"{VERSION}")
+    st.markdown("<h3 style='padding-left: 24px; font-weight: 700; letter-spacing: 1.5px;'>LILI AI</h3>", unsafe_allow_html=True)
+    st.caption(f"<p style='padding-left: 24px; color: #8a99ad; font-size: 0.75rem;'>{VERSION}</p>", unsafe_allow_html=True)
     
-    st.markdown("### Modo de Trabajo")
-    modos = ["💻 Programación", "💬 Chat General", "🎨 Creativo", "📊 Análisis"]
+    modos = ["Programación", "Chat General", "Creativo", "Análisis"]
+    # Mapeo para la lógica
+    modos_logicos = ["💻 Programación", "💬 Chat General", "🎨 Creativo", "📊 Análisis"]
     
-    seleccion = st.radio("", modos, index=modos.index(st.session_state.modo_actual), label_visibility="collapsed")
-    if seleccion != st.session_state.modo_actual:
-        st.session_state.modo_actual = seleccion
+    index_actual = modos_logicos.index(st.session_state.modo_actual)
+    seleccion = st.radio("", modos, index=index_actual, label_visibility="collapsed")
+    
+    nuevo_modo_logico = modos_logicos[modos.index(seleccion)]
+    if nuevo_modo_logico != st.session_state.modo_actual:
+        st.session_state.modo_actual = nuevo_modo_logico
         chats_del_modo = [k for k in st.session_state.todos_los_chats.keys() if k.startswith(f"{st.session_state.modo_actual}|")]
         if chats_del_modo:
             st.session_state.chat_actual_id = sorted(chats_del_modo)[-1]
@@ -266,8 +330,9 @@ with st.sidebar:
             st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
         st.rerun()
 
-    st.markdown("---")
+    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
+    # Botón Nuevo Chat
     if st.button("+ Nuevo Chat", use_container_width=True):
         nuevo_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
         st.session_state.chat_actual_id = nuevo_id
@@ -275,7 +340,7 @@ with st.sidebar:
         guardar_todos_los_chats(st.session_state.todos_los_chats)
         st.rerun()
 
-    st.markdown("**Historial**")
+    st.markdown("<p style='color: #8a99ad; font-size: 0.8rem; margin-top: 20px; margin-bottom: 10px;'>HISTORIAL</p>", unsafe_allow_html=True)
     for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
         if chat_id.startswith(f"{st.session_state.modo_actual}|") and len(st.session_state.todos_los_chats[chat_id]) > 0:
             col1, col2 = st.columns([0.8, 0.2])
@@ -299,7 +364,7 @@ with st.sidebar:
     st.markdown("---")
     
     if st.session_state.modo_actual == "💻 Programación":
-        st.markdown("#### 🐙 Repositorios")
+        st.markdown("#### 🐙 GitHub")
         token = st.secrets.get("GITHUB_TOKEN")
         usuario_github = "leivercontreras18-ux"
         
@@ -330,7 +395,7 @@ with st.sidebar:
             if st.session_state.archivo_cargado_nombre:
                 st.success(f"✅ Leyendo: {st.session_state.archivo_cargado_nombre}")
 
-    with st.expander("Configuración General"):
+    with st.expander("Configuración"):
         voz_activa = st.checkbox("Voz activa", value=True)
         with st.expander("Micrófono"):
             audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
@@ -367,7 +432,7 @@ if len(mensajes_actuales) == 0:
             <div class="display-text">{texto_reactor}</div>
         </div>
         <div style="text-align: center; margin-top: 20px;">
-            <p style="font-size: 16px; color: #94a3b8;">{mensaje_bienvenida}</p>
+            <p style="font-size: 16px; color: #8a99ad;">{mensaje_bienvenida}</p>
         </div>
     """, unsafe_allow_html=True)
 
