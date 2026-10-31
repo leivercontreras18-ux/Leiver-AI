@@ -129,7 +129,7 @@ try:
                 try:
                     # Llamada a Groq
                     respuesta = cliente.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
+                        model="openai/gpt-oss-120b",
                         messages=[
                             {"role": "system", "content": instrucciones},
                             {"role": "user", "content": contexto_ia}
