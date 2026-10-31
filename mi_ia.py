@@ -12,13 +12,11 @@ VOZ_FIJA = "es-MX-DaliaNeural"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS AVANZADO (DISEÑO ETHEREAL / FIJO) ---
+# --- CSS AVANZADO (DISEÑO ETHEREAL / CORTANA) ---
 st.markdown("""
 <style>
-    /* 1. BLOQUEAR EL SCROLL DE LA PÁGINA */
-    html, body, .stApp {
-        height: 100vh !important;
-        overflow: hidden !important; 
+    /* Fondo Espacial */
+    .stApp {
         background-color: #0b0b12;
         background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0b0b12 100%);
         color: #e0e0e0;
@@ -28,37 +26,45 @@ st.markdown("""
     footer {visibility: hidden;}
     header { background: transparent !important; }
     
-    /* Ajustar layout principal */
     .block-container { 
-        padding-top: 2rem !important; 
-        padding-bottom: 0rem !important;
-        max-width: 95% !important; 
-        height: 90vh !important;
+        padding-top: 3rem !important; 
+        padding-bottom: 2rem !important;
+        max-width: 90% !important; 
     }
 
-    /* 2. EL ORBE PERFECTO (Flotante y Suave) */
-    .orb-container {
+    /* -----------------------------------------
+       1. EL ORBE DEFORMABLE (Morpling Blob)
+       ----------------------------------------- */
+    .orb-wrapper {
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        height: 100%;
+        height: 70vh;
     }
     
     .fluid-orb {
-        width: 300px;
-        height: 300px;
-        border-radius: 50%; /* Redondo perfecto */
+        width: 280px;
+        height: 280px;
+        /* Gradiente pastel: Rosa, Morado, Azul */
         background: linear-gradient(135deg, #fbcfe8 0%, #d8b4fe 50%, #bfdbfe 100%);
-        filter: blur(8px); /* Efecto difuminado */
-        animation: float 6s ease-in-out infinite;
-        box-shadow: 0 0 80px rgba(216, 180, 254, 0.4), inset 0 0 40px rgba(255,255,255,0.5);
+        /* Animación combinada: deformación + flotación */
+        animation: morph 8s ease-in-out infinite, float 6s ease-in-out infinite;
+        box-shadow: 0 0 60px rgba(216, 180, 254, 0.5), inset 0 0 40px rgba(255,255,255,0.6);
+        filter: blur(6px);
+    }
+
+    /* La animación de deformación que te gustó */
+    @keyframes morph {
+        0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+        34% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; }
+        67% { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; }
     }
 
     @keyframes float {
-        0% { transform: translateY(0px) scale(1); }
-        50% { transform: translateY(-15px) scale(1.03); }
-        100% { transform: translateY(0px) scale(1); }
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-15px); }
+        100% { transform: translateY(0px); }
     }
 
     .title-container {
@@ -68,79 +74,80 @@ st.markdown("""
     .title-container h1 {
         color: #ffffff;
         font-weight: 300;
-        letter-spacing: 3px;
+        letter-spacing: 2px;
         margin-bottom: 0px;
     }
     .title-container p {
         color: #7dd3fc;
         font-size: 14px;
-        margin-top: 5px;
     }
 
-    /* 3. EL PANEL DE CHAT (Fijo con su propio scroll) */
-    .chat-wrapper {
-        height: 80vh; /* Ocupa el 80% de la pantalla */
-        display: flex;
-        flex-direction: column;
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 20px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-    
-    /* Contenedor interno para que solo el texto haga scroll */
-    .chat-messages {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding-right: 10px;
+    /* -----------------------------------------
+       2. EL PANEL DE CHAT (Cristal Templado)
+       ----------------------------------------- */
+    /* Caja contenedora del chat */
+    div[data-testid="stVerticalBlock"]:has(div[data-testid="stChatMessage"]) {
+        background: rgba(255, 255, 255, 0.04) !important;
+        backdrop-filter: blur(15px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 20px !important;
+        padding: 20px !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
     }
 
-    /* Burbujas del Chat */
-    div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
-    div[data-testid="stChatMessage"] { background: transparent !important; padding: 0 !important; }
+    /* Ocultar avatares por defecto */
+    div[data-testid="stChatMessageAvatarUser"],
+    div[data-testid="stChatMessageAvatarAssistant"] {
+        display: none !important;
+    }
 
-    /* Usuario (Morado) */
+    /* Burbuja del Usuario (Morado Pastel) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         background-color: #e9d5ff !important; 
         border-radius: 20px 20px 0 20px !important;
         margin-left: auto !important;
         width: fit-content !important;
         max-width: 85% !important;
-        padding: 12px 18px !important;
+        padding: 10px 15px !important;
         margin-bottom: 15px !important;
     }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) p { color: #1a1a1a !important; margin: 0; }
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) p {
+        color: #1a1a1a !important; 
+        margin: 0;
+    }
 
-    /* Nova (Rosa) */
+    /* Burbuja de Nova (Rosa Pastel) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
         background-color: #fbcfe8 !important;
         border-radius: 20px 20px 20px 0 !important;
         margin-right: auto !important;
         width: fit-content !important;
         max-width: 85% !important;
-        padding: 12px 18px !important;
+        padding: 10px 15px !important;
         margin-bottom: 15px !important;
     }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) p { color: #1a1a1a !important; margin: 0; }
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) p {
+        color: #1a1a1a !important;
+        margin: 0;
+    }
 
-    /* 4. BARRA DE TEXTO ANCLADA AL FONDO */
+    /* -----------------------------------------
+       3. BARRA DE TEXTO (Píldora Brillante)
+       ----------------------------------------- */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
-        padding: 0 !important;
-        position: fixed;
-        bottom: 20px;
-        right: 2.5%;
-        width: 45%;
+        padding-bottom: 1rem !important;
     }
     .stChatInput {
         background: rgba(20, 20, 30, 0.9) !important;
-        border: 2px solid #a855f7 !important;
+        border: 2px solid #a855f7 !important; 
         border-radius: 30px !important;
         box-shadow: 0 0 20px rgba(168, 85, 247, 0.3) !important;
     }
-    
+    .stChatInput input {
+        color: white !important;
+    }
+
     /* Ocultar reproductor de audio */
     audio { display: none !important; }
     div[data-testid="stAudio"] { display: none !important; }
@@ -178,11 +185,11 @@ try:
     instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa."
 
     # --- LAYOUT PRINCIPAL ---
-    col_izq, col_der = st.columns([1, 1])
+    col_izq, col_der = st.columns([1.2, 1])
 
     with col_izq:
         st.markdown("""
-            <div class="orb-container">
+            <div class="orb-wrapper">
                 <div class="fluid-orb"></div>
                 <div class="title-container">
                     <h1>Nova</h1>
@@ -192,18 +199,12 @@ try:
         """, unsafe_allow_html=True)
 
     with col_der:
-        st.markdown('<div class="chat-wrapper">', unsafe_allow_html=True)
-        
-        # Contenedor de mensajes con scroll propio
-        st.markdown('<div class="chat-messages">', unsafe_allow_html=True)
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Espacio extra para que el último mensaje no quede tapado por la barra de texto
-        st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Contenedor con altura fija para el chat
+        chat_container = st.container(height=550)
+        with chat_container:
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
 
     # --- LÓGICA DE ENTRADA ---
     prompt = st.chat_input(f"Ask {NOMBRE_IA}...")
