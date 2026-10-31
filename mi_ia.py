@@ -13,39 +13,61 @@ NOMBRE_IA = "Nova"
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🤖", layout="wide")
 
-# --- CSS PERSONALIZADO (DISEÑO PREMIUM) ---
+# --- CSS PERSONALIZADO (ESTILO CHATGPT) ---
 st.markdown("""
 <style>
+    /* Ocultar menús de Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header { background: transparent !important; }
+
+    /* Fondo general estilo ChatGPT */
     .stApp {
-        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-        color: #e0e0e0;
+        background-color: #212121;
+        color: #ececec;
     }
+
+    /* Barra lateral gris muy oscuro */
     [data-testid="stSidebar"] {
-        background: rgba(15, 12, 41, 0.7);
-        backdrop-filter: blur(12px);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: #171717;
+        border-right: none;
     }
+
+    /* Centrar el contenido para que no ocupe toda la pantalla */
+    .block-container {
+        max-width: 800px;
+        padding-top: 2rem;
+        padding-bottom: 6rem;
+    }
+
+    /* Burbujas de chat limpias */
     .stChatMessage {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 1.2rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        color: #ffffff;
+        background-color: transparent !important;
+        border: none !important;
+        padding: 0.5rem 0 !important;
+        box-shadow: none !important;
     }
+
+    /* El mensaje del usuario se resalta con un fondo gris */
+    /* (Usamos un truco para pintar solo los mensajes del usuario) */
+    .stChatMessage[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
+        background-color: #2f2f2f !important;
+        border-radius: 15px !important;
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    /* Botones */
     .stButton>button {
-        background: linear-gradient(90deg, #4b33a8 0%, #1d4ed8 100%);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        transition: transform 0.2s;
+        background-color: #2f2f2f;
+        color: #ececec;
+        border: 1px solid #444;
+        border-radius: 8px;
     }
-    .stButton>button:hover { transform: scale(1.05); }
+    .stButton>button:hover {
+        background-color: #3f3f3f;
+        color: #fff;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -59,7 +81,7 @@ async def generar_audio_edge(texto, voz):
     audio_buffer.seek(0)
     return audio_buffer
 
-# --- FUNCIÓN PARA REPRODUCIR AUDIO SIN MOSTRAR EL REPRODUCTOR ---
+# --- FUNCIÓN PARA REPRODUCIR AUDIO (INVISIBLE) ---
 def autoplay_audio(audio_buffer, format="audio/mp3"):
     audio_bytes = audio_buffer.read()
     b64 = base64.b64encode(audio_bytes).decode()
@@ -73,7 +95,7 @@ def autoplay_audio(audio_buffer, format="audio/mp3"):
 # --- BARRA LATERAL ---
 with st.sidebar:
     st.title(f"🤖 {NOMBRE_IA}")
-    st.caption("v2.7 - Asistente Personal")
+    st.caption("Tu asistente personal")
     st.divider()
     
     st.subheader("⚙️ Configuración")
@@ -82,9 +104,8 @@ with st.sidebar:
     voz_seleccionada = st.selectbox(
         "🎙️ Selecciona la voz",
         options=[
-            "es-MX-DaliaNeural",  # Español Latino (Recomendada)
+            "es-MX-DaliaNeural",  # Español Latino
             "es-ES-ElviraNeural", # Español de España
-            "es-US-PalomaNeural", # Español de Estados Unidos
             "en-GB-SoniaNeural"   # Inglés Británico
         ],
         index=0
@@ -99,7 +120,7 @@ with st.sidebar:
         st.success(f"✅ {archivo_subido.name} ({len(codigo_actual.splitlines())} líneas)")
     
     st.divider()
-    if st.button("🗑️ Limpiar Conversación", use_container_width=True):
+    if st.button("🗑️ Nuevo Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
@@ -108,27 +129,28 @@ try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
     
-    instrucciones = f"Eres {NOMBRE_IA}, un asistente experto, elegante, amable y directo (estilo Jarvis/Viernes). Siempre respondes en español de forma clara, fluida y con un toque de sofisticación."
+    instrucciones = f"Eres {NOMBRE_IA}, un asistente experto, elegante, amable y directo. Siempre respondes en español de forma clara."
     modelo = genai.GenerativeModel('gemini-3.5-flash', system_instruction=instrucciones)
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    st.subheader(f"💬 Centro de Mando - {NOMBRE_IA}")
+    # --- ÁREA PRINCIPAL DEL CHAT ---
+    st.markdown(f"### ¿En qué puedo ayudarte hoy?")
     
     for message in st.session_state.messages:
         avatar = "👤" if message["role"] == "user" else "🤖"
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
-    col1, col2 = st.columns([1, 4])
+    # --- ZONA DE ENTRADA ---
+    col1, col2 = st.columns([1, 8])
     with col1:
-        st.write("🎤 **Voz:**")
         audio_grabado = st.audio_input("Habla aquí", label_visibility="collapsed")
     with col2:
-        st.write("⌨️ **Texto:**")
         prompt = st.chat_input(f"Habla con {NOMBRE_IA}...")
 
+    # --- LÓGICA DE PROCESAMIENTO ---
     if audio_grabado or prompt:
         if prompt:
             texto_usuario = prompt
@@ -156,7 +178,7 @@ try:
             contexto_ia = f"Te adjunto el código actual del archivo:\n\n```python\n{codigo_actual}\n```\n\nMi petición es: {prompt}\n\nPor favor, devuélveme el código completo modificado dentro de un bloque de código."
 
         with st.chat_message("assistant", avatar="🤖"):
-            with st.spinner("Procesando..."):
+            with st.spinner("Pensando..."):
                 max_reintentos = 3
                 for intento in range(max_reintentos):
                     try:
@@ -167,9 +189,7 @@ try:
                         
                         if activar_voz and len(texto_respuesta) < 600: 
                             try:
-                                # Generamos el audio
                                 audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, voz_seleccionada))
-                                # Lo reproducimos sin el reproductor feo
                                 autoplay_audio(audio_buffer, format="audio/mp3")
                             except Exception as e:
                                 st.warning(f"No se pudo generar la voz: {e}")
