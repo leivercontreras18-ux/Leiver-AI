@@ -11,11 +11,12 @@ import requests
 import datetime
 from datetime import timezone, timedelta
 from groq import Groq
+from PIL import Image
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v37.3 - Forced GitHub Sync"
+VERSION = "v38.0 - Vision & Clean History"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -53,9 +54,8 @@ def limpiar_texto_para_voz(texto):
     texto_limpio = re.sub(r'\s+', ' ', texto_limpio)
     return texto_limpio.strip()
 
-# --- FUNCIONES PARA GITHUB (SIN CACHÉ PARA FORZAR ACTUALIZACIÓN) ---
+# --- FUNCIONES PARA GITHUB ---
 def obtener_repositorios(token):
-    # Usamos /user/repos para traer TODOS (públicos y privados) del usuario autenticado
     headers = {"Authorization": f"token {token}"}
     res = requests.get("https://api.github.com/user/repos?per_page=100&sort=updated", headers=headers)
     if res.status_code == 200:
@@ -84,7 +84,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS PREMIUM HUD ---
+# --- CSS PREMIUM HUD (CON FIX DE HISTORIAL) ---
 st.markdown("""
 <style>
     /* Variables de Sistema */
@@ -112,7 +112,7 @@ st.markdown("""
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
     /* =========================================
-       BARRA LATERAL
+       BARRA LATERAL Y MENÚ
        ========================================= */
     [data-testid="stSidebar"] {
         background-color: #131822 !important;
@@ -153,6 +153,42 @@ st.markdown("""
     }
 
     /* =========================================
+       HISTORIAL DE CHATS LIMPIO
+       ========================================= */
+    /* Botón del chat (Ocultamos el borde por defecto) */
+    div[data-testid="stSidebar"] button[key^="btn_"] {
+        background-color: transparent !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 0 !important;
+        color: var(--text-muted) !important;
+        font-size: 0.8rem !important;
+        font-family: monospace !important;
+        text-align: left !important;
+        padding: 8px 10px !important;
+        transition: all 0.2s ease !important;
+    }
+    div[data-testid="stSidebar"] button[key^="btn_"]:hover {
+        color: var(--cyan-neon) !important;
+        background-color: rgba(0, 229, 255, 0.05) !important;
+    }
+    
+    /* Botón de borrar (X) */
+    div[data-testid="stSidebar"] button[key^="del_"] {
+        background-color: transparent !important;
+        border: none !important;
+        color: #56667a !important;
+        font-size: 0.9rem !important;
+        padding: 0 !important;
+        transition: all 0.2s ease !important;
+    }
+    div[data-testid="stSidebar"] button[key^="del_"]:hover {
+        color: #ff4d4d !important;
+        background-color: transparent !important;
+        text-shadow: 0 0 8px rgba(255, 77, 77, 0.5) !important;
+    }
+
+    /* =========================================
        PANEL DE GITHUB Y DROPDOWNS HUD
        ========================================= */
     [data-testid="stExpander"] summary {
@@ -187,38 +223,29 @@ st.markdown("""
     [data-testid="stExpander"] button img,
     [data-testid="stExpander"] button span[role="img"] { display: none !important; }
 
-    /* FIX PARA EL SELECTOR NATIVO */
     [data-testid="stExpander"] div[data-baseweb="select"] > div {
         background-color: rgba(10, 14, 22, 0.6) !important;
         border: 1px solid rgba(0, 229, 255, 0.1) !important;
         color: #ffffff !important;
         border-radius: 6px !important;
     }
-    
-    [data-testid="stExpander"] div[data-baseweb="select"] > div:hover {
-        border-color: rgba(0, 229, 255, 0.3) !important;
-    }
-
-    [data-testid="stExpander"] div[data-baseweb="select"] > div > div:last-child {
-        background-color: transparent !important;
-        border-left: none !important;
+    [data-testid="stExpander"] div[data-baseweb="select"] > div:focus-within {
+        border-color: #00e5ff !important;
+        box-shadow: 0 0 8px rgba(0, 229, 255, 0.2) !important;
     }
     [data-testid="stExpander"] div[data-baseweb="select"] svg {
         fill: #00e5ff !important;
         color: #00e5ff !important;
     }
-
     ul[data-baseweb="menu"] {
         background-color: #131822 !important;
         border: 1px solid rgba(0, 229, 255, 0.2) !important;
         border-radius: 6px !important;
     }
-    
     ul[data-baseweb="menu"] li {
         color: #ffffff !important;
         font-size: 0.8rem !important;
     }
-    
     ul[data-baseweb="menu"] li:hover {
         background-color: rgba(0, 229, 255, 0.1) !important;
         color: #00e5ff !important;
@@ -358,9 +385,11 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("<p style='color: #8a99ad; font-size: 0.8rem; margin-top: 20px; margin-bottom: 10px; padding-left: 20px;'>HISTORIAL</p>", unsafe_allow_html=True)
+    
+    # Historial con diseño limpio
     for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
         if chat_id.startswith(f"{st.session_state.modo_actual}|") and len(st.session_state.todos_los_chats[chat_id]) > 0:
-            col1, col2 = st.columns([0.8, 0.2])
+            col1, col2 = st.columns([0.8, 0.2], vertical_alignment="center")
             with col1:
                 icono = "▸" if chat_id == st.session_state.chat_actual_id else "▫"
                 hora_chat = chat_id.split("|")[1]
@@ -389,13 +418,11 @@ with st.sidebar:
             usuario_github = "leivercontreras18-ux"
             
             if token:
-                # Trae todos los repositorios sin caché
                 repos = obtener_repositorios(token)
                 repo_sel = None
                 arch_sel = None
                 
                 if repos:
-                    # Buscamos "Leiver-AI" de forma flexible
                     idx_repo = 0
                     for i, r in enumerate(repos):
                         if r.lower() == "leiver-ai":
@@ -414,11 +441,10 @@ with st.sidebar:
                     else:
                         st.info("No hay archivos válidos.")
                 else:
-                    st.warning("No se encontraron repositorios. ¿El token tiene permisos?")
+                    st.warning("No se encontraron repositorios.")
                 
                 st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
                 
-                # Botones en paralelo
                 col1, col2 = st.columns(2)
                 
                 with col1:
@@ -445,9 +471,15 @@ with st.sidebar:
                         </div>
                     """, unsafe_allow_html=True)
 
-    with st.expander("Configuración", expanded=False):
+    # --- SUBIDA DE IMÁGENES Y CONFIGURACIÓN ---
+    with st.expander("Multimedia y Voz", expanded=False):
+        imagen_subida = st.file_uploader("Sube una imagen para Lili", type=["png", "jpg", "jpeg"])
+        if imagen_subida:
+            st.image(imagen_subida, caption="Imagen lista para analizar", use_container_width=True)
+            
+        st.markdown("---")
         voz_activa = st.checkbox("Voz activa", value=True)
-        audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
+        audio_grabado = st.audio_input("Graba un mensaje de voz", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
 
 # --- CONEXIÓN CON GROQ ---
 if "GROQ_API_KEY" not in st.secrets:
@@ -503,7 +535,27 @@ if audio_grabado or prompt:
                 st.error(f"Error de audio: {e}")
                 
     if texto_usuario:
-        st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "user", "content": texto_usuario})
+        # Determinamos qué modelo usar dependiendo de si hay imagen
+        modelo_a_usar = "openai/gpt-oss-20b"
+        mensaje_para_groq_content = texto_usuario
+        
+        if imagen_subida:
+            # Codificamos la imagen a Base64
+            bytes_imagen = imagen_subida.getvalue()
+            imagen_b64 = base64.b64encode(bytes_imagen).decode('utf-8')
+            
+            # Preparamos el formato especial para modelos de visión
+            mensaje_para_groq_content = [
+                {"type": "text", "text": texto_usuario},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{imagen_b64}"}}
+            ]
+            modelo_a_usar = "llama-3.2-11b-vision-preview" # Modelo de visión de Groq
+            
+            # Guardamos en el historial local que se envió una imagen
+            st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "user", "content": f"{texto_usuario} [Imagen Adjunta]"})
+        else:
+            st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "user", "content": texto_usuario})
+            
         guardar_todos_los_chats(st.session_state.todos_los_chats)
         
         codigo_actual = st.session_state.codigo_github
@@ -534,13 +586,19 @@ if audio_grabado or prompt:
 
         mensajes_para_groq = [{"role": "system", "content": instrucciones}]
         for msg in mensajes_actuales:
-            mensajes_para_groq.append({"role": msg["role"], "content": msg["content"]})
-        mensajes_para_groq.append({"role": "user", "content": texto_usuario})
+            # Si el mensaje anterior tenía imagen, el historial guardado tiene "[Imagen Adjunta]", lo limpiamos
+            contenido_historial = msg["content"].replace(" [Imagen Adjunta]", "")
+            mensajes_para_groq.append({"role": msg["role"], "content": contenido_historial})
+            
+        mensajes_para_groq.append({"role": "user", "content": mensaje_para_groq_content})
 
         try:
-            with st.spinner("Pensando..."):
+            with st.spinner("Procesando..."):
                 respuesta = cliente.chat.completions.create(
-                    model="openai/gpt-oss-20b", messages=mensajes_para_groq, temperature=0.7, max_tokens=1024
+                    model=modelo_a_usar, 
+                    messages=mensajes_para_groq, 
+                    temperature=0.7, 
+                    max_tokens=1024
                 )
                 texto_respuesta = respuesta.choices[0].message.content
                 st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "assistant", "content": texto_respuesta})
