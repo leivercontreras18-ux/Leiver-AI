@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v34.0 - Custom HUD Menu"
+VERSION = "v35.0 - Premium GitHub HUD"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -78,6 +78,245 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
+# --- CSS PREMIUM HUD (INTEGRACIÓN TOTAL) ---
+st.markdown("""
+<style>
+    /* Variables de Sistema */
+    :root {
+        --bg-deep-space: #121620;
+        --bg-sidebar: #181d28;
+        --bg-active-tab: rgba(0, 229, 255, 0.08);
+        --cyan-neon: #00e5ff;
+        --text-pure-white: #ffffff;
+        --text-muted: #8a99ad;
+        --glass-bubble: rgba(24, 29, 40, 0.65);
+        --glass-border: rgba(0, 229, 255, 0.15);
+    }
+
+    /* Fondo Principal */
+    .stApp {
+        background: radial-gradient(circle at 60% 50%, #1a2233 0%, var(--bg-deep-space) 100%) !important;
+        color: var(--text-pure-white) !important;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    #MainMenu {visibility: hidden;} 
+    footer {visibility: hidden;} 
+    header { background: transparent !important; }
+    .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
+
+    /* =========================================
+       BARRA LATERAL Y MENÚ CUSTOM
+       ========================================= */
+    [data-testid="stSidebar"] {
+        background-color: #131822 !important;
+        min-width: 280px !important;
+        border-right: 1px solid rgba(0, 229, 255, 0.05) !important;
+    }
+    [data-testid="stSidebarCollapseButton"] { display: none !important; }
+
+    /* Botones del menú principal */
+    [data-testid="stSidebar"] button[key^="menu_"] {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: var(--text-muted) !important;
+        text-align: left !important;
+        width: 100% !important;
+        padding: 14px 20px !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        letter-spacing: 1px !important;
+        text-transform: uppercase !important;
+        border-radius: 0px !important;
+        display: flex !important;
+        justify-content: flex-start !important;
+        transition: all 0.3s ease !important;
+        margin-bottom: 0px !important;
+    }
+    [data-testid="stSidebar"] button[key^="menu_"]:hover {
+        color: var(--text-pure-white) !important;
+        background-color: rgba(255, 255, 255, 0.02) !important;
+    }
+
+    /* El truco del botón activo */
+    div[data-testid="stSidebar"] div[class*="st-key-menu_"] button {
+        color: var(--cyan-neon) !important;
+        background-color: rgba(0, 229, 255, 0.08) !important;
+        border-left: 3px solid var(--cyan-neon) !important;
+        box-shadow: inset 10px 0 15px rgba(0, 229, 255, 0.02) !important;
+        font-weight: 700 !important;
+    }
+
+    /* =========================================
+       PANEL DE GITHUB PREMIUM (TU CSS)
+       ========================================= */
+    /* 1. Transformar el contenedor expandible */
+    [data-testid="stExpander"] {
+        background: rgba(19, 24, 34, 0.4) !important;
+        border: 1px solid rgba(0, 229, 255, 0.1) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    [data-testid="stExpander"] summary {
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px !important;
+        color: #ffffff !important;
+        padding: 12px !important;
+    }
+    
+    /* Ocultar la flechita nativa */
+    [data-testid="stExpander"] summary svg { display: none !important; }
+
+    /* 2. Botones dentro de GitHub */
+    [data-testid="stExpander"] button {
+        background: rgba(0, 229, 255, 0.05) !important;
+        border: 1px solid rgba(0, 229, 255, 0.3) !important;
+        border-radius: 8px !important;
+        color: #00e5ff !important;
+        font-size: 0.8rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 1px !important;
+        text-transform: uppercase !important;
+        box-shadow: 0 0 10px rgba(0, 229, 255, 0.05) !important;
+        transition: all 0.3s ease !important;
+        width: 100% !important;
+        padding: 10px !important;
+    }
+
+    [data-testid="stExpander"] button:hover {
+        background: rgba(0, 229, 255, 0.12) !important;
+        border-color: #00e5ff !important;
+        box-shadow: 0 0 15px rgba(0, 229, 255, 0.2) !important;
+        color: #ffffff !important;
+    }
+
+    /* 3. Selectores (Repositorio y Archivo) */
+    [data-testid="stExpander"] [data-baseweb="select"] {
+        background-color: rgba(10, 14, 22, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
+    }
+
+    [data-testid="stExpander"] [data-baseweb="select"]:focus-within {
+        border-color: rgba(0, 229, 255, 0.4) !important;
+        box-shadow: 0 0 8px rgba(0, 229, 255, 0.1) !important;
+    }
+
+    [data-testid="stExpander"] label {
+        color: #8a99ad !important;
+        font-size: 0.8rem !important;
+        font-weight: 500 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        margin-bottom: 4px !important;
+    }
+
+    /* 4. Estilo para el botón de carga de archivos (por si acaso) */
+    [data-testid="stExpander"] [data-testid="stFileUploader"] {
+        border: 1px dashed rgba(138, 153, 173, 0.3) !important;
+        background-color: rgba(255, 255, 255, 0.01) !important;
+        border-radius: 8px !important;
+    }
+
+    /* =========================================
+       CHAT (GLASSMORPHISM)
+       ========================================= */
+    [data-testid="stChatMessage"] {
+        background: var(--glass-bubble) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border-radius: 12px !important;
+        padding: 16px 20px !important;
+        margin-bottom: 20px !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        margin-left: auto !important;
+        width: fit-content !important;
+        max-width: 80% !important;
+    }
+
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
+        border: 1px solid var(--glass-border) !important;
+        box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.03) !important;
+        margin-right: auto !important;
+        width: fit-content !important;
+        max-width: 80% !important;
+    }
+
+    [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { 
+        display: none !important; 
+    }
+    [data-testid="stChatMessage"] > div { background-color: transparent !important; }
+
+    /* =========================================
+       CAJA DE TEXTO
+       ========================================= */
+    [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { 
+        background-color: transparent !important; 
+        background: transparent !important; 
+    }
+    
+    [data-testid="stBottomBlockContainer"] { 
+        padding-bottom: 2rem !important; 
+        max-width: 800px !important; 
+        margin: 0 auto !important; 
+    }
+    
+    .stChatInput { 
+        background: rgba(24, 29, 40, 0.7) !important; 
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(0, 229, 255, 0.2) !important; 
+        border-radius: 30px !important; 
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important; 
+        transition: all 0.3s ease !important;
+    }
+    
+    .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input { 
+        background-color: transparent !important; 
+        border: none !important; 
+        outline: none !important; 
+        box-shadow: none !important; 
+        color: var(--text-pure-white) !important; 
+    }
+    
+    .stChatInput textarea::placeholder { color: rgba(255, 255, 255, 0.5) !important; }
+    
+    .stChatInput:focus-within { 
+        border-color: var(--cyan-neon) !important; 
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 8px rgba(0, 229, 255, 0.3) !important; 
+    }
+    
+    [data-testid="stChatInput"] button { 
+        background: transparent !important; border-radius: 50% !important; border: none !important; 
+        margin: 5px !important; width: 35px !important; height: 35px !important; box-shadow: none !important;
+    }
+    [data-testid="stChatInput"] button:hover { background: rgba(0, 229, 255, 0.1) !important; }
+    [data-testid="stChatInput"] button svg { fill: var(--cyan-neon) !important; }
+    audio, div[data-testid="stAudio"] { display: none !important; }
+
+    /* =========================================
+       REACTOR (ORBE)
+       ========================================= */
+    .center-display { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10vh; margin-bottom: 30px; position: relative; padding: 40px 0; }
+    .reactor { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
+    .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0, 229, 255, 0.1); border-top: 2px solid var(--cyan-neon); border-bottom: 2px solid var(--cyan-neon); animation: spin 3s linear infinite; opacity: 0.3; }
+    .reactor-ring-mid { position: absolute; inset: 20px; border-radius: 50%; border: 1px dashed rgba(0, 229, 255, 0.2); animation: spin-reverse 8s linear infinite; opacity: 0.3; }
+    .reactor-core { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #ffffff 0%, var(--cyan-neon) 40%, #0077ff 100%); box-shadow: 0 0 50px var(--cyan-neon), inset 0 0 20px #ffffff; animation: pulse 2s ease-in-out infinite; z-index: 10; }
+    .display-text { margin-top: 30px; font-size: 12px; letter-spacing: 4px; color: var(--cyan-neon); text-transform: uppercase; font-weight: 600; font-family: monospace; background: rgba(24, 29, 40, 0.8); padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(0, 229, 255, 0.3); box-shadow: 0 0 10px rgba(0, 229, 255, 0.1); z-index: 10; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+    @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 30px var(--cyan-neon), inset 0 0 15px #ffffff; } 50% { transform: scale(1.05); box-shadow: 0 0 60px var(--cyan-neon), inset 0 0 30px #ffffff; } 100% { transform: scale(0.95); box-shadow: 0 0 30px var(--cyan-neon), inset 0 0 15px #ffffff; } }
+</style>
+""", unsafe_allow_html=True)
+
 # --- INICIALIZACIÓN DE ESTADO ---
 if "todos_los_chats" not in st.session_state: 
     st.session_state.todos_los_chats = cargar_todos_los_chats()
@@ -98,151 +337,17 @@ if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
 
-# --- CSS DEL USUARIO + AJUSTES PREMIUM ---
-st.markdown("""
-<style>
-    /* Variables y Fondo */
-    :root {
-        --bg-deep-space: #121620;
-        --bg-sidebar: #181d28;
-        --cyan-neon: #00e5ff;
-        --text-pure-white: #ffffff;
-        --text-muted: #8a99ad;
-    }
-    .stApp {
-        background: radial-gradient(circle at 60% 50%, #1a2233 0%, var(--bg-deep-space) 100%) !important;
-        color: var(--text-pure-white) !important;
-    }
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
-    .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
-
-    /* --- CSS EXACTO DEL USUARIO (style.txt) --- */
-    [data-testid="stSidebar"] {
-        background-color: #131822 !important;
-        min-width: 280px !important;
-        border-right: 1px solid rgba(0, 229, 255, 0.05) !important;
-    }
-
-    [data-testid="stSidebar"] button {
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        color: #8a99ad !important;
-        text-align: left !important;
-        width: 100% !important;
-        padding: 14px 20px !important;
-        font-size: 0.85rem !important;
-        font-weight: 500 !important;
-        letter-spacing: 1px !important;
-        text-transform: uppercase !important;
-        border-radius: 0px !important;
-        display: flex !important;
-        justify-content: flex-start !important;
-        transition: all 0.3s ease !important;
-        margin-bottom: 0px !important;
-    }
-
-    [data-testid="stSidebar"] button:hover {
-        color: #ffffff !important;
-        background-color: rgba(255, 255, 255, 0.02) !important;
-    }
-
-    [data-testid="stSidebar"] button:focus {
-        color: #00e5ff !important;
-        background-color: rgba(0, 229, 255, 0.08) !important;
-        border-left: 3px solid #00e5ff !important;
-        box-shadow: inset 10px 0 15px rgba(0, 229, 255, 0.02) !important;
-        font-weight: 700 !important;
-    }
-
-    /* Ocultar flecha nativa de colapsar */
-    [data-testid="stSidebarCollapseButton"] { display: none !important; }
-
-    /* Botones de acción (Nuevo chat, historial) */
-    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button { 
-        background: rgba(0, 229, 255, 0.1) !important; 
-        color: var(--cyan-neon) !important; 
-        border: 1px solid rgba(0, 229, 255, 0.3) !important; 
-        text-align: center !important; font-weight: 600 !important; 
-        border-radius: 8px !important; margin: 10px 20px !important; width: calc(100% - 40px) !important;
-    }
-
-    /* --- CHAT (GLASSMORPHISM) --- */
-    [data-testid="stChatMessage"] {
-        background: rgba(24, 29, 40, 0.65) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border-radius: 12px !important; padding: 16px 20px !important; margin-bottom: 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
-    }
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
-        border: 1px solid rgba(255, 255, 255, 0.08) !important; background: rgba(255, 255, 255, 0.04) !important;
-        margin-left: auto !important; width: fit-content !important; max-width: 80% !important;
-    }
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
-        border: 1px solid rgba(0, 229, 255, 0.15) !important; box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.03) !important;
-        margin-right: auto !important; width: fit-content !important; max-width: 80% !important;
-    }
-    [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
-    [data-testid="stChatMessage"] > div { background-color: transparent !important; }
-
-    /* --- CAJA DE TEXTO --- */
-    [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { background-color: transparent !important; background: transparent !important; }
-    [data-testid="stBottomBlockContainer"] { padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
-    
-    .stChatInput { 
-        background: rgba(24, 29, 40, 0.7) !important; backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(0, 229, 255, 0.2) !important; border-radius: 30px !important; 
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important; transition: all 0.3s ease !important;
-    }
-    .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input { background-color: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; color: var(--text-pure-white) !important; }
-    .stChatInput textarea::placeholder { color: rgba(255, 255, 255, 0.5) !important; }
-    .stChatInput:focus-within { border-color: var(--cyan-neon) !important; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 8px rgba(0, 229, 255, 0.3) !important; }
-    [data-testid="stChatInput"] button { background: transparent !important; border-radius: 50% !important; border: none !important; margin: 5px !important; width: 35px !important; height: 35px !important; box-shadow: none !important; }
-    [data-testid="stChatInput"] button:hover { background: rgba(0, 229, 255, 0.1) !important; }
-    [data-testid="stChatInput"] button svg { fill: var(--cyan-neon) !important; }
-    audio, div[data-testid="stAudio"] { display: none !important; }
-
-    /* --- REACTOR --- */
-    .center-display { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10vh; margin-bottom: 30px; position: relative; padding: 40px 0; }
-    .reactor { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
-    .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0, 229, 255, 0.1); border-top: 2px solid var(--cyan-neon); border-bottom: 2px solid var(--cyan-neon); animation: spin 3s linear infinite; opacity: 0.3; }
-    .reactor-ring-mid { position: absolute; inset: 20px; border-radius: 50%; border: 1px dashed rgba(0, 229, 255, 0.2); animation: spin-reverse 8s linear infinite; opacity: 0.3; }
-    .reactor-core { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #ffffff 0%, var(--cyan-neon) 40%, #0077ff 100%); box-shadow: 0 0 50px var(--cyan-neon), inset 0 0 20px #ffffff; animation: pulse 2s ease-in-out infinite; z-index: 10; }
-    .display-text { margin-top: 30px; font-size: 12px; letter-spacing: 4px; color: var(--cyan-neon); text-transform: uppercase; font-weight: 600; font-family: monospace; background: rgba(24, 29, 40, 0.8); padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(0, 229, 255, 0.3); box-shadow: 0 0 10px rgba(0, 229, 255, 0.1); z-index: 10; }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-    @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
-    @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 30px var(--cyan-neon), inset 0 0 15px #ffffff; } 50% { transform: scale(1.05); box-shadow: 0 0 60px var(--cyan-neon), inset 0 0 30px #ffffff; } 100% { transform: scale(0.95); box-shadow: 0 0 30px var(--cyan-neon), inset 0 0 15px #ffffff; } }
-</style>
-""", unsafe_allow_html=True)
-
-# 🔥 TRUCO DINÁMICO: Inyectar el CSS del botón activo según el modo actual
-modo_activo_key = f"menu_{st.session_state.modo_actual.lower().replace(' ', '_')}"
-st.markdown(f"""
-<style>
-    /* Fuerza el estilo del botón activo usando su Key de Streamlit */
-    div[data-testid="stSidebar"] div.st-key-{modo_activo_key} button {{
-        color: #00e5ff !important;
-        background-color: rgba(0, 229, 255, 0.08) !important;
-        border-left: 3px solid #00e5ff !important;
-        box-shadow: inset 10px 0 15px rgba(0, 229, 255, 0.02) !important;
-        font-weight: 700 !important;
-    }}
-</style>
-""", unsafe_allow_html=True)
-
-# --- SIDEBAR (BOTONES PERSONALIZADOS) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.markdown("<h3 style='padding-left: 20px; font-weight: 700; letter-spacing: 1.5px;'>LILI AI</h3>", unsafe_allow_html=True)
     st.caption(f"<p style='padding-left: 20px; color: #8a99ad; font-size: 0.75rem; margin-top: -10px;'>{VERSION}</p>", unsafe_allow_html=True)
     
-    # Botones del Menú
+    # Botones del Menú Principal
     modos = ["Programación", "Chat General", "Creativo", "Análisis"]
     for m in modos:
         key_name = f"menu_{m.lower().replace(' ', '_')}"
         if st.button(m, key=key_name, use_container_width=True):
             st.session_state.modo_actual = m
-            # Al cambiar de modo, buscar el último chat de ese modo o crear uno nuevo
             chats_del_modo = [k for k in st.session_state.todos_los_chats.keys() if k.startswith(f"{st.session_state.modo_actual}|")]
             if chats_del_modo:
                 st.session_state.chat_actual_id = sorted(chats_del_modo)[-1]
@@ -253,7 +358,6 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
-    # Botón Nuevo Chat (Estilo píldora)
     if st.button("+ Nuevo Chat", use_container_width=True):
         nuevo_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
         st.session_state.chat_actual_id = nuevo_id
@@ -284,7 +388,7 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
-    # Conexión GitHub (Solo en Programación)
+    # PANEL DE GITHUB (CON ESTILOS PREMIUM)
     if st.session_state.modo_actual == "Programación":
         with st.expander("🐙 GitHub"):
             token = st.secrets.get("GITHUB_TOKEN")
