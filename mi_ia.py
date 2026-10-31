@@ -12,11 +12,13 @@ VOZ_FIJA = "es-MX-DaliaNeural"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS AVANZADO (DISEÑO ETHEREAL / CORTANA) ---
+# --- CSS AVANZADO (DISEÑO ETHEREAL / FIJO) ---
 st.markdown("""
 <style>
-    /* Fondo Espacial Profundo */
-    .stApp {
+    /* 1. BLOQUEAR EL SCROLL DE LA PÁGINA */
+    html, body, .stApp {
+        height: 100vh !important;
+        overflow: hidden !important; 
         background-color: #0b0b12;
         background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0b0b12 100%);
         color: #e0e0e0;
@@ -26,83 +28,80 @@ st.markdown("""
     footer {visibility: hidden;}
     header { background: transparent !important; }
     
-    /* Ajustar layout para que todo quepa */
+    /* Ajustar layout principal */
     .block-container { 
         padding-top: 2rem !important; 
-        padding-bottom: 2rem !important;
+        padding-bottom: 0rem !important;
         max-width: 95% !important; 
+        height: 90vh !important;
     }
 
-    /* -----------------------------------------
-       EL ORBE FLUIDO (Morphing Blob CSS)
-       ----------------------------------------- */
+    /* 2. EL ORBE PERFECTO (Flotante y Suave) */
     .orb-container {
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         height: 100%;
-        margin-top: 5vh;
     }
     
     .fluid-orb {
-        width: 320px;
-        height: 320px;
-        /* Colores pastel: Rosa, Morado, Azul */
+        width: 300px;
+        height: 300px;
+        border-radius: 50%; /* Redondo perfecto */
         background: linear-gradient(135deg, #fbcfe8 0%, #d8b4fe 50%, #bfdbfe 100%);
-        border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
-        animation: morph 8s ease-in-out infinite, glow 3s infinite alternate;
+        filter: blur(8px); /* Efecto difuminado */
+        animation: float 6s ease-in-out infinite;
         box-shadow: 0 0 80px rgba(216, 180, 254, 0.4), inset 0 0 40px rgba(255,255,255,0.5);
-        position: relative;
     }
 
-    /* Animación del Orbe (Cambio de forma) */
-    @keyframes morph {
-        0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(0deg) scale(1); }
-        34% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; transform: rotate(120deg) scale(1.05); }
-        67% { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; transform: rotate(240deg) scale(0.95); }
-    }
-
-    @keyframes glow {
-        0% { box-shadow: 0 0 60px rgba(216, 180, 254, 0.3), inset 0 0 30px rgba(255,255,255,0.3); }
-        100% { box-shadow: 0 0 120px rgba(251, 207, 232, 0.6), inset 0 0 50px rgba(255,255,255,0.6); }
+    @keyframes float {
+        0% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(-15px) scale(1.03); }
+        100% { transform: translateY(0px) scale(1); }
     }
 
     .title-container {
         text-align: center;
-        margin-top: 40px;
+        margin-top: 30px;
     }
     .title-container h1 {
         color: #ffffff;
-        font-weight: 400;
-        letter-spacing: 2px;
-        margin-bottom: 5px;
+        font-weight: 300;
+        letter-spacing: 3px;
+        margin-bottom: 0px;
     }
     .title-container p {
-        color: #7dd3fc; /* Azul clarito */
+        color: #7dd3fc;
         font-size: 14px;
+        margin-top: 5px;
     }
 
-    /* -----------------------------------------
-       EL PANEL DE CHAT (GLASSMORPHISM)
-       ----------------------------------------- */
-    /* Contenedor del chat con efecto cristal */
-    div[data-testid="stVerticalBlock"]:has(> div > div > div > div[data-testid="stChatMessage"]) {
-        background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 20px !important;
-        padding: 20px !important;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+    /* 3. EL PANEL DE CHAT (Fijo con su propio scroll) */
+    .chat-wrapper {
+        height: 80vh; /* Ocupa el 80% de la pantalla */
+        display: flex;
+        flex-direction: column;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Contenedor interno para que solo el texto haga scroll */
+    .chat-messages {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding-right: 10px;
     }
 
-    /* Ocultar avatares por defecto */
-    div[data-testid="stChatMessageAvatarUser"],
-    div[data-testid="stChatMessageAvatarAssistant"] {
-        display: none !important;
-    }
+    /* Burbujas del Chat */
+    div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
+    div[data-testid="stChatMessage"] { background: transparent !important; padding: 0 !important; }
 
-    /* Burbuja del Usuario (Morado Pastel) */
+    /* Usuario (Morado) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         background-color: #e9d5ff !important; 
         border-radius: 20px 20px 0 20px !important;
@@ -110,14 +109,11 @@ st.markdown("""
         width: fit-content !important;
         max-width: 85% !important;
         padding: 12px 18px !important;
+        margin-bottom: 15px !important;
     }
-    /* Texto oscuro dentro de la burbuja del usuario */
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) p {
-        color: #1a1a1a !important; 
-        font-size: 14px;
-    }
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) p { color: #1a1a1a !important; margin: 0; }
 
-    /* Burbuja de Nova (Rosa Pastel) */
+    /* Nova (Rosa) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
         background-color: #fbcfe8 !important;
         border-radius: 20px 20px 20px 0 !important;
@@ -125,30 +121,26 @@ st.markdown("""
         width: fit-content !important;
         max-width: 85% !important;
         padding: 12px 18px !important;
+        margin-bottom: 15px !important;
     }
-    /* Texto oscuro dentro de la burbuja de Nova */
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) p {
-        color: #1a1a1a !important;
-        font-size: 14px;
-    }
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) p { color: #1a1a1a !important; margin: 0; }
 
-    /* -----------------------------------------
-       BARRA DE TEXTO (Estilo Píldora Brillante)
-       ----------------------------------------- */
+    /* 4. BARRA DE TEXTO ANCLADA AL FONDO */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
-        padding-bottom: 2rem !important;
+        padding: 0 !important;
+        position: fixed;
+        bottom: 20px;
+        right: 2.5%;
+        width: 45%;
     }
     .stChatInput {
-        background: rgba(20, 20, 30, 0.8) !important;
-        border: 2px solid #a855f7 !important; /* Borde Morado Brillante */
+        background: rgba(20, 20, 30, 0.9) !important;
+        border: 2px solid #a855f7 !important;
         border-radius: 30px !important;
         box-shadow: 0 0 20px rgba(168, 85, 247, 0.3) !important;
     }
-    .stChatInput input {
-        color: white !important;
-    }
-
+    
     /* Ocultar reproductor de audio */
     audio { display: none !important; }
     div[data-testid="stAudio"] { display: none !important; }
@@ -183,10 +175,10 @@ if "audio_pendiente" not in st.session_state:
 try:
     api_key = st.secrets["GROQ_API_KEY"]
     cliente = Groq(api_key=api_key)
-    instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa y directa."
+    instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa."
 
-    # --- LAYOUT PRINCIPAL (2 Columnas: Orbe a la Izquierda, Chat a la Derecha) ---
-    col_izq, col_der = st.columns([1.2, 1])
+    # --- LAYOUT PRINCIPAL ---
+    col_izq, col_der = st.columns([1, 1])
 
     with col_izq:
         st.markdown("""
@@ -200,18 +192,22 @@ try:
         """, unsafe_allow_html=True)
 
     with col_der:
-        # Contenedor con scroll para el chat
-        chat_container = st.container(height=550)
-        with chat_container:
-            # Mostrar mensajes (sin avatares, el CSS los oculta)
-            for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
+        st.markdown('<div class="chat-wrapper">', unsafe_allow_html=True)
+        
+        # Contenedor de mensajes con scroll propio
+        st.markdown('<div class="chat-messages">', unsafe_allow_html=True)
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Espacio extra para que el último mensaje no quede tapado por la barra de texto
+        st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # --- LÓGICA DE ENTRADA ---
     prompt = st.chat_input(f"Ask {NOMBRE_IA}...")
 
-    # El micrófono ahora va oculto en la barra lateral para mantener el diseño limpio
     with st.sidebar:
         st.markdown("### ⚙️ System")
         activar_voz = st.checkbox("🔊 Voz activa", value=True)
@@ -275,7 +271,6 @@ try:
             except Exception as e:
                 st.error(f"Error de Groq: {e}")
 
-    # --- AUDIO PENDIENTE ---
     if st.session_state.audio_pendiente:
         autoplay_audio(st.session_state.audio_pendiente)
         st.session_state.audio_pendiente = None
