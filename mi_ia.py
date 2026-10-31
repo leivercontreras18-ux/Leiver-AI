@@ -103,35 +103,24 @@ st.markdown("""
     }
 
     /* =======================================================
-       4. CAJA DEL CHAT (MUERTE AL BORDE GRIS)
+       4. CAJA DEL CHAT (CRISTAL)
        ======================================================= */
-    /* Atacamos al contenedor y a TODOS sus hijos directos e indirectos */
-    div[data-testid="stVerticalBlockBorderWrapper"],
-    div[data-testid="stVerticalBlockBorderWrapper"] > div,
-    div[data-testid="stVerticalBlockBorderWrapper"] > div > div {
-        border: none !important;
-        border-width: 0 !important;
-        border-style: none !important;
-        border-color: transparent !important;
-        outline: none !important;
-        box-shadow: none !important;
-    }
-
-    /* Le damos nuestro propio estilo de cristal al contenedor principal */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background: rgba(255, 255, 255, 0.02) !important; 
+        border: none !important; 
         backdrop-filter: blur(30px) !important; 
         border-radius: 30px !important; 
         box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.4) !important;
         padding: 20px !important;
         overflow: hidden !important;
     }
+    div[data-testid="stVerticalBlockBorderWrapper"] > div { background: transparent !important; }
 
-    /* Ocultar Avatares y botones */
+    /* Ocultar Avatares y botones de Streamlit */
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
     div[data-testid="stChatMessage"] button { display: none !important; }
 
-    /* Burbujas (Estilo Píldora) */
+    /* Burbujas */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         background: linear-gradient(135deg, rgba(147, 51, 234, 0.4), rgba(88, 28, 135, 0.4)) !important;
         border: 1px solid rgba(168, 85, 247, 0.3) !important;
@@ -201,7 +190,65 @@ st.markdown("""
     }
 
     audio, div[data-testid="stAudio"] { display: none !important; }
-    [data-testid="stSidebar"] { background-color: #1a1a1e !important; }
+
+    /* =======================================================
+       6. REDISEÑO DE LA BARRA LATERAL (SIDEBAR SCI-FI)
+       ======================================================= */
+    [data-testid="stSidebar"] {
+        background-color: #0b0b12 !important;
+        border-right: 1px solid rgba(168, 85, 247, 0.15) !important;
+    }
+
+    [data-testid="stSidebar"] h1, 
+    [data-testid="stSidebar"] h2, 
+    [data-testid="stSidebar"] h3 {
+        font-weight: 200 !important;
+        letter-spacing: 2px;
+        color: #e9d5ff !important;
+        text-transform: uppercase;
+        font-size: 14px !important;
+    }
+
+    [data-testid="stFileUploader"] {
+        background-color: rgba(255, 255, 255, 0.02) !important;
+        border: 1px dashed rgba(168, 85, 247, 0.4) !important;
+        border-radius: 15px !important;
+        padding: 10px !important;
+        transition: all 0.3s ease;
+    }
+    [data-testid="stFileUploader"]:hover {
+        border-color: rgba(168, 85, 247, 0.8) !important;
+        background-color: rgba(168, 85, 247, 0.05) !important;
+    }
+
+    [data-testid="stAudioInput"] {
+        background-color: rgba(0, 242, 254, 0.05) !important;
+        border: 1px solid rgba(0, 242, 254, 0.2) !important;
+        border-radius: 15px !important;
+        padding: 10px !important;
+    }
+
+    [data-testid="stSidebar"] button {
+        background: rgba(255, 0, 85, 0.1) !important;
+        color: #ff3366 !important;
+        border: 1px solid rgba(255, 0, 85, 0.3) !important;
+        border-radius: 10px !important;
+        font-weight: bold !important;
+        letter-spacing: 1px !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    [data-testid="stSidebar"] button:hover {
+        background: rgba(255, 0, 85, 0.3) !important;
+        box-shadow: 0 0 15px rgba(255, 0, 85, 0.5) !important;
+        color: white !important;
+        border: 1px solid rgba(255, 0, 85, 0.8) !important;
+    }
+    
+    [data-testid="stSidebar"] .stCheckbox p {
+        font-size: 13px !important;
+        color: #a78bfa !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
