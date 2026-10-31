@@ -55,14 +55,13 @@ async def generar_audio_edge(texto, voz):
 def autoplay_audio(audio_buffer):
     audio_bytes = audio_buffer.read()
     b64 = base64.b64encode(audio_bytes).decode()
-    # Inyectamos el audio directamente en el HTML (sin iframe)
     audio_html = f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}"></audio>'
     st.markdown(audio_html, unsafe_allow_html=True)
 
 # --- BARRA LATERAL ---
 with st.sidebar:
     st.title(f"🤖 {NOMBRE_IA}")
-    st.caption("v3.9 - Powered by Groq ⚡")
+    st.caption("v4.0 - Powered by Groq ⚡")
     st.divider()
     
     st.subheader("⚙️ Configuración")
@@ -164,5 +163,7 @@ try:
                         
                     except Exception as e:
                         st.error(f"Error de Groq: {e}")
-            
-            # ¡Eliminamos el st.rerun() para no interrumpir el audio!
+
+# AQUÍ ESTABA EL ERROR: Faltaba cerrar el try principal
+except KeyError:
+    st.warning("⚠️ Falta la API Key de Groq. Configúrala en los Secrets de Streamlit.")
