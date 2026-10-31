@@ -11,12 +11,12 @@ import requests
 from groq import Groq
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
-NOMBRE_IA = "Nova"
+NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v12.0 - GitHub Integration"
-ARCHIVO_HISTORIAL = "historial_nova.json"
+VERSION = "v13.1 - GitHub Reader"
+ARCHIVO_HISTORIAL = "historial_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA ---
 def cargar_historial():
@@ -36,6 +36,32 @@ def limpiar_texto_para_voz(texto):
     texto_limpio = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', texto_limpio)
     texto_limpio = re.sub(r'(?<=\d),(?=\d)', '', texto_limpio) 
     return texto_limpio.strip()
+
+# --- FUNCIÓN PARA DESCARGAR CÓDIGO DE GITHUB ---
+def descargar_codigo_github(repo_y_archivo, token):
+    try:
+        # Formato esperado: "usuario/repo/archivo.py" o "repo/archivo.py"
+        partes = repo_y_archivo.strip().split('/')
+        if len(partes) == 3:
+            usuario, repo, archivo = partes
+        elif len(partes) == 2:
+            usuario = "leivercontreras18-ux" # Tu usuario por defecto
+            repo, archivo = partes
+        else:
+            return "Error: Formato incorrecto. Usa 'repositorio/archivo.py'"
+        
+        url = f"https://api.github.com/repos/{usuario}/{repo}/contents/{archivo}"
+        headers = {"Authorization": f"token {token}"}
+        respuesta = requests.get(url, headers=headers)
+        
+        if respuesta.status_code == 200:
+            contenido_base64 = respuesta.json()['content']
+            codigo = base64.b64decode(contenido_base64).decode('utf-8')
+            return codigo
+        else:
+            return f"Error {respuesta.status_code}: No se pudo encontrar el archivo."
+    except Exception as e:
+        return f"Error: {e}"
 
 # --- CSS AVANZADO ---
 st.markdown("""
@@ -117,6 +143,8 @@ if "mic_key" not in st.session_state:
     st.session_state.mic_key = 0
 if "github_contexto" not in st.session_state:
     st.session_state.github_contexto = ""
+if "codigo_github" not in st.session_state:
+    st.session_state.codigo_github = ""
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -131,12 +159,29 @@ with st.sidebar:
     
     st.subheader("📁 Código")
     uploaded_file = st.file_uploader("Upload", type=["py", "txt", "json", "js"], label_visibility="collapsed")
-    codigo_actual = uploaded_file.read().decode("utf-8") if uploaded_file else ""
+    codigo_actual = uploaded_file.read().decode("utf-8") if uploaded_file else st.session_state.codigo_github
     if uploaded_file:
         st.success(f"Cargado: {uploaded_file.name}")
     
     st.markdown("---")
     st.subheader("🐙 GitHub")
+    
+    # NUEVO BUSCADOR DE ARCHIVOS EN GITHUB
+    ruta_archivo = st.text_input("Ruta del archivo (ej. inventario-app/app.py)", label_visibility="collapsed")
+    if st.button("Leer archivo de GitHub", use_container_width=True):
+        token = st.secrets.get("GITHUB_TOKEN")
+        if token:
+            with st.spinner("Descargando código..."):
+                codigo_descargado = descargar_codigo_github(ruta_archivo, token)
+                if "Error" not in codigo_descargado:
+                    st.session_state.codigo_github = codigo_descargado
+                    st.success("¡Archivo cargado!")
+                    st.rerun()
+                else:
+                    st.error(codigo_descargado)
+        else:
+            st.warning("Falta GITHUB_TOKEN en los Secrets.")
+
     if st.button("Sincronizar mis Repositorios", use_container_width=True):
         with st.spinner("Conectando con GitHub..."):
             token = st.secrets.get("GITHUB_TOKEN")
@@ -162,6 +207,7 @@ with st.sidebar:
     st.markdown("---")
     if st.button("🗑️ Limpiar Chat", use_container_width=True):
         st.session_state.messages = []
+        st.session_state.codigo_github = ""
         if os.path.exists(ARCHIVO_HISTORIAL):
             os.remove(ARCHIVO_HISTORIAL)
         st.session_state.mic_key += 1
@@ -219,9 +265,12 @@ if audio_grabado or prompt:
         st.session_state.messages.append({"role": "user", "content": texto_usuario})
         guardar_historial(st.session_state.messages)
         
+        # ========================================================
+        # INSTRUCCIONES (REGLAS DE PROGRAMACIÓN SUAVIZADAS)
+        # ========================================================
         instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis. Tienes un toque de humor seco y eres muy leal a tu usuario.
         
-        REGLA DE ORO: DEBES RESPONDER SIEMPRE EN ESPAÑOL. No importa qué idioma use el usuario, tu respuesta debe ser en español latino/neutro.
+        REGLA DE ORO: DEBES RESPONDER SIEMPRE EN ESPAÑOL.
 
         CONTEXTO DEL USUARIO: 
         Tu usuario se llama Leiver, vive en Venezuela y es sumamente curioso y preguntón. Trabaja en proyectos de programación.
@@ -231,12 +280,13 @@ if audio_grabado or prompt:
         
         CÓMO DEBES HABLAR:
         - Háblale como una persona real, no como un robot.
-        - Sé directo y fluido. Evita el uso excesivo de comas y puntos suspensivos.
-        - No uses listas largas ni enumeres con números. Prefiere hablar en párrafos fluidos.
-        - REGLA ESTRICTA DE FORMATO: No uses formato Markdown, ni asteriscos, ni negritas, ni numerales."""
+        - Sé directa y fluida. Evita el uso excesivo de comas y puntos suspensivos.
+        - No uses listas largas. Prefiere párrafos fluidos."""
         
+        # Si hay código (subido o descargado de GitHub), se lo pasamos
         if codigo_actual:
             instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```python\n{codigo_actual}\n```"
+            instrucciones += "\n\nINSTRUCCIÓN: Si el usuario te pide un cambio, devuélvele solo el fragmento exacto que debe cambiar y dile en qué línea va, para no saturar la memoria."
 
         mensajes_para_groq = [{"role": "system", "content": instrucciones}]
         for msg in st.session_state.messages:
