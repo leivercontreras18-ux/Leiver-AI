@@ -12,7 +12,7 @@ VOZ_FIJA = "es-MX-DaliaNeural"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS AVANZADO (CÁPSULAS UNIFICADAS PARA EVITAR ERRORES EN EL DOM) ---
+# --- CSS AVANZADO (CÁPSULAS UNIFICADAS Y ADAPTACIÓN DE SIDEBAR) ---
 st.markdown("""
 <style>
     /* 1. FONDO OSCURO Y GLOWS DE NEBULOSA */
@@ -35,6 +35,12 @@ st.markdown("""
         padding-bottom: 0 !important;
         max-width: 95% !important; 
         height: 100vh !important;
+    }
+
+    /* PERSONALIZACIÓN DE LA BARRA LATERAL IZQUIERDA */
+    [data-testid="stSidebar"] {
+        background-color: #1a1a1e !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
 
     /* 2. EL ORBE (Animación fluida) */
@@ -67,7 +73,6 @@ st.markdown("""
         width: 300px; height: 300px;
         border-radius: 50%;
         background: linear-gradient(to top right, rgba(168, 85, 247, 0.3), rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.3));
-        filter: blur-size(60px);
         filter: blur(60px);
         animation: pulse 3s infinite alternate;
     }
@@ -126,7 +131,7 @@ st.markdown("""
     }
 
     .chat-scroll-area {
-        flex-1: 1;
+        flex: 1 1 auto;
         overflow-y: auto !important;
         padding-right: 5px;
         height: 100%;
@@ -134,7 +139,7 @@ st.markdown("""
 
     .chat-header-text {
         padding-bottom: 12px;
-        border-b: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         font-size: 14px;
         color: #cbd5e1;
         font-weight: 500;
@@ -231,6 +236,25 @@ if "messages" not in st.session_state:
 if "audio_pendiente" not in st.session_state:
     st.session_state.audio_pendiente = None
 
+# --- COMPONENTES DE LA BARRA LATERAL IZQUIERDA (SIDEBAR) ---
+with st.sidebar:
+    st.title("⚙️ System")
+    voz_activa = st.checkbox("🔊 Voz activa", value=True)
+    
+    st.subheader("🎤 Hablar")
+    # Simulación visual de entrada de audio como se ve en la captura
+    st.caption("⬇️ 00:00")
+    
+    st.subheader("📁 Código")
+    uploaded_file = st.file_uploader("Upload", type=["py", "txt", "json", "js"], label_visibility="collapsed")
+    if uploaded_file:
+        st.success(f"Cargado: {uploaded_file.name}")
+        
+    st.markdown("---")
+    if st.button("🗑️ Limpiar Chat"):
+        st.session_state.messages = []
+        st.rerun()
+
 # --- VALIDACIÓN DE CREDENCIALES DE ENTORNO ---
 if "GROQ_API_KEY" not in st.secrets:
     st.error("Error crítico: Falta configurar la variable 'GROQ_API_KEY' dentro del archivo de secretos (.streamlit/secrets.toml).")
@@ -239,13 +263,12 @@ if "GROQ_API_KEY" not in st.secrets:
 # --- CONEXIÓN DE COMPONENTES ---
 api_key = st.secrets["GROQ_API_KEY"]
 cliente = Groq(api_key=api_key)
-instrucciones_sistema = f"Eres {NOMBRE_IA}, una entidad de inteligencia artificial avanzada con una estética elegante, cibernética y pulcra. Responde de manera concisa y clara."
+instrucciones_sistema = f"Eres {NOMBRE_IA}, una entidad de inteligencia artificial avanzada con una estética elegante, cibernética y pulcra. Tu pareja es Winderly Espinoza. Responde de manera concisa y clara."
 
-# --- GENERACIÓN DEL GRID DE COMPOSICIÓN (ARQUITECTURA DE ENTRADAS SEGURA) ---
+# --- GENERACIÓN DEL GRID DE COMPOSICIÓN ---
 col_izq, col_der = st.columns([1, 1.1], gap="large")
 
 with col_izq:
-    # Contenedor limpio del Orbe Central
     st.markdown(f"""
     <div class="orb-container">
         <div class="orb-wrapper">
@@ -254,23 +277,3 @@ with col_izq:
                 <div class="orb-inner"></div>
             </div>
         </div>
-        <div class="nova-title">{NOMBRE_IA.upper()}</div>
-        <div class="nova-subtitle">How can I help you today?</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col_der:
-    # Contenedor encapsulado completo del panel de vidrio esmerilado
-    st.markdown('<div class="custom-chat-wrapper"><div class="chat-header-text">Conversación Activa</div><div class="chat-scroll-area">', unsafe_allow_html=True)
-    
-    # Inyección controlada de burbujas nativas
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.write(message["content"])
-            
-    st.markdown('</div></div>', unsafe_allow_html=True)
-
-# --- CAPTURA DE ACCIONES DEL USUARIO ---
-prompt_usuario = st.chat_input("Ask Nova...")
-
-if prompt_usuario:
