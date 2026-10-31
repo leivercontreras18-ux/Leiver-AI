@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v19.1 - One Piece Theme"
+VERSION = "v20.0 - Anime Minimalist"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="🏴‍☠️", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,83 +78,86 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS ESTILO ONE PIECE (DARK GRAND LINE) ---
+# --- CSS ESTILO MINIMALISTA CON FONDO ANIME ---
 st.markdown("""
 <style>
-    /* 1. FONDO SÓLIDO OSCURO (Azul Mar Profundo) */
+    /* 1. FONDO DE ANIME OSCURO (Islas flotantes / Estilo Ghibli / One Piece) */
     .stApp {
-        background-color: #0b1320 !important; /* Azul marino casi negro */
-        background-image: radial-gradient(circle at 50% 0%, #1a2a40 0%, #0b1320 80%) !important;
-        color: #ffffff !important;
+        /* Imagen de fondo de un cielo nocturno de anime */
+        background-image: url('https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=2000&auto=format&fit=crop'); 
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+    /* Capa oscura para que el texto se lea perfectamente sin importar la imagen */
+    .stApp::before {
+        content: "";
+        position: fixed; inset: 0;
+        background: rgba(10, 10, 15, 0.75); /* Ajusta el 0.75 si quieres el fondo más o menos oscuro */
+        z-index: -1;
     }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
-    
-    .block-container { padding-top: 2rem !important; max-width: 1000px !important; }
+    .block-container { padding-top: 3rem !important; max-width: 900px !important; }
 
     /* =========================================
-       BARRA LATERAL (MENÚ FLOTANTE PIRATA)
+       BARRA LATERAL (MENÚ DE CRISTAL OSCURO)
        ========================================= */
     [data-testid="stSidebar"] {
-        background-color: #0d1826 !important;
-        border-right: 2px solid #d4af37 !important; /* Borde Dorado */
+        background: rgba(15, 15, 20, 0.6) !important;
+        backdrop-filter: blur(15px) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
     
-    /* El Orbe (Ahora simula una Fruta del Diablo o el Sol de Luffy) */
-    .side-orb {
-        width: 120px; height: 120px; border-radius: 50%;
-        background: radial-gradient(circle at 30% 30%, #ffeb3b, #ff9800, #d32f2f);
-        box-shadow: 0 0 50px rgba(255, 152, 0, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.8);
-        animation: float 4s ease-in-out infinite;
-        margin: 20px auto 40px auto;
-        position: relative;
+    /* Título del menú */
+    [data-testid="stSidebar"] h2 {
+        color: #ffffff !important;
+        font-weight: 300 !important;
+        letter-spacing: 2px !important;
+        text-align: center;
+        margin-bottom: 30px !important;
     }
-    /* Anillo exterior */
-    .side-orb::after {
-        content: "🏴‍☠️"; font-size: 40px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        animation: pulse 3s infinite alternate;
-    }
-
-    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-    @keyframes pulse { 0% { opacity: 0.7; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1.05); } }
-
-    /* Botones del menú */
+    
+    /* Botones del menú (Estilo minimalista de la foto) */
     [data-testid="stSidebar"] button {
-        background: transparent !important; color: #d4af37 !important; /* Texto Dorado */
-        border: none !important; text-align: left !important; padding: 15px 10px !important;
-        font-size: 16px !important; font-weight: bold !important; letter-spacing: 2px !important;
-        transition: all 0.3s ease !important;
+        background: transparent !important; 
+        color: #a1a1aa !important; 
+        border: none !important;
+        text-align: left !important; 
+        padding: 12px 15px !important;
+        font-size: 15px !important; 
+        font-weight: 400 !important; 
+        transition: all 0.2s ease !important;
     }
     [data-testid="stSidebar"] button:hover {
-        color: #ffeb3b !important; padding-left: 20px !important; text-shadow: 0 0 10px #ffeb3b;
-    }
-    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
-        color: #ffffff !important; border-left: 3px solid #d32f2f !important; /* Borde Rojo */
+        color: #ffffff !important; 
+        background: rgba(255,255,255,0.05) !important;
+        border-radius: 8px !important;
     }
 
     /* =========================================
-       CHAT (TEXTO FLOTANTE CON ALTO CONTRASTE)
+       CHAT (TEXTO LIMPIO)
        ========================================= */
     div[data-testid="stChatMessage"] {
         background-color: transparent !important;
         border: none !important;
         padding: 10px 0 !important;
-        margin-bottom: 20px !important;
+        margin-bottom: 15px !important;
     }
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { 
         display: none !important; 
     }
     
-    /* Forzar que el texto sea blanco puro y legible */
+    /* El texto del chat */
     div[data-testid="stChatMessage"] p {
         font-size: 16px !important;
-        line-height: 1.7 !important;
+        line-height: 1.6 !important;
         color: #ffffff !important;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* Sombra para mejor lectura */
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.9); /* Sombra para leer sobre el fondo */
     }
 
     /* =========================================
-       CAJA DE TEXTO (ESTILO TESORO)
+       CAJA DE TEXTO (PÍLDORA ELEGANTE)
        ========================================= */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important; 
@@ -164,14 +167,14 @@ st.markdown("""
     }
     
     .stChatInput {
-        background: rgba(13, 24, 38, 0.9) !important;
-        border: 2px solid #d4af37 !important; /* Borde Dorado */
-        border-radius: 15px !important;
-        box-shadow: 0 0 20px rgba(212, 175, 55, 0.2) !important;
+        background: rgba(20, 20, 25, 0.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 30px !important;
+        backdrop-filter: blur(10px) !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
     }
     .stChatInput:focus-within { 
-        border: 2px solid #ffeb3b !important; 
-        box-shadow: 0 0 30px rgba(255, 235, 59, 0.4) !important;
+        border: 1px solid rgba(255, 255, 255, 0.5) !important; 
     }
     [data-testid="stChatInput"] textarea { 
         color: #ffffff !important; font-size: 16px !important; padding: 12px 20px !important; 
@@ -179,16 +182,15 @@ st.markdown("""
     
     /* Botón de enviar */
     [data-testid="stChatInput"] button {
-        background: transparent !important; color: #d4af37 !important; border: none !important; 
+        background: #ffffff !important; 
+        color: #000000 !important; 
+        border-radius: 50% !important;
+        border: none !important; 
+        width: 35px !important; height: 35px !important;
+        margin: 8px !important;
     }
-    [data-testid="stChatInput"] button svg { fill: #d4af37 !important; }
-    [data-testid="stChatInput"] button:hover { color: #ffeb3b !important; }
+    [data-testid="stChatInput"] button svg { fill: #000000 !important; }
 
-    /* Ajustes de textos internos de Streamlit para que se lean */
-    .stMarkdown p, .stMarkdown li, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-        color: #ffffff !important;
-    }
-    
     audio, div[data-testid="stAudio"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -202,31 +204,33 @@ if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
 
-# --- SIDEBAR ---
+# --- SIDEBAR (MENÚ MINIMALISTA) ---
 with st.sidebar:
-    st.markdown('<div class="side-orb"></div>', unsafe_allow_html=True)
+    st.markdown("<h2>L I L I</h2>", unsafe_allow_html=True)
     
-    if st.button("⚓ H O M E", use_container_width=True):
+    if st.button("➕ Nuevo Chat", use_container_width=True):
         nuevo_id = datetime.datetime.now().strftime("%d/%m %H:%M")
         st.session_state.chat_actual_id = nuevo_id
         st.session_state.todos_los_chats[nuevo_id] = []
         st.rerun()
 
-    st.button("🗺️ H I S T O R Y", use_container_width=True)
-    st.button("👤 P R O F I L E", use_container_width=True)
+    st.button("Home", use_container_width=True)
+    st.button("History", use_container_width=True)
+    st.button("Profile", use_container_width=True)
     
-    with st.expander("⚙️ S E T T I N G S"):
+    st.markdown("---")
+    with st.expander("⚙️ Ajustes"):
         voz_activa = st.checkbox("🔊 Voz activa", value=True)
         token = st.secrets.get("GITHUB_TOKEN")
         usuario_github = "leivercontreras18-ux"
         if token:
             repos = obtener_repositorios(token, usuario_github)
             if repos:
-                repo_sel = st.selectbox("Repo", repos)
+                repo_sel = st.selectbox("Repositorio", repos)
                 archivos = obtener_archivos(usuario_github, repo_sel, token)
                 if archivos:
-                    arch_sel = st.selectbox("File", archivos)
-                    if st.button("Cargar GitHub", use_container_width=True):
+                    arch_sel = st.selectbox("Archivo", archivos)
+                    if st.button("📥 Cargar", use_container_width=True):
                         exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
                         if exito:
                             st.session_state.codigo_github = resultado
@@ -250,14 +254,13 @@ for message in mensajes_actuales:
 
 if len(mensajes_actuales) == 0:
     st.markdown("""
-        <div style="text-align: left; margin-top: 10vh; color: #ffffff; max-width: 600px; text-shadow: 1px 1px 3px black;">
-            <h1 style="font-size: 32px; font-weight: 400; line-height: 1.4; font-family: serif; color: #d4af37;">"El Rey de los Piratas"</h1>
-            <p style="font-size: 18px; color: #e5e5e5;">Bienvenido al Grand Line, Leiver. Soy Lili, tu nakama. Estoy lista para ayudarte a navegar por el código, buscar tesoros de información o simplemente charlar. ¿Cuál es nuestro próximo destino?</p>
+        <div style="text-align: center; margin-top: 20vh; color: #ffffff;">
+            <h1 style="font-size: 32px; font-weight: 300; letter-spacing: 1px;">¿Qué vamos a crear hoy, Leiver?</h1>
         </div>
     """, unsafe_allow_html=True)
 
 # --- PROCESAMIENTO DE ENTRADA ---
-prompt = st.chat_input("Escribe tu mensaje al mar...")
+prompt = st.chat_input("Escribe tu mensaje...")
 
 with st.sidebar:
     with st.expander("🎤 Micrófono"):
@@ -282,10 +285,11 @@ if audio_grabado or prompt:
         
         codigo_actual = st.session_state.codigo_github
         
-        instrucciones = f"""Eres {NOMBRE_IA}, una IA avanzada, cercana y carismática. Actúas como un nakama (compañero) de Leiver.
+        # PERSONALIDAD NORMAL DE LILI (Sin piratas)
+        instrucciones = f"""Eres {NOMBRE_IA}, una IA avanzada, cercana y carismática.
         REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
-        CONTEXTO: Te habla Leiver, de Venezuela. Tienes una vibra pirata, leal y emocionada por la aventura.
-        REGLA DE PROGRAMACIÓN: NUNCA devuelvas archivos completos. Dile: "Borra desde la línea X hasta la Y" y dale el bloque de código exacto."""
+        CONTEXTO: Te habla Leiver, de Venezuela. Eres su asistente personal y de programación.
+        REGLA DE PROGRAMACIÓN: Si te pide cambios de código, NUNCA devuelvas el archivo completo. Dile: "Borra desde la línea X hasta la Y" y dale el bloque de código exacto."""
         
         if codigo_actual:
             instrucciones += f"\n\nCódigo actual:\n```\n{codigo_actual[:10000]}\n```"
@@ -296,7 +300,7 @@ if audio_grabado or prompt:
         mensajes_para_groq.append({"role": "user", "content": texto_usuario})
 
         try:
-            with st.spinner("Navegando..."):
+            with st.spinner("Pensando..."):
                 respuesta = cliente.chat.completions.create(
                     model="openai/gpt-oss-20b", messages=mensajes_para_groq, temperature=0.8, max_tokens=1024
                 )
