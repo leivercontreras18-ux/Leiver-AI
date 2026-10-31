@@ -13,7 +13,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v13.3 - GitHub UI"
+VERSION = "v13.4 - Multi-Language"
 ARCHIVO_HISTORIAL = "historial_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -51,7 +51,9 @@ def obtener_archivos(usuario, repo, token):
     headers = {"Authorization": f"token {token}"}
     res = requests.get(f"https://api.github.com/repos/{usuario}/{repo}/contents", headers=headers)
     if res.status_code == 200:
-        return [f['name'] for f in res.json() if f['type'] == 'file' and f['name'].endswith(('.py', '.txt', '.json'))]
+        # 🔥 AQUÍ ESTÁ EL CAMBIO: Aceptamos archivos de web y de Python
+        extensiones_validas = ('.py', '.html', '.css', '.js', '.json', '.txt', '.md')
+        return [f['name'] for f in res.json() if f['type'] == 'file' and f['name'].endswith(extensiones_validas)]
     return []
 
 def descargar_archivo_github(usuario, repo, archivo, token):
@@ -157,28 +159,25 @@ with st.sidebar:
     audio_grabado = st.audio_input("Graba tu mensaje", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
     
     st.subheader("📁 Código")
-    uploaded_file = st.file_uploader("Upload", type=["py", "txt", "json", "js"], label_visibility="collapsed")
+    uploaded_file = st.file_uploader("Upload", type=["py", "txt", "json", "js", "html", "css"], label_visibility="collapsed")
     
-    # Prioridad: archivo subido o archivo de GitHub
     codigo_actual = uploaded_file.read().decode("utf-8") if uploaded_file else st.session_state.codigo_github
     if uploaded_file:
         st.success(f"Cargado: {uploaded_file.name}")
-        st.session_state.codigo_github = "" # Limpiamos GitHub si sube uno manual
+        st.session_state.codigo_github = ""
     
     st.markdown("---")
     st.subheader("🐙 GitHub")
     
     token = st.secrets.get("GITHUB_TOKEN")
-    usuario_github = "leivercontreras18-ux" # Tu usuario de GitHub
+    usuario_github = "leivercontreras18-ux"
 
     if token:
-        # 1. Cargar Repositorios
         repos = obtener_repositorios(token, usuario_github)
         
         if repos:
             repo_seleccionado = st.selectbox("1. Repositorio", repos)
             
-            # 2. Cargar Archivos del repo seleccionado
             archivos = obtener_archivos(usuario_github, repo_seleccionado, token)
             
             if archivos:
@@ -194,11 +193,10 @@ with st.sidebar:
                         else:
                             st.error(codigo)
             else:
-                st.info("No hay archivos .py en este repositorio.")
+                st.info("No hay archivos de código soportados en este repositorio.")
         else:
             st.warning("No se encontraron repositorios. Revisa el token.")
             
-        # Sincronizar contexto general
         if st.button("Sincronizar Descripciones", use_container_width=True):
             with st.spinner("Conectando..."):
                 try:
@@ -280,9 +278,6 @@ if audio_grabado or prompt:
         st.session_state.messages.append({"role": "user", "content": texto_usuario})
         guardar_historial(st.session_state.messages)
         
-        # ========================================================
-        # INSTRUCCIONES (CIRUJANA EXACTA)
-        # ========================================================
         instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis. Tienes un toque de humor seco y eres muy leal a tu usuario.
         
         REGLA DE ORO: DEBES RESPONDER SIEMPRE EN ESPAÑOL.
@@ -294,7 +289,7 @@ if audio_grabado or prompt:
         {st.session_state.github_contexto}
         
         REGLA DE PROGRAMACIÓN QUIRÚRGICA: 
-        Cuando Leiver te pida cambiar o agregar algo en su código, NUNCA le devuelvas el archivo completo. Actúa como un cirujano experto y dile exactamente:
+        Cuando Leiver te pida cambiar o agregar algo en su código (sea Python, HTML, CSS o JS), NUNCA le devuelvas el archivo completo. Actúa como un cirujano experto y dile exactamente:
         1. "Borra desde la línea X hasta la línea Y" (indica el rango exacto de líneas que debe eliminar o reemplazar).
         2. Luego, dale el bloque de código exacto que debe pegar en su lugar.
         Sé muy preciso con los números de línea para que Leiver no tenga que adivinar.
@@ -305,7 +300,7 @@ if audio_grabado or prompt:
         - No uses listas largas. Prefiere párrafos fluidos."""
         
         if codigo_actual:
-            instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```python\n{codigo_actual}\n```"
+            instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```\n{codigo_actual}\n```"
 
         mensajes_para_groq = [{"role": "system", "content": instrucciones}]
         for msg in st.session_state.messages:
