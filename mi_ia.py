@@ -21,7 +21,6 @@ st.markdown("""
         color: #e0e0e0;
     }
     
-    /* Ocultar barras por defecto */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header { background: transparent !important; }
@@ -38,40 +37,39 @@ st.markdown("""
     }
     
     .orb {
-        width: 250px;
-        height: 250px;
+        width: 260px;
+        height: 260px;
         border-radius: 50%;
-        background: radial-gradient(circle, #00f2fe 0%, #4facfe 30%, #ff0844 80%, transparent 100%);
-        box-shadow: 0 0 60px #00f2fe, 0 0 120px #ff0844, inset 0 0 50px #ffffff;
-        animation: pulse 2s infinite alternate, rotate 10s linear infinite;
-        filter: blur(4px);
+        background: radial-gradient(circle at 30% 30%, #00f2fe 0%, #4facfe 40%, #ff0844 80%, transparent 100%);
+        box-shadow: 0 0 60px #00f2fe, 0 0 120px #ff0844, inset 0 0 40px #ffffff;
+        animation: pulse 2s infinite alternate ease-in-out, rotate 8s linear infinite;
+        filter: blur(3px);
     }
 
     @keyframes pulse {
-        0% { transform: scale(0.95); opacity: 0.8; }
-        100% { transform: scale(1.05); opacity: 1; }
+        0% { transform: scale(0.92); opacity: 0.8; box-shadow: 0 0 40px #00f2fe, 0 0 80px #ff0844; }
+        100% { transform: scale(1.08); opacity: 1; box-shadow: 0 0 80px #00f2fe, 0 0 150px #ff0844; }
     }
     
     @keyframes rotate {
-        0% { filter: hue-rotate(0deg); }
-        100% { filter: hue-rotate(360deg); }
+        0% { filter: hue-rotate(0deg) blur(3px); }
+        100% { filter: hue-rotate(360deg) blur(3px); }
     }
 
-    /* Anillos orbitales */
     .orb-ring {
         position: absolute;
-        width: 350px;
-        height: 350px;
+        width: 360px;
+        height: 360px;
         border-radius: 50%;
-        border: 2px solid rgba(0, 242, 254, 0.3);
+        border: 2px solid rgba(0, 242, 254, 0.2);
         animation: spin 15s linear infinite;
     }
     .orb-ring-2 {
         position: absolute;
-        width: 400px;
-        height: 400px;
+        width: 420px;
+        height: 420px;
         border-radius: 50%;
-        border: 1px dashed rgba(255, 8, 68, 0.3);
+        border: 1px dashed rgba(255, 8, 68, 0.2);
         animation: spin 25s linear infinite reverse;
     }
 
@@ -80,7 +78,7 @@ st.markdown("""
     }
 
     /* -----------------------------------------
-       EL CHAT (PANELES FLOTANTES A LA DERECHA)
+       EL CHAT
        ----------------------------------------- */
     div[data-testid="stChatMessage"] {
         background: rgba(255, 255, 255, 0.03) !important;
@@ -93,7 +91,7 @@ st.markdown("""
     }
 
     /* -----------------------------------------
-       LA BARRA DE TEXTO DE CRISTAL
+       BARRA DE TEXTO Y AUDIO
        ----------------------------------------- */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
@@ -106,8 +104,6 @@ st.markdown("""
         border-radius: 30px !important;
         box-shadow: 0 0 20px rgba(0, 242, 254, 0.2) !important;
     }
-
-    /* Ocultar reproductor de audio nativo */
     audio { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -128,16 +124,24 @@ def autoplay_audio(audio_buffer):
     audio_html = f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}"></audio>'
     st.markdown(audio_html, unsafe_allow_html=True)
 
-# --- BARRA LATERAL (MINIMALISTA) ---
+# --- INICIALIZAR ESTADO PARA EL MICRÓFONO ---
+if "mic_key" not in st.session_state:
+    st.session_state.mic_key = 0
+
+# --- BARRA LATERAL ---
 with st.sidebar:
     st.markdown(f"### 🌌 {NOMBRE_IA} System")
     st.divider()
     activar_voz = st.checkbox("🔊 Voz activa", value=True)
-    audio_grabado = st.audio_input("🎤 Hablar")
+    
+    # AQUÍ ESTÁ EL TRUCO: Le damos una key única al micrófono
+    audio_grabado = st.audio_input("🎤 Hablar", key=f"mic_{st.session_state.mic_key}")
+    
     archivo_subido = st.file_uploader("📂 Código")
     codigo_actual = archivo_subido.read().decode("utf-8") if archivo_subido else ""
     if st.button("🗑️ Reiniciar Sistema"):
         st.session_state.messages = []
+        st.session_state.mic_key += 1 # Resetea el micrófono
         st.rerun()
 
 # --- CONFIGURACIÓN DEL CEREBRO ---
@@ -149,11 +153,10 @@ try:
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # --- LAYOUT PRINCIPAL: ORBE A LA IZQUIERDA, CHAT A LA DERECHA ---
+    # --- LAYOUT PRINCIPAL ---
     col_izq, col_der = st.columns([1.5, 1])
 
     with col_izq:
-        # Aquí dibujamos el Orbe con HTML puro
         st.markdown("""
             <div class="orb-container">
                 <div class="orb-ring"></div>
@@ -161,21 +164,19 @@ try:
                 <div class="orb"></div>
             </div>
             <div style="text-align: center; margin-top: -50px;">
-                <h2 style="color: #00f2fe; letter-spacing: 5px;">NOVA</h2>
+                <h2 style="color: #00f2fe; letter-spacing: 5px; text-shadow: 0 0 10px #00f2fe;">NOVA</h2>
                 <p style="color: gray;">SISTEMAS OPERATIVOS</p>
             </div>
         """, unsafe_allow_html=True)
 
     with col_der:
-        # Aquí va el historial de chat
         st.markdown("<h3 style='color: #00f2fe; margin-bottom: 20px;'>Registro de Misión</h3>", unsafe_allow_html=True)
         
-        chat_container = st.container(height=500) # Altura fija para que no empuje el orbe
-        with chat_container:
-            for message in st.session_state.messages:
-                avatar = "👤" if message["role"] == "user" else "🤖"
-                with st.chat_message(message["role"], avatar=avatar):
-                    st.markdown(message["content"])
+        # Quitamos el límite de altura para que el chat fluya
+        for message in st.session_state.messages:
+            avatar = "👤" if message["role"] == "user" else "🤖"
+            with st.chat_message(message["role"], avatar=avatar):
+                st.markdown(message["content"])
 
     # --- LÓGICA DE ENTRADA ---
     prompt = st.chat_input(f"Habla con {NOMBRE_IA}...")
@@ -184,7 +185,7 @@ try:
         texto_usuario = ""
         
         if audio_grabado and not prompt:
-            with st.spinner("Escuchando..."):
+            with st.spinner("Analizando voz..."):
                 try:
                     transcripcion = cliente.audio.transcriptions.create(
                         file=("audio.wav", audio_grabado.read()),
@@ -204,7 +205,6 @@ try:
             if codigo_actual:
                 contexto_ia = f"Código:\n```python\n{codigo_actual}\n```\nPetición: {texto_usuario}"
 
-            # Generar respuesta
             try:
                 respuesta = cliente.chat.completions.create(
                     model="openai/gpt-oss-120b",
@@ -223,10 +223,11 @@ try:
                     try:
                         audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
                         autoplay_audio(audio_buffer)
-                    except Exception as e:
-                        pass # Silencioso para no romper la ilusión visual
+                    except Exception:
+                        pass
                 
-                # Recargamos para mostrar el nuevo mensaje en el chat
+                # TRUCO CLAVE: Cambiamos la key del micrófono y recargamos
+                st.session_state.mic_key += 1
                 st.rerun()
                 
             except Exception as e:
