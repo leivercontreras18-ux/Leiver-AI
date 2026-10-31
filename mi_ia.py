@@ -14,7 +14,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v14.3 - Clear UI"
+VERSION = "v14.4 - Stylish Errors"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -112,38 +112,33 @@ st.markdown("""
     [data-testid="stFileUploader"] { display: none !important; }
     [data-testid="stAudioInput"] { background-color: rgba(0, 242, 254, 0.05) !important; border: 1px solid rgba(0, 242, 254, 0.2) !important; border-radius: 15px !important; padding: 10px !important; }
 
-    /* Estilos generales para botones de la barra lateral */
-    [data-testid="stSidebar"] button { 
-        background: rgba(168, 85, 247, 0.1) !important; 
-        color: #e9d5ff !important; 
-        border: 1px solid rgba(168, 85, 247, 0.3) !important; 
-        border-radius: 8px !important; 
-        text-align: center !important;
-        transition: all 0.2s ease !important; 
-    }
-    [data-testid="stSidebar"] button:hover { 
-        background: rgba(168, 85, 247, 0.3) !important; 
+    [data-testid="stSidebar"] button { background: rgba(168, 85, 247, 0.1) !important; color: #e9d5ff !important; border: 1px solid rgba(168, 85, 247, 0.3) !important; border-radius: 8px !important; text-align: center !important; transition: all 0.2s ease !important; }
+    [data-testid="stSidebar"] button:hover { background: rgba(168, 85, 247, 0.3) !important; color: #ffffff !important; box-shadow: 0 0 10px rgba(168, 85, 247, 0.5) !important; }
+    
+    /* Estilo para el historial de chats (parecen texto) */
+    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button { background: transparent !important; border: none !important; text-align: left !important; color: #a78bfa !important; }
+    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button:hover { background: rgba(168, 85, 247, 0.1) !important; }
+
+    /* =======================================================
+       REDISEÑO DE NOTIFICACIONES (ERRORES, ADVERTENCIAS, ETC)
+       ======================================================= */
+    div[data-testid="stNotification"] {
+        background-color: rgba(20, 20, 30, 0.85) !important;
+        backdrop-filter: blur(15px) !important;
+        border-radius: 15px !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5) !important;
         color: #ffffff !important;
-        box-shadow: 0 0 10px rgba(168, 85, 247, 0.5) !important;
+        padding: 15px !important;
+        margin-bottom: 15px !important;
     }
-
-    /* Estilo especial para los chats en el historial (para que parezcan texto) */
-    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button {
-        background: transparent !important;
-        border: none !important;
-        text-align: left !important;
-        color: #a78bfa !important;
-    }
-    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button:hover {
-        background: rgba(168, 85, 247, 0.1) !important;
-    }
-
-    /* Notificación de éxito en la barra lateral */
-    div[data-testid="stNotification"] { background-color: rgba(20, 20, 30, 0.85) !important; backdrop-filter: blur(15px) !important; border-radius: 10px !important; padding: 10px !important; margin-bottom: 10px !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) { border: 1px solid #34d399 !important; box-shadow: 0 0 10px rgba(52, 211, 153, 0.2) !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) * { color: #a7f3d0 !important; font-size: 12px; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentInfo"]) { border: 1px solid #00f2fe !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentInfo"]) * { color: #a5f3fc !important; font-size: 12px;}
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentError"]) { border: 1px solid #ff3366 !important; box-shadow: 0 0 20px rgba(255, 51, 102, 0.3) !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentError"]) * { color: #ffb3c6 !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentWarning"]) { border: 1px solid #fbbf24 !important; box-shadow: 0 0 20px rgba(251, 191, 36, 0.3) !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentWarning"]) * { color: #fde68a !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) { border: 1px solid #34d399 !important; box-shadow: 0 0 20px rgba(52, 211, 153, 0.3) !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) * { color: #a7f3d0 !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentInfo"]) { border: 1px solid #00f2fe !important; box-shadow: 0 0 20px rgba(0, 242, 254, 0.3) !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentInfo"]) * { color: #a5f3fc !important; }
     div[data-testid="stNotification"] svg { display: none !important; }
     
     @media (max-width: 768px) {
@@ -229,21 +224,18 @@ with st.sidebar:
             archivos = obtener_archivos(usuario_github, repo_seleccionado, token)
             if archivos:
                 archivo_seleccionado = st.selectbox("2. Archivo", archivos)
-                
-                # 🔥 AQUÍ ESTÁ EL BOTÓN ARREGLADO
                 if st.button("📥 Leer archivo de GitHub", use_container_width=True):
                     with st.spinner("Descargando..."):
                         exito, resultado = descargar_archivo_github(usuario_github, repo_seleccionado, archivo_seleccionado, token)
                         if exito:
                             st.session_state.codigo_github = resultado
                             st.session_state.archivo_cargado_nombre = archivo_seleccionado
-                            st.rerun() # Recargamos para mostrar el mensaje verde
+                            st.rerun()
                         else:
                             st.error(resultado)
             else:
                 st.info("No hay archivos válidos.")
         
-        # 🔥 INDICADOR DE ARCHIVO EN MEMORIA
         if st.session_state.archivo_cargado_nombre:
             st.success(f"✅ Leyendo: {st.session_state.archivo_cargado_nombre}")
         
@@ -325,7 +317,7 @@ if prompt:
         try:
             with st.spinner("Pensando..."):
                 respuesta = cliente.chat.completions.create(
-                    model="llama-3.1-8b-instant", 
+                    model="openai/gpt-oss-20b", 
                     messages=mensajes_para_groq,
                     temperature=0.8,
                     max_tokens=1024
