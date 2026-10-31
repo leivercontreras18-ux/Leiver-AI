@@ -13,7 +13,7 @@ NOMBRE_IA = "Nova"
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🤖", layout="wide")
 
-# --- CSS PERSONALIZADO (ESTILO DEEPSEEK/CHATGPT) ---
+# --- CSS PERSONALIZADO (ESTILO DEEPSEEK/CHATGPT FORZADO) ---
 st.markdown("""
 <style>
     #MainMenu {visibility: hidden;}
@@ -22,63 +22,63 @@ st.markdown("""
 
     /* Fondo oscuro sólido */
     .stApp {
-        background-color: #1a1a1a;
-        color: #ececec;
+        background-color: #1a1a1a !important;
+        color: #ececec !important;
     }
 
     /* Barra lateral */
     [data-testid="stSidebar"] {
-        background-color: #121212;
-        border-right: 1px solid #333;
+        background-color: #121212 !important;
+        border-right: 1px solid #333 !important;
     }
 
     /* Centrar el chat */
     .block-container {
-        max-width: 800px;
-        padding-top: 2rem;
-        padding-bottom: 100px;
-    }
-
-    /* Burbujas de chat generales */
-    .stChatMessage {
-        background-color: transparent !important;
-        border: none !important;
-        padding: 0.5rem 0 !important;
+        max-width: 800px !important;
+        padding-top: 2rem !important;
+        padding-bottom: 100px !important;
     }
 
     /* =========================================
        MENSAJES DEL USUARIO (A LA DERECHA)
        ========================================= */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
-        background-color: #2b2b2b !important;
+        display: flex !important;
+        flex-direction: row-reverse !important;
+        background-color: #2f2f2f !important;
         border-radius: 15px !important;
         padding: 1rem !important;
         margin-bottom: 1rem !important;
-        flex-direction: row-reverse; /* Invierte el avatar y el texto */
-        text-align: right;
-        width: fit-content;          /* La burbuja se ajusta al texto */
-        margin-left: auto;           /* Empuja la burbuja a la derecha */
+        margin-left: auto !important;  /* Empuja a la derecha */
+        margin-right: 0 !important;
+        width: fit-content !important; /* Ajusta al ancho del texto */
+        max-width: 85% !important;
+        align-self: flex-end !important;
     }
 
-    /* Forzar que el texto interior también se alinee a la derecha */
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) p {
-        text-align: right;
+    /* Alinear el texto del usuario a la derecha */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
+        text-align: right !important;
     }
 
     /* =========================================
        MENSAJES DE LA IA (A LA IZQUIERDA)
        ========================================= */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
+        display: flex !important;
         background-color: transparent !important;
-        text-align: left;
-        width: fit-content;
-        margin-right: auto;          /* Empuja la burbuja a la izquierda */
+        text-align: left !important;
+        width: fit-content !important;
+        max-width: 85% !important;
+        margin-right: auto !important;
+        margin-left: 0 !important;
+        align-self: flex-start !important;
     }
 
-    /* Forzar que la caja de texto se pegue al fondo */
+    /* Fijar la caja de texto abajo */
     [data-testid="stBottomBlockContainer"] {
         background-color: #1a1a1a !important;
-        padding-bottom: 2rem;
+        padding-bottom: 1.5rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -149,7 +149,7 @@ try:
 
     # --- ÁREA PRINCIPAL DEL CHAT ---
     if not st.session_state.messages:
-        st.markdown(f"<h2 style='text-align: center; margin-top: 20vh;'>¿En qué puedo ayudarte hoy?</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align: center; margin-top: 20vh; color: #ececec;'>¿En qué puedo ayudarte hoy?</h2>", unsafe_allow_html=True)
     
     for message in st.session_state.messages:
         avatar = "👤" if message["role"] == "user" else "🤖"
