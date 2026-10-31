@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v33.1 - Premium Polish"
+VERSION = "v33.2 - Premium Buttons"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -78,7 +78,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS PREMIUM HUD (CON AJUSTES CRÍTICOS) ---
+# --- CSS PREMIUM HUD (CON LOS AJUSTES SOLICITADOS) ---
 st.markdown("""
 <style>
     /* Variables de Sistema */
@@ -106,55 +106,52 @@ st.markdown("""
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
     /* =========================================
-       AJUSTE 1: BARRA LATERAL MÁS ANCHA Y LIMPIA
+       BARRA LATERAL (MÁS ANCHA Y SIN FLECHAS)
        ========================================= */
     [data-testid="stSidebar"] {
         background-color: var(--bg-sidebar) !important;
         border-right: 1px solid rgba(255, 255, 255, 0.03) !important;
-        min-width: 280px !important; /* Más ancha para que respire */
+        min-width: 280px !important; /* Más ancha */
         max-width: 280px !important;
     }
 
-    /* Ocultar los círculos de los radio buttons */
-    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label > div:first-child {
-        display: none !important; 
+    /* Ocultar la flecha nativa de colapsar */
+    [data-testid="stSidebarCollapseButton"] {
+        display: none !important;
     }
 
-    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label {
-        display: block !important;
-        padding: 14px 24px !important;
-        border-radius: 0 !important;
+    /* Contenedor del menú */
+    .custom-sidebar-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 0px; /* Sin espacio para que se vea como una lista continua */
+        margin-top: 20px;
+    }
+
+    /* Estilo para los botones del menú (Simulando enlaces de texto) */
+    div[data-testid="stSidebar"] div[data-testid="stButton"] button {
         background-color: transparent !important;
-        border-left: 3px solid transparent !important;
-        transition: all 0.3s ease !important;
-        cursor: pointer !important;
-    }
-
-    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label p {
         color: var(--text-muted) !important;
-        text-transform: uppercase !important;
+        border: none !important;
+        text-align: left !important;
+        width: 100% !important;
+        padding: 14px 24px !important;
         font-size: 0.85rem !important;
         font-weight: 500 !important;
         letter-spacing: 1px !important;
-        margin: 0 !important;
+        text-transform: uppercase !important;
+        border-radius: 0px !important;
+        border-left: 3px solid transparent !important;
+        transition: all 0.3s ease !important;
+        justify-content: flex-start !important;
     }
 
-    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label:hover {
+    div[data-testid="stSidebar"] div[data-testid="stButton"] button:hover {
+        color: var(--text-pure-white) !important;
         background-color: rgba(255, 255, 255, 0.02) !important;
     }
 
-    /* Estado Activo del Menú */
-    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) {
-        background-color: var(--bg-active-tab) !important;
-        border-left: 3px solid var(--cyan-neon) !important;
-    }
-
-    [data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) p {
-        color: var(--cyan-neon) !important;
-        font-weight: 600 !important;
-    }
-
-    /* Ocultar las flechitas de los expanders (Configuración) */
+    /* Ocultar flechas de expanders */
     [data-testid="stSidebar"] [data-testid="stExpander"] summary svg {
         display: none !important;
     }
@@ -164,7 +161,7 @@ st.markdown("""
         padding-left: 24px !important;
     }
 
-    /* Botones */
+    /* Botones Generales (Nuevo chat, historial) */
     [data-testid="stSidebar"] button { 
         background: transparent !important; 
         color: var(--text-muted) !important; 
@@ -175,14 +172,13 @@ st.markdown("""
         margin-left: 12px !important;
         margin-right: 12px !important;
         width: calc(100% - 24px) !important;
-        transition: all 0.2s ease !important;
     }
     [data-testid="stSidebar"] button:hover { 
         background: rgba(255, 255, 255, 0.05) !important; 
         color: var(--text-pure-white) !important; 
     }
 
-    /* Botón Nuevo Chat */
+    /* Botón Nuevo Chat (Destacado) */
     [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button { 
         background: rgba(0, 229, 255, 0.1) !important; 
         color: var(--cyan-neon) !important; 
@@ -226,7 +222,7 @@ st.markdown("""
     [data-testid="stChatMessage"] > div { background-color: transparent !important; }
 
     /* =========================================
-       AJUSTE 2: CAJA DE TEXTO SUAVE Y FLOTANTE
+       CAJA DE TEXTO (CÁPSULA FLOTANTE)
        ========================================= */
     [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { 
         background-color: transparent !important; 
@@ -240,8 +236,8 @@ st.markdown("""
     }
     
     .stChatInput { 
-        background: rgba(24, 29, 40, 0.7) !important; /* Fondo semi-transparente suave */
-        backdrop-filter: blur(10px) !important; /* Desenfoque */
+        background: rgba(24, 29, 40, 0.7) !important;
+        backdrop-filter: blur(10px) !important;
         border: 1px solid rgba(0, 229, 255, 0.2) !important; 
         border-radius: 30px !important; 
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important; 
@@ -257,7 +253,7 @@ st.markdown("""
     }
     
     .stChatInput textarea::placeholder { 
-        color: rgba(255, 255, 255, 0.5) !important; /* Placeholder visible pero sutil */
+        color: rgba(255, 255, 255, 0.5) !important; 
     }
     
     .stChatInput:focus-within { 
@@ -265,7 +261,6 @@ st.markdown("""
         box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 8px rgba(0, 229, 255, 0.3) !important; 
     }
     
-    /* Botón de enviar integrado y sutil */
     [data-testid="stChatInput"] button { 
         background: transparent !important; 
         border-radius: 50% !important; 
@@ -273,35 +268,34 @@ st.markdown("""
         margin: 5px !important; 
         width: 35px !important; 
         height: 35px !important; 
-        box-shadow: none !important; /* Quitamos el resplandor */
+        box-shadow: none !important;
     }
     [data-testid="stChatInput"] button:hover {
         background: rgba(0, 229, 255, 0.1) !important;
     }
     [data-testid="stChatInput"] button svg { 
-        fill: var(--cyan-neon) !important; /* Icono cian brillante */
+        fill: var(--cyan-neon) !important;
     }
     audio, div[data-testid="stAudio"] { display: none !important; }
 
     /* =========================================
-       AJUSTE 3: ORBE Y TEXTO DE ESTADO
+       REACTOR (ORBE Y TEXTO)
        ========================================= */
     .center-display { 
         display: flex; flex-direction: column; align-items: center; justify-content: center; 
         margin-top: 10vh; margin-bottom: 30px; position: relative; 
-        padding: 40px 0; /* Espacio para que no se corten los anillos */
+        padding: 40px 0; 
     }
     
     .reactor { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
     
-    /* Anillos con opacidad reducida */
     .reactor-ring-outer { 
         position: absolute; inset: 0; border-radius: 50%; 
         border: 2px solid rgba(0, 229, 255, 0.1); 
         border-top: 2px solid var(--cyan-neon); 
         border-bottom: 2px solid var(--cyan-neon); 
         animation: spin 3s linear infinite; 
-        opacity: 0.3; /* Reducimos opacidad para que no compitan */
+        opacity: 0.3;
     }
     .reactor-ring-mid { 
         position: absolute; inset: 20px; border-radius: 50%; 
@@ -318,7 +312,6 @@ st.markdown("""
         z-index: 10; 
     }
     
-    /* Texto en una cápsula integrada */
     .display-text { 
         margin-top: 30px; 
         font-size: 12px; 
@@ -341,17 +334,17 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- INICIALIZACIÓN DE ESTADO Y MIGRACIÓN ---
+# --- INICIALIZACIÓN DE ESTADO ---
 if "todos_los_chats" not in st.session_state: 
     st.session_state.todos_los_chats = cargar_todos_los_chats()
     for key in list(st.session_state.todos_los_chats.keys()):
         if "|" not in key:
-            new_key = f"💻 Programación|{key}"
+            new_key = f"Programación|{key}"
             st.session_state.todos_los_chats[new_key] = st.session_state.todos_los_chats.pop(key)
     guardar_todos_los_chats(st.session_state.todos_los_chats)
 
 if "modo_actual" not in st.session_state: 
-    st.session_state.modo_actual = "💻 Programación"
+    st.session_state.modo_actual = "Programación"
     
 if "chat_actual_id" not in st.session_state: 
     st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
@@ -366,25 +359,40 @@ with st.sidebar:
     st.markdown("<h3 style='padding-left: 24px; font-weight: 700; letter-spacing: 1.5px;'>LILI AI</h3>", unsafe_allow_html=True)
     st.caption(f"<p style='padding-left: 24px; color: #8a99ad; font-size: 0.75rem;'>{VERSION}</p>", unsafe_allow_html=True)
     
-    modos = ["Programación", "Chat General", "Creativo", "Análisis"]
-    modos_logicos = ["💻 Programación", "💬 Chat General", "🎨 Creativo", "📊 Análisis"]
+    st.markdown('<div class="custom-sidebar-menu">', unsafe_allow_html=True)
     
-    index_actual = modos_logicos.index(st.session_state.modo_actual)
-    seleccion = st.radio("", modos, index=index_actual, label_visibility="collapsed")
+    # Menú de opciones
+    opciones = ["Programación", "Chat General", "Creativo", "Análisis"]
     
-    nuevo_modo_logico = modos_logicos[modos.index(seleccion)]
-    if nuevo_modo_logico != st.session_state.modo_actual:
-        st.session_state.modo_actual = nuevo_modo_logico
-        chats_del_modo = [k for k in st.session_state.todos_los_chats.keys() if k.startswith(f"{st.session_state.modo_actual}|")]
-        if chats_del_modo:
-            st.session_state.chat_actual_id = sorted(chats_del_modo)[-1]
-        else:
-            st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
-            st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
-        st.rerun()
+    for i, opcion in enumerate(opciones):
+        # Pequeño hack de CSS dinámico para el botón activo
+        if st.session_state.modo_actual == opcion:
+            st.markdown(f"""
+            <style>
+                div[data-testid="stSidebar"] div[data-testid="stButton"]:nth-of-type({i+1}) button {{
+                    color: #00e5ff !important;
+                    background-color: rgba(0, 229, 255, 0.08) !important;
+                    border-left: 3px solid #00e5ff !important;
+                    font-weight: 700 !important;
+                }}
+            </style>
+            """, unsafe_allow_html=True)
+            
+        if st.button(opcion, key=f"menu_{opcion.lower().replace(' ', '_')}", use_container_width=True):
+            st.session_state.modo_actual = opcion
+            chats_del_modo = [k for k in st.session_state.todos_los_chats.keys() if k.startswith(f"{st.session_state.modo_actual}|")]
+            if chats_del_modo:
+                st.session_state.chat_actual_id = sorted(chats_del_modo)[-1]
+            else:
+                st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
+                st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
+            st.rerun()
+            
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
+    # Botón Nuevo Chat
     if st.button("+ Nuevo Chat", use_container_width=True):
         nuevo_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
         st.session_state.chat_actual_id = nuevo_id
@@ -415,13 +423,13 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
-    if st.session_state.modo_actual == "💻 Programación":
-        with st.expander("🐙 GitHub"):
+    if st.session_state.modo_actual == "Programación":
+        with st.expander("GitHub"):
             token = st.secrets.get("GITHUB_TOKEN")
             usuario_github = "leivercontreras18-ux"
             
             if token:
-                if st.button("🔄 Sincronizar", use_container_width=True):
+                if st.button("Sincronizar Repositorios", use_container_width=True):
                     st.cache_data.clear()
                     st.rerun()
                     
@@ -435,7 +443,7 @@ with st.sidebar:
                         idx_archivo = archivos.index("mi_ia.py") if "mi_ia.py" in archivos else 0
                         arch_sel = st.selectbox("Archivo", archivos, index=idx_archivo)
                         
-                        if st.button("📥 Cargar Archivo", use_container_width=True):
+                        if st.button("Cargar Archivo", use_container_width=True):
                             exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
                             if exito:
                                 st.session_state.codigo_github = resultado
@@ -470,8 +478,8 @@ for message in mensajes_actuales:
         st.markdown(message["content"])
 
 if len(mensajes_actuales) == 0:
-    texto_reactor = "DEV ENVIRONMENT" if st.session_state.modo_actual == "💻 Programación" else "SYSTEM ONLINE"
-    mensaje_bienvenida = "Entorno de Desarrollo listo. Carga un archivo de GitHub para comenzar." if st.session_state.modo_actual == "💻 Programación" else "Hola Leiver. ¿Qué hacemos hoy?"
+    texto_reactor = "DEV ENVIRONMENT" if st.session_state.modo_actual == "Programación" else "SYSTEM ONLINE"
+    mensaje_bienvenida = "Entorno de Desarrollo listo. Carga un archivo de GitHub para comenzar." if st.session_state.modo_actual == "Programación" else "Hola Leiver. ¿Qué hacemos hoy?"
     
     st.markdown(f"""
         <div class="center-display">
@@ -488,7 +496,7 @@ if len(mensajes_actuales) == 0:
     """, unsafe_allow_html=True)
 
 # --- PROCESAMIENTO DE ENTRADA ---
-placeholder_texto = "Pídeme un cambio de código..." if st.session_state.modo_actual == "💻 Programación" else "Escribe tu mensaje..."
+placeholder_texto = "Pídeme un cambio de código..." if st.session_state.modo_actual == "Programación" else "Escribe tu mensaje..."
 prompt = st.chat_input(placeholder_texto)
 
 if audio_grabado or prompt:
@@ -510,7 +518,7 @@ if audio_grabado or prompt:
         
         codigo_actual = st.session_state.codigo_github
         
-        if st.session_state.modo_actual == "💻 Programación":
+        if st.session_state.modo_actual == "Programación":
             instrucciones = """Eres Lili Dev, una IA experta en programación y arquitectura de software.
             REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
             CONTEXTO: Te habla Leiver, de Venezuela. Estás en MODO PROGRAMACIÓN.
@@ -523,11 +531,11 @@ if audio_grabado or prompt:
             else:
                 instrucciones += "\n\nNOTA: Aún no tienes ningún archivo cargado. Pídele al usuario que cargue uno desde la barra lateral."
                 
-        elif st.session_state.modo_actual == "🎨 Creativo":
+        elif st.session_state.modo_actual == "Creativo":
             instrucciones = """Eres Lili Creative, una IA imaginativa, poética y apasionada por el arte.
             REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL. CONTEXTO: Estás en MODO CREATIVO."""
             
-        elif st.session_state.modo_actual == "📊 Análisis":
+        elif st.session_state.modo_actual == "Análisis":
             instrucciones = """Eres Lili Analyst, una IA lógica y estructurada.
             REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL. CONTEXTO: Estás en MODO ANÁLISIS."""
             
