@@ -9,12 +9,13 @@ import os
 import re
 import requests
 import datetime
+from datetime import timezone, timedelta
 from groq import Groq
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v15.0 - Clean Sidebar"
+VERSION = "v15.1 - Time Zone"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -107,61 +108,23 @@ st.markdown("""
     [data-testid="stChatInput"]:focus-within { border: 1px solid rgba(168, 85, 247, 0.8) !important; box-shadow: 0 0 25px rgba(168, 85, 247, 0.3) !important; }
     audio, div[data-testid="stAudio"] { display: none !important; }
     
-    /* SIDEBAR BASE */
     [data-testid="stSidebar"] { background-color: #0b0b12 !important; border-right: 1px solid rgba(168, 85, 247, 0.15) !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { font-weight: 200 !important; letter-spacing: 2px; color: #e9d5ff !important; text-transform: uppercase; font-size: 14px !important; }
     [data-testid="stFileUploader"] { display: none !important; }
     [data-testid="stAudioInput"] { background-color: rgba(0, 242, 254, 0.05) !important; border: 1px solid rgba(0, 242, 254, 0.2) !important; border-radius: 15px !important; padding: 10px !important; }
 
-    /* BOTONES DE LA SIDEBAR (Generales) */
-    [data-testid="stSidebar"] button { 
-        background: rgba(168, 85, 247, 0.1) !important; 
-        color: #e9d5ff !important; 
-        border: 1px solid rgba(168, 85, 247, 0.3) !important; 
-        border-radius: 8px !important; 
-        text-align: center !important;
-        transition: all 0.2s ease !important; 
-    }
-    [data-testid="stSidebar"] button:hover { 
-        background: rgba(168, 85, 247, 0.3) !important; 
-        color: #ffffff !important;
-        box-shadow: 0 0 10px rgba(168, 85, 247, 0.5) !important;
-    }
+    [data-testid="stSidebar"] button { background: rgba(168, 85, 247, 0.1) !important; color: #e9d5ff !important; border: 1px solid rgba(168, 85, 247, 0.3) !important; border-radius: 8px !important; text-align: center !important; transition: all 0.2s ease !important; }
+    [data-testid="stSidebar"] button:hover { background: rgba(168, 85, 247, 0.3) !important; color: #ffffff !important; box-shadow: 0 0 10px rgba(168, 85, 247, 0.5) !important; }
+    
+    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button { background: transparent !important; border: none !important; text-align: left !important; color: #a78bfa !important; font-size: 14px !important; }
+    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button:hover { background: rgba(168, 85, 247, 0.1) !important; }
 
-    /* ESTILO ESPECIAL PARA EL HISTORIAL DE CHATS (Para que parezcan textos y no botones) */
-    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button {
-        background: transparent !important;
-        border: none !important;
-        text-align: left !important;
-        color: #a78bfa !important;
-        font-size: 14px !important;
-    }
-    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button:hover {
-        background: rgba(168, 85, 247, 0.1) !important;
-    }
+    .streamlit-expanderHeader { background-color: rgba(255, 255, 255, 0.02) !important; border: 1px solid rgba(168, 85, 247, 0.2) !important; border-radius: 8px !important; color: #e9d5ff !important; font-size: 14px !important; }
+    .streamlit-expanderContent { background-color: rgba(0, 0, 0, 0.2) !important; border: 1px solid rgba(168, 85, 247, 0.1) !important; border-top: none !important; }
 
-    /* =======================================================
-       EXPANDER (MENÚ DE AJUSTES) - AQUÍ ESTÁ EL TRUCO DE LIMPIEZA
-       ======================================================= */
-    .streamlit-expanderHeader {
-        background-color: rgba(255, 255, 255, 0.02) !important;
-        border: 1px solid rgba(168, 85, 247, 0.2) !important;
-        border-radius: 8px !important;
-        color: #e9d5ff !important;
-        font-size: 14px !important;
-    }
-    .streamlit-expanderContent {
-        background-color: rgba(0, 0, 0, 0.2) !important;
-        border: 1px solid rgba(168, 85, 247, 0.1) !important;
-        border-top: none !important;
-    }
-
-    /* Notificaciones */
     div[data-testid="stNotification"] { background-color: rgba(20, 20, 30, 0.85) !important; backdrop-filter: blur(15px) !important; border-radius: 10px !important; padding: 10px !important; margin-bottom: 10px !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) { border: 1px solid #34d399 !important; box-shadow: 0 0 10px rgba(52, 211, 153, 0.2) !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) { border: 1px solid #34d399 !important; }
     div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) * { color: #a7f3d0 !important; font-size: 12px; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentInfo"]) { border: 1px solid #00f2fe !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentInfo"]) * { color: #a5f3fc !important; font-size: 12px;}
     div[data-testid="stNotification"] svg { display: none !important; }
     
     @media (max-width: 768px) {
@@ -214,7 +177,6 @@ if "archivo_cargado_nombre" not in st.session_state:
 
 # --- SIDEBAR (HISTORIAL Y CONFIGURACIÓN) ---
 with st.sidebar:
-    # 1. SECCIÓN DE CHATS
     if st.button("➕ Nuevo Chat", use_container_width=True):
         nuevo_id = datetime.datetime.now().strftime("%d/%m %H:%M")
         st.session_state.chat_actual_id = nuevo_id
@@ -231,7 +193,6 @@ with st.sidebar:
     
     st.markdown("---")
 
-    # 2. SECCIÓN DE AJUSTES (OCULTA EN UN EXPANDER)
     with st.expander("⚙️ Ajustes del Sistema", expanded=False):
         voz_activa = st.checkbox("🔊 Voz activa", value=True)
         
@@ -264,7 +225,6 @@ with st.sidebar:
         else:
             st.warning("Falta el token de GitHub.")
 
-    # 3. BOTÓN DE BORRAR AL FINAL
     st.markdown("---")
     if st.button("🗑️ Borrar este Chat", use_container_width=True):
         if st.session_state.chat_actual_id in st.session_state.todos_los_chats:
@@ -317,15 +277,31 @@ if prompt:
         
         codigo_actual = st.session_state.codigo_github
         
-        # Si el archivo es muy grande, reducimos el contexto para evitar el error 413
         if len(codigo_actual) > 10000: 
             codigo_actual_para_groq = codigo_actual[:10000] + "\n\n...[Código truncado por ser muy largo]..."
         else:
             codigo_actual_para_groq = codigo_actual
 
+        # 🔥 AQUÍ AGREGAMOS LA ZONA HORARIA 🔥
+        tz_venezuela = timezone(timedelta(hours=-4))
+        ahora = datetime.datetime.now(tz_venezuela)
+        # Formato: Jueves, 30 de Octubre de 2026, a las 01:50 AM
+        fecha_hora_str = ahora.strftime("%A, %d de %B de %Y, a las %I:%M %p")
+        # Traducir el día de la semana y mes al español (opcional pero recomendado)
+        dias = {"Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles", "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo"}
+        meses = {"January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto", "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"}
+        
+        for en, es in dias.items():
+            fecha_hora_str = fecha_hora_str.replace(en, es)
+        for en, es in meses.items():
+            fecha_hora_str = fecha_hora_str.replace(en, es)
+
         instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis. Tienes un toque de humor seco y eres muy leal a tu usuario.
         
         REGLA DE ORO: DEBES RESPONDER SIEMPRE EN ESPAÑOL.
+        
+        CONTEXTO TEMPORAL: Hoy es {fecha_hora_str} (Hora de Venezuela, UTC-4). Si el usuario te pregunta la hora o la fecha, usa esta información exacta.
+        
         CONTEXTO DEL USUARIO: Tu usuario se llama Leiver, vive en Venezuela y es sumamente curioso y preguntón. Trabaja en proyectos de programación.
         
         REGLA DE PROGRAMACIÓN QUIRÚRGICA: 
