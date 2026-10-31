@@ -13,70 +13,51 @@ NOMBRE_IA = "Nova"
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🤖", layout="wide")
 
-# --- CSS PERSONALIZADO (ESTILO CHATGPT PREMIUM) ---
+# --- CSS PERSONALIZADO (ESTILO DEEPSEEK/CHATGPT) ---
 st.markdown("""
 <style>
-    /* Ocultar menús de Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header { background: transparent !important; }
 
-    /* Fondo general estilo ChatGPT */
+    /* Fondo oscuro sólido */
     .stApp {
-        background-color: #212121;
+        background-color: #1a1a1a;
         color: #ececec;
     }
 
-    /* Barra lateral gris muy oscuro */
+    /* Barra lateral */
     [data-testid="stSidebar"] {
-        background-color: #171717;
-        border-right: none;
+        background-color: #121212;
+        border-right: 1px solid #333;
     }
 
-    /* Centrar el contenido para que no ocupe toda la pantalla */
+    /* Centrar el chat */
     .block-container {
         max-width: 800px;
         padding-top: 2rem;
-        padding-bottom: 150px; /* Espacio para que el chat no quede tapado por la caja de texto */
+        padding-bottom: 100px;
     }
 
-    /* Burbujas de chat limpias */
+    /* Burbujas de chat */
     .stChatMessage {
         background-color: transparent !important;
         border: none !important;
         padding: 0.5rem 0 !important;
-        box-shadow: none !important;
     }
 
-    /* El mensaje del usuario se resalta con un fondo gris */
+    /* Mensaje del usuario resaltado */
     .stChatMessage[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
-        background-color: #2f2f2f !important;
+        background-color: #2b2b2b !important;
         border-radius: 15px !important;
         padding: 1rem !important;
         margin-bottom: 1rem !important;
     }
 
-    /* FIJAR LA CAJA DE ENTRADA AL FONDO DE LA PANTALLA */
-    div[data-testid="stVerticalBlock"] > div:has(> div > .stChatInput) {
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        background-color: #212121;
-        padding: 15px 20%;
-        z-index: 1000;
-        border-top: 1px solid #333;
-    }
-
-    /* Botones */
-    .stButton>button {
-        background-color: #2f2f2f;
-        color: #ececec;
-        border: 1px solid #444;
-        border-radius: 8px;
-    }
-    .stButton>button:hover {
-        background-color: #3f3f3f;
-        color: #fff;
+    /* Forzar que la caja de texto se pegue al fondo */
+    [data-testid="stBottomBlockContainer"] {
+        background-color: #1a1a1a !important;
+        padding-bottom: 2rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -91,7 +72,7 @@ async def generar_audio_edge(texto, voz):
     audio_buffer.seek(0)
     return audio_buffer
 
-# --- FUNCIÓN PARA REPRODUCIR AUDIO (INVISIBLE) ---
+# --- FUNCIÓN PARA REPRODUCIR AUDIO ---
 def autoplay_audio(audio_buffer, format="audio/mp3"):
     audio_bytes = audio_buffer.read()
     b64 = base64.b64encode(audio_bytes).decode()
@@ -113,13 +94,13 @@ with st.sidebar:
     
     voz_seleccionada = st.selectbox(
         "🎙️ Selecciona la voz",
-        options=[
-            "es-MX-DaliaNeural",  # Español Latino
-            "es-ES-ElviraNeural", # Español de España
-            "en-GB-SoniaNeural"   # Inglés Británico
-        ],
+        options=["es-MX-DaliaNeural", "es-ES-ElviraNeural", "en-GB-SoniaNeural"],
         index=0
     )
+    
+    st.divider()
+    st.subheader("🎤 Hablar con Nova")
+    audio_grabado = st.audio_input("Graba tu mensaje", label_visibility="collapsed")
     
     st.divider()
     st.subheader("📂 Sube tu código")
@@ -146,23 +127,20 @@ try:
         st.session_state.messages = []
 
     # --- ÁREA PRINCIPAL DEL CHAT ---
-    st.markdown(f"### ¿En qué puedo ayudarte hoy?")
+    if not st.session_state.messages:
+        st.markdown(f"<h2 style='text-align: center; margin-top: 20vh;'>¿En qué puedo ayudarte hoy?</h2>", unsafe_allow_html=True)
     
     for message in st.session_state.messages:
         avatar = "👤" if message["role"] == "user" else "🤖"
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
-    # --- ZONA DE ENTRADA (Fija al fondo) ---
-    with st.container():
-        col1, col2 = st.columns([1, 8])
-        with col1:
-            audio_grabado = st.audio_input("Habla aquí", label_visibility="collapsed")
-        with col2:
-            prompt = st.chat_input(f"Habla con {NOMBRE_IA}...")
+    # --- ZONA DE ENTRADA (Caja de texto pegada al fondo) ---
+    prompt = st.chat_input(f"Habla con {NOMBRE_IA}...")
 
     # --- LÓGICA DE PROCESAMIENTO ---
     if audio_grabado or prompt:
+        # Determinamos el texto
         if prompt:
             texto_usuario = prompt
             contexto_ia = prompt
@@ -175,9 +153,10 @@ try:
                 {"mime_type": "audio/wav", "data": audio_bytes}
             ]
             tipo_entrada = "voz"
+            # El audio ya no se renderiza en el chat para que se vea limpio
 
+        # Mostramos el mensaje del usuario
         with st.chat_message("user", avatar="👤"):
-            # Quitamos el st.audio(audio_grabado) para que no salga el reproductor feo
             st.markdown(texto_usuario)
         
         st.session_state.messages.append({"role": "user", "content": texto_usuario})
@@ -185,6 +164,7 @@ try:
         if codigo_actual and tipo_entrada == "texto":
             contexto_ia = f"Te adjunto el código actual del archivo:\n\n```python\n{codigo_actual}\n```\n\nMi petición es: {prompt}\n\nPor favor, devuélveme el código completo modificado dentro de un bloque de código."
 
+        # Generamos la respuesta
         with st.chat_message("assistant", avatar="🤖"):
             with st.spinner("Pensando..."):
                 max_reintentos = 3
@@ -201,8 +181,6 @@ try:
                                 autoplay_audio(audio_buffer, format="audio/mp3")
                             except Exception as e:
                                 st.warning(f"No se pudo generar la voz: {e}")
-                        elif activar_voz:
-                            st.info("🔇 Respuesta larga (código). No se lee en voz alta.")
                         
                         break 
                     except Exception as e:
@@ -218,6 +196,9 @@ try:
                         else:
                             st.error(f"Error: {e}")
                             break
+        # Hacemos un pequeño rerun para que la caja de texto se mantenga abajo
+        if prompt:
+            st.rerun()
 
 except KeyError:
     st.warning("⚠️ Falta la API Key.")
