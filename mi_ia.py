@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v29.0 - Arc Reactor"
+VERSION = "v31.0 - Dev Mode"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="🔵", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="💻", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,9 +78,15 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS ARC REACTOR (DISEÑO LIMPIO Y ELEGANTE) ---
+# --- CSS ESTILOS DINÁMICOS ---
+# Usamos variables CSS para cambiar el color dependiendo del modo
 st.markdown("""
 <style>
+    :root {
+        --accent-color: #00f2fe; /* Cian por defecto */
+        --bg-glow: rgba(0, 242, 254, 0.1);
+    }
+
     /* FONDO OSCURO ESPACIAL */
     .stApp {
         background: radial-gradient(circle at 50% 50%, #0f172a 0%, #050810 100%) !important;
@@ -97,13 +103,23 @@ st.markdown("""
         background-color: #0b1120 !important; 
         border-right: 1px solid #1e293b !important;
     }
-    [data-testid="stSidebar"] h3 { color: #00f2fe !important; text-align: left; font-weight: 600; }
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] .stCaption { color: #94a3b8 !important; }
-    [data-testid="stSidebar"] button {
+    
+    /* Selector de modos */
+    [data-testid="stSidebar"] .stRadio > div { gap: 5px; }
+    [data-testid="stSidebar"] .stRadio label {
         background: transparent !important; color: #cbd5e1 !important; border: 1px solid transparent !important;
+        padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.2s ease !important; cursor: pointer;
+    }
+    [data-testid="stSidebar"] .stRadio label:hover { background: #1e293b !important; color: #ffffff !important; }
+
+    /* Botones generales */
+    [data-testid="stSidebar"] button {
+        background: transparent !important; color: #cbd5e1 !important; border: 1px solid #1e293b !important;
         text-align: left !important; padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.2s ease !important;
     }
-    [data-testid="stSidebar"] button:hover { background: #1e293b !important; color: #ffffff !important; }
+    [data-testid="stSidebar"] button:hover { background: #1e293b !important; color: #ffffff !important; border-color: #334155 !important;}
+    
+    /* Botón Nuevo Chat y Sincronizar */
     [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
         background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%) !important; 
         color: #000000 !important; text-align: center !important; font-weight: bold !important; border: none !important;
@@ -112,127 +128,79 @@ st.markdown("""
     /* =========================================
        CHAT
        ========================================= */
-    div[data-testid="stChatMessage"] {
-        background-color: transparent !important; border: none !important; padding: 0 !important;
-        margin-bottom: 20px !important; display: flex !important;
-    }
+    div[data-testid="stChatMessage"] { background-color: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 20px !important; display: flex !important; }
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
 
-    /* TUS MENSAJES (Derecha) */
+    /* TUS MENSAJES */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
-        flex-direction: row-reverse !important; justify-content: flex-start !important;
-        margin-left: auto !important; width: fit-content !important; max-width: 80% !important;
+        flex-direction: row-reverse !important; justify-content: flex-start !important; margin-left: auto !important; width: fit-content !important; max-width: 80% !important;
     }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
-        background: #1e293b !important; color: #ffffff !important; 
-        border-radius: 16px 16px 0 16px !important; padding: 12px 18px !important;
-        border: 1px solid #334155 !important;
+        background: #1e293b !important; color: #ffffff !important; border-radius: 16px 16px 0 16px !important; padding: 12px 18px !important; border: 1px solid #334155 !important;
     }
 
-    /* MENSAJES DE LILI (Izquierda) */
+    /* MENSAJES DE LILI */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
-        flex-direction: row !important; justify-content: flex-start !important;
-        margin-right: auto !important; width: fit-content !important; max-width: 80% !important;
+        flex-direction: row !important; justify-content: flex-start !important; margin-right: auto !important; width: fit-content !important; max-width: 80% !important;
     }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
-        background: linear-gradient(135deg, rgba(0, 242, 254, 0.1) 0%, rgba(79, 172, 254, 0.1) 100%) !important; 
-        color: #ffffff !important; border-radius: 16px 16px 16px 0 !important; padding: 12px 18px !important;
-        border: 1px solid rgba(0, 242, 254, 0.3) !important;
+        background: var(--bg-glow) !important; color: #ffffff !important; border-radius: 16px 16px 16px 0 !important; padding: 12px 18px !important; border: 1px solid var(--accent-color) !important;
     }
 
     /* =========================================
        CAJA DE TEXTO
        ========================================= */
-    [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] {
-        background-color: transparent !important; background: transparent !important;
-    }
+    [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { background-color: transparent !important; background: transparent !important; }
     [data-testid="stBottomBlockContainer"] { padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
     
-    .stChatInput {
-        background: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 30px !important; 
-        box-shadow: 0 0 20px rgba(0, 242, 254, 0.1) !important;
-    }
-    .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input {
-        background-color: transparent !important; background: transparent !important;
-        border: none !important; outline: none !important; box-shadow: none !important; color: #ffffff !important;
-    }
-    .stChatInput:focus-within { border: 1px solid #00f2fe !important; box-shadow: 0 0 25px rgba(0, 242, 254, 0.2) !important; }
-    [data-testid="stChatInput"] button {
-        background: #00f2fe !important; border-radius: 50% !important; border: none !important;
-        margin: 5px !important; width: 35px !important; height: 35px !important;
-    }
+    .stChatInput { background: #0f172a !important; border: 1px solid var(--accent-color) !important; border-radius: 30px !important; box-shadow: 0 0 15px var(--bg-glow) !important; }
+    .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input { background-color: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; color: #ffffff !important; }
+    .stChatInput textarea::placeholder { color: #64748b !important; }
+    .stChatInput:focus-within { box-shadow: 0 0 25px var(--bg-glow) !important; }
+    
+    [data-testid="stChatInput"] button { background: var(--accent-color) !important; border-radius: 50% !important; border: none !important; margin: 5px !important; width: 35px !important; height: 35px !important; }
     [data-testid="stChatInput"] button svg { fill: #000000 !important; }
     audio, div[data-testid="stAudio"] { display: none !important; }
 
     /* =========================================
-       EL ARC REACTOR (CÍRCULOS CONCÉNTRICOS LIMPIOS)
+       VISUALIZADOR CENTRAL (REACTOR / TERMINAL)
        ========================================= */
-    .reactor-container {
+    .center-display {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         margin-top: 10vh; margin-bottom: 30px; position: relative;
     }
     
-    /* Contenedor principal */
+    /* Reactor (Modo Programación) */
     .reactor {
-        position: relative;
-        width: 250px; height: 250px;
-        display: flex; align-items: center; justify-content: center;
+        position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center;
     }
-
-    /* Anillo exterior giratorio */
     .reactor-ring-outer {
-        position: absolute; inset: 0;
-        border-radius: 50%;
-        border: 2px solid rgba(0, 242, 254, 0.3);
-        border-top: 2px solid #00f2fe;
-        border-bottom: 2px solid #00f2fe;
-        animation: spin 4s linear infinite;
-        box-shadow: 0 0 30px rgba(0, 242, 254, 0.2);
+        position: absolute; inset: 0; border-radius: 50%;
+        border: 2px solid rgba(0, 242, 254, 0.3); border-top: 2px solid var(--accent-color); border-bottom: 2px solid var(--accent-color);
+        animation: spin 3s linear infinite; box-shadow: 0 0 30px var(--bg-glow);
     }
-
-    /* Anillo medio punteado */
     .reactor-ring-mid {
-        position: absolute; inset: 20px;
-        border-radius: 50%;
-        border: 1px dashed rgba(157, 78, 221, 0.6);
-        animation: spin-reverse 10s linear infinite;
+        position: absolute; inset: 20px; border-radius: 50%;
+        border: 1px dashed rgba(157, 78, 221, 0.6); animation: spin-reverse 8s linear infinite;
     }
-
-    /* Núcleo central brillante */
     .reactor-core {
-        width: 100px; height: 100px;
-        border-radius: 50%;
-        background: radial-gradient(circle at 50% 50%, #ffffff 0%, #00f2fe 40%, #4facfe 100%);
-        box-shadow: 0 0 50px #00f2fe, inset 0 0 20px #ffffff;
-        animation: pulse 2s ease-in-out infinite;
-        z-index: 10;
+        width: 80px; height: 80px; border-radius: 50%;
+        background: radial-gradient(circle at 50% 50%, #ffffff 0%, var(--accent-color) 40%, #4facfe 100%);
+        box-shadow: 0 0 50px var(--accent-color), inset 0 0 20px #ffffff;
+        animation: pulse 2s ease-in-out infinite; z-index: 10;
     }
-
-    /* Pequeños nodos orbitando */
-    .reactor-node {
-        position: absolute; width: 8px; height: 8px;
-        background-color: #00f2fe; border-radius: 50%;
-        box-shadow: 0 0 10px #00f2fe;
-        top: -4px; left: 50%; transform: translateX(-50%);
-    }
-    .reactor-node-2 {
-        position: absolute; width: 6px; height: 6px;
-        background-color: #9d4edd; border-radius: 50%;
-        box-shadow: 0 0 10px #9d4edd;
-        bottom: -3px; left: 50%; transform: translateX(-50%);
-    }
-
-    .reactor-text {
-        margin-top: 30px; font-size: 14px; letter-spacing: 5px; color: #00f2fe; text-transform: uppercase;
-        text-shadow: 0 0 15px rgba(0,242,254,0.8); z-index: 10; font-weight: 600;
+    
+    .display-text {
+        margin-top: 30px; font-size: 14px; letter-spacing: 5px; color: var(--accent-color); text-transform: uppercase;
+        text-shadow: 0 0 15px var(--bg-glow); z-index: 10; font-weight: 600; font-family: monospace;
     }
 
     @keyframes spin { 100% { transform: rotate(360deg); } }
     @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
     @keyframes pulse { 
-        0% { transform: scale(0.95); box-shadow: 0 0 30px #00f2fe, inset 0 0 15px #ffffff; }
-        50% { transform: scale(1.05); box-shadow: 0 0 60px #00f2fe, inset 0 0 30px #ffffff; }
-        100% { transform: scale(0.95); box-shadow: 0 0 30px #00f2fe, inset 0 0 15px #ffffff; }
+        0% { transform: scale(0.95); box-shadow: 0 0 30px var(--accent-color), inset 0 0 15px #ffffff; }
+        50% { transform: scale(1.05); box-shadow: 0 0 60px var(--accent-color), inset 0 0 30px #ffffff; }
+        100% { transform: scale(0.95); box-shadow: 0 0 30px var(--accent-color), inset 0 0 15px #ffffff; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -245,12 +213,21 @@ if "audio_pendiente" not in st.session_state: st.session_state.audio_pendiente =
 if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
+if "modo_actual" not in st.session_state: st.session_state.modo_actual = "💻 Programación" # Por defecto en Dev Mode
 
-# --- SIDEBAR ---
+# --- SIDEBAR (DISEÑO DE MODO PROGRAMACIÓN) ---
 with st.sidebar:
-    st.markdown("<h3>🔵 Lili AI</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: var(--accent-color);'>💻 Lili Dev</h3>", unsafe_allow_html=True)
     st.caption(f"{VERSION}")
     
+    # Selector de Modo
+    st.markdown("### Modo de Trabajo")
+    modos = ["💻 Programación", "💬 Chat General", "🎨 Creativo", "📊 Análisis"]
+    st.session_state.modo_actual = st.radio("", modos, index=modos.index(st.session_state.modo_actual), label_visibility="collapsed")
+
+    st.markdown("---")
+    
+    # Nuevo Chat
     if st.button("+ Nuevo Chat", use_container_width=True):
         nuevo_id = datetime.datetime.now().strftime("%H:%M:%S")
         st.session_state.chat_actual_id = nuevo_id
@@ -258,9 +235,8 @@ with st.sidebar:
         guardar_todos_los_chats(st.session_state.todos_los_chats)
         st.rerun()
 
-    st.markdown("---")
-    st.markdown("**Conversaciones**")
-    
+    # Historial
+    st.markdown("**Historial**")
     for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
         if len(st.session_state.todos_los_chats[chat_id]) > 0:
             col1, col2 = st.columns([0.8, 0.2])
@@ -281,25 +257,41 @@ with st.sidebar:
                     st.rerun()
 
     st.markdown("---")
-    with st.expander("Proyectos / Sistema"):
-        voz_activa = st.checkbox("Voz activa", value=True)
+    
+    # Configuración de GitHub (SIEMPRE VISIBLE EN MODO PROGRAMACIÓN)
+    if st.session_state.modo_actual == "💻 Programación":
+        st.markdown("#### 🐙 Repositorios")
         token = st.secrets.get("GITHUB_TOKEN")
         usuario_github = "leivercontreras18-ux"
+        
         if token:
+            # EL BOTÓN ESENCIAL DE SINCRONIZAR
+            if st.button("🔄 Sincronizar Repositorios", use_container_width=True):
+                st.cache_data.clear() # Forzamos a que vuelva a buscar la lista actualizada
+                st.rerun()
+                
             repos = obtener_repositorios(token, usuario_github)
             if repos:
                 repo_sel = st.selectbox("Repositorio", repos)
                 archivos = obtener_archivos(usuario_github, repo_sel, token)
                 if archivos:
                     arch_sel = st.selectbox("Archivo", archivos)
-                    if st.button("Cargar Archivo", use_container_width=True):
+                    if st.button("📥 Cargar Archivo", use_container_width=True):
                         exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
                         if exito:
                             st.session_state.codigo_github = resultado
                             st.session_state.archivo_cargado_nombre = arch_sel
                             st.rerun()
+            else:
+                st.warning("No se encontraron repositorios. Revisa tu Token.")
+                
             if st.session_state.archivo_cargado_nombre:
-                st.success(f"Cargado: {st.session_state.archivo_cargado_nombre}")
+                st.success(f"✅ Leyendo: {st.session_state.archivo_cargado_nombre}")
+
+    with st.expander("Configuración General"):
+        voz_activa = st.checkbox("Voz activa", value=True)
+        with st.expander("Micrófono"):
+            audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
 
 # --- CONEXIÓN CON GROQ ---
 if "GROQ_API_KEY" not in st.secrets:
@@ -314,28 +306,28 @@ for message in mensajes_actuales:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Si no hay mensajes, mostramos el ARC REACTOR
+# Si no hay mensajes, mostramos el reactor adaptado
 if len(mensajes_actuales) == 0:
-    st.markdown("""
-        <div class="reactor-container">
+    texto_reactor = "DEV ENVIRONMENT" if st.session_state.modo_actual == "💻 Programación" else "SYSTEM ONLINE"
+    mensaje_bienvenida = "Entorno de Desarrollo listo. Carga un archivo de GitHub para comenzar." if st.session_state.modo_actual == "💻 Programación" else "Hola Leiver. ¿Qué hacemos hoy?"
+    
+    st.markdown(f"""
+        <div class="center-display">
             <div class="reactor">
-                <div class="reactor-ring-outer"><div class="reactor-node"></div></div>
-                <div class="reactor-ring-mid"><div class="reactor-node-2"></div></div>
+                <div class="reactor-ring-outer"></div>
+                <div class="reactor-ring-mid"></div>
                 <div class="reactor-core"></div>
             </div>
-            <div class="reactor-text">System Online</div>
+            <div class="display-text">{texto_reactor}</div>
         </div>
         <div style="text-align: center; margin-top: 20px;">
-            <p style="font-size: 16px; color: #94a3b8;">Hola Leiver. El reactor está estable. ¿Qué construimos hoy?</p>
+            <p style="font-size: 16px; color: #94a3b8;">{mensaje_bienvenida}</p>
         </div>
     """, unsafe_allow_html=True)
 
 # --- PROCESAMIENTO DE ENTRADA ---
-prompt = st.chat_input("Escribe tu mensaje...")
-
-with st.sidebar:
-    with st.expander("Micrófono"):
-        audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
+placeholder_texto = "Pídeme un cambio de código..." if st.session_state.modo_actual == "💻 Programación" else "Escribe tu mensaje..."
+prompt = st.chat_input(placeholder_texto)
 
 if audio_grabado or prompt:
     texto_usuario = prompt if prompt else ""
@@ -356,13 +348,16 @@ if audio_grabado or prompt:
         
         codigo_actual = st.session_state.codigo_github
         
-        instrucciones = f"""Eres {NOMBRE_IA}, una IA avanzada, cercana y carismática.
-        REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
-        CONTEXTO: Te habla Leiver, de Venezuela. Eres su asistente personal y de programación.
-        REGLA DE PROGRAMACIÓN: Si te pide cambios de código, NUNCA devuelvas el archivo completo. Dile: "Borra desde la línea X hasta la Y" y dale el bloque de código exacto."""
-        
-        if codigo_actual:
-            instrucciones += f"\n\nCódigo actual:\n```\n{codigo_actual[:10000]}\n```"
+        # --- LÓGICA DE PROMPTS SEGÚN EL MODO ---
+        if st.session_state.modo_actual == "💻 Programación":
+            instrucciones = """Eres Lili Dev, una IA experta en programación y arquitectura de software.
+            REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
+            CONTEXTO: Te habla Leiver, de Venezuela. Estás en MODO PROGRAMACIÓN.
+            REGLA CRÍTICA: Si te pide cambios de código, NUNCA devuelvas el archivo completo. Dile: "Borra desde la línea X hasta la Y" y dale el bloque de código exacto. Sé preciso y técnico."""
+            if codigo_actual:
+                instrucciones += f"\n\nCódigo actual del proyecto:\n```\n{codigo_actual[:10000]}\n```"
+        else:
+            instrucciones = """Eres Lili, una IA avanzada y carismática. REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL."""
 
         mensajes_para_groq = [{"role": "system", "content": instrucciones}]
         for msg in mensajes_actuales:
@@ -372,7 +367,7 @@ if audio_grabado or prompt:
         try:
             with st.spinner("Pensando..."):
                 respuesta = cliente.chat.completions.create(
-                    model="openai/gpt-oss-20b", messages=mensajes_para_groq, temperature=0.8, max_tokens=1024
+                    model="openai/gpt-oss-20b", messages=mensajes_para_groq, temperature=0.7, max_tokens=1024
                 )
                 texto_respuesta = respuesta.choices[0].message.content
                 st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "assistant", "content": texto_respuesta})
