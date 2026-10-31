@@ -12,7 +12,7 @@ VOZ_FIJA = "es-MX-DaliaNeural"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS AVANZADO (DISEÑO ETHEREAL / CORTANA) ---
+# --- CSS AVANZADO (DISEÑO ETHEREAL / FLOTANTE) ---
 st.markdown("""
 <style>
     /* Fondo Espacial */
@@ -23,13 +23,13 @@ st.markdown("""
     }
     
     #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    footer {visibility: hidden;} /* Ocultamos el pie de página feo */
     header { background: transparent !important; }
     
     .block-container { 
-        padding-top: 3rem !important; 
-        padding-bottom: 2rem !important;
-        max-width: 90% !important; 
+        padding-top: 2rem !important; 
+        padding-bottom: 120px !important; /* Espacio para la barra flotante */
+        max-width: 95% !important; 
     }
 
     /* -----------------------------------------
@@ -40,21 +40,19 @@ st.markdown("""
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        height: 70vh;
+        height: 75vh;
     }
     
     .fluid-orb {
-        width: 280px;
-        height: 280px;
-        /* Gradiente pastel: Rosa, Morado, Azul */
+        width: 320px;
+        height: 320px;
         background: linear-gradient(135deg, #fbcfe8 0%, #d8b4fe 50%, #bfdbfe 100%);
-        /* Animación combinada: deformación + flotación */
+        /* Animación de deformación y flotación */
         animation: morph 8s ease-in-out infinite, float 6s ease-in-out infinite;
-        box-shadow: 0 0 60px rgba(216, 180, 254, 0.5), inset 0 0 40px rgba(255,255,255,0.6);
-        filter: blur(6px);
+        box-shadow: 0 0 80px rgba(216, 180, 254, 0.5), inset 0 0 40px rgba(255,255,255,0.7);
+        filter: blur(8px); /* Suaviza los bordes */
     }
 
-    /* La animación de deformación que te gustó */
     @keyframes morph {
         0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
         34% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; }
@@ -63,7 +61,7 @@ st.markdown("""
 
     @keyframes float {
         0% { transform: translateY(0px); }
-        50% { transform: translateY(-15px); }
+        50% { transform: translateY(-20px); }
         100% { transform: translateY(0px); }
     }
 
@@ -74,7 +72,7 @@ st.markdown("""
     .title-container h1 {
         color: #ffffff;
         font-weight: 300;
-        letter-spacing: 2px;
+        letter-spacing: 3px;
         margin-bottom: 0px;
     }
     .title-container p {
@@ -87,8 +85,8 @@ st.markdown("""
        ----------------------------------------- */
     /* Caja contenedora del chat */
     div[data-testid="stVerticalBlock"]:has(div[data-testid="stChatMessage"]) {
-        background: rgba(255, 255, 255, 0.04) !important;
-        backdrop-filter: blur(15px) !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(20px) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 20px !important;
         padding: 20px !important;
@@ -132,13 +130,18 @@ st.markdown("""
     }
 
     /* -----------------------------------------
-       3. BARRA DE TEXTO (Píldora Brillante)
+       3. BARRA DE TEXTO (El truco de la Píldora)
        ----------------------------------------- */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
-        padding-bottom: 1rem !important;
+        display: flex !important;
+        justify-content: center !important; /* Centra la barra */
+        padding-bottom: 2rem !important;
     }
+    
     .stChatInput {
+        width: 60% !important; /* No ocupa todo el ancho */
+        max-width: 800px !important;
         background: rgba(20, 20, 30, 0.9) !important;
         border: 2px solid #a855f7 !important; 
         border-radius: 30px !important;
@@ -185,7 +188,7 @@ try:
     instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa."
 
     # --- LAYOUT PRINCIPAL ---
-    col_izq, col_der = st.columns([1.2, 1])
+    col_izq, col_der = st.columns([1, 1])
 
     with col_izq:
         st.markdown("""
