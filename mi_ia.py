@@ -103,30 +103,30 @@ st.markdown("""
     }
 
     /* =======================================================
-       4. CAJA DEL CHAT (El verdadero Cristal Flotante)
+       4. CAJA DEL CHAT (Borde Invisible)
        ======================================================= */
     div[data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(255, 255, 255, 0.01) !important; /* Casi invisible */
-        border: 1px solid rgba(255, 255, 255, 0.08) !important; /* Borde muy sutil */
-        backdrop-filter: blur(30px) !important; /* Más difuminado */
-        border-radius: 30px !important; /* Más redondeado */
-        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5) !important;
+        background: rgba(255, 255, 255, 0.02) !important; 
+        border: none !important; /* ¡Aquí quitamos el borde gris! */
+        backdrop-filter: blur(30px) !important; 
+        border-radius: 30px !important; 
+        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.4) !important; /* Sombra suave para que flote */
         padding: 20px !important;
         overflow: hidden !important;
     }
     
     div[data-testid="stVerticalBlockBorderWrapper"] > div { background: transparent !important; }
 
-    /* Ocultar Avatares y botones de Streamlit */
+    /* Ocultar Avatares y botones */
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
     div[data-testid="stChatMessage"] button { display: none !important; }
 
     /* Burbujas (Estilo Píldora) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
-        background: linear-gradient(135deg, rgba(147, 51, 234, 0.3), rgba(88, 28, 135, 0.3)) !important;
-        border: 1px solid rgba(168, 85, 247, 0.4) !important;
+        background: linear-gradient(135deg, rgba(147, 51, 234, 0.4), rgba(88, 28, 135, 0.4)) !important;
+        border: 1px solid rgba(168, 85, 247, 0.3) !important;
         color: #f3e8ff !important;
-        border-radius: 25px 25px 5px 25px !important; /* Curva pronunciada */
+        border-radius: 25px 25px 5px 25px !important; 
         margin-left: auto !important;
         width: fit-content !important;
         max-width: 85% !important;
@@ -137,7 +137,7 @@ st.markdown("""
 
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
         color: rgba(252, 231, 243, 0.95) !important;
         border-radius: 25px 25px 25px 5px !important;
         margin-right: auto !important;
@@ -148,27 +148,16 @@ st.markdown("""
         backdrop-filter: blur(10px) !important;
     }
 
-    /* EL TRUCO DEL SCROLL: Barra morada fina y elegante */
-    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar {
-        width: 6px !important;
-    }
-    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-track {
-        background: transparent !important;
-    }
-    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-thumb {
-        background: rgba(168, 85, 247, 0.4) !important;
-        border-radius: 10px !important;
-    }
-    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-thumb:hover {
-        background: rgba(168, 85, 247, 0.8) !important;
-    }
+    /* Scroll elegante */
+    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar { width: 6px !important; }
+    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-track { background: transparent !important; }
+    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.4) !important; border-radius: 10px !important; }
+    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.8) !important; }
 
     /* =======================================================
        5. BARRA DE TEXTO
        ======================================================= */
-    [data-testid="stBottom"], [data-testid="stBottom"] > div {
-        background: transparent !important;
-    }
+    [data-testid="stBottom"], [data-testid="stBottom"] > div { background: transparent !important; }
 
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
@@ -185,12 +174,10 @@ st.markdown("""
         box-shadow: 0 0 20px rgba(168, 85, 247, 0.15) !important;
     }
 
-    [data-testid="stChatInput"] > div,
-    [data-testid="stChatInput"] div,
+    [data-testid="stChatInput"] > div, [data-testid="stChatInput"] div,
     [data-testid="stChatInput"] div[data-baseweb="base-input"],
     [data-testid="stChatInput"] div[data-baseweb="textarea"],
-    [data-testid="stChatInput"] textarea,
-    [data-testid="stChatInput"] input {
+    [data-testid="stChatInput"] textarea, [data-testid="stChatInput"] input {
         background-color: transparent !important;
         border: none !important;
         outline: none !important;
