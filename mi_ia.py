@@ -19,7 +19,7 @@ st.markdown("""
     .stApp {
         background-color: #121214 !important;
         color: #e2e8f0;
-        overflow: hidden !important; /* Bloquea el scroll de la página principal */
+        overflow: hidden !important; 
     }
     
     /* Los resplandores de fondo (Glows) */
@@ -38,7 +38,7 @@ st.markdown("""
         height: 100vh !important;
     }
 
-    /* 2. EL ORBE (Animación exacta provista por Gemini) */
+    /* 2. EL ORBE (Animación exacta) */
     @keyframes blob {
         0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; transform: scale(1); }
         33% { border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%; transform: scale(1.03) rotate(4deg); }
@@ -50,7 +50,16 @@ st.markdown("""
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 75vh;
+        height: 70vh;
+    }
+
+    .orb-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 300px;
+        height: 300px;
     }
 
     /* Brillo exterior del orbe */
@@ -96,34 +105,38 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
         margin-top: 30px;
         margin-bottom: 0;
+        text-align: center;
     }
     .nova-subtitle {
         font-size: 14px;
         color: rgba(233, 213, 255, 0.6);
         letter-spacing: 0.05em;
+        text-align: center;
+        margin-top: 5px;
     }
 
     /* 3. EL PANEL DE CHAT (Glassmorphism) */
-    /* Estilo del contenedor derecho */
     .chat-panel {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(24px);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        background: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(24px) !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
         border-radius: 24px;
-        height: 80vh;
+        height: 75vh;
+        padding: 20px;
+        overflow-y: auto !important;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
     }
 
     .chat-header {
-        padding: 16px 24px;
+        padding-bottom: 12px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         font-size: 14px;
         color: #cbd5e1;
         font-weight: 500;
         letter-spacing: 0.05em;
+        margin-bottom: 15px;
     }
 
     /* Ocultar avatares de Streamlit */
@@ -160,7 +173,7 @@ st.markdown("""
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
         position: fixed !important;
-        bottom: 20px !important;
+        bottom: 25px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 100% !important;
@@ -176,6 +189,7 @@ st.markdown("""
         backdrop-filter: blur(24px) !important;
         box-shadow: 0 0 20px rgba(168, 85, 247, 0.1) !important;
         transition: all 0.3s ease !important;
+        overflow: hidden !important;
     }
     
     .stChatInput:focus-within {
@@ -215,8 +229,6 @@ def autoplay_audio(audio_buffer):
 # --- INICIALIZAR ESTADO ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "mic_key" not in st.session_state:
-    st.session_state.mic_key = 0
 if "audio_pendiente" not in st.session_state:
     st.session_state.audio_pendiente = None
 
@@ -224,104 +236,44 @@ if "audio_pendiente" not in st.session_state:
 try:
     api_key = st.secrets["GROQ_API_KEY"]
     cliente = Groq(api_key=api_key)
-    instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa."
+    instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Tu pareja es Winderly Espinoza. Responde de forma concisa."
 
-    # --- LAYOUT PRINCIPAL ---
-    col_izq, col_der = st.columns([1.5, 1])
+    # --- LAYOUT PRINCIPAL SEPARADO EN COLUMNAS ---
+    col_izq, col_der = st.columns([5, 4], gap="large")
 
+    # COLUMNA IZQUIERDA: Orbe Holográfico
     with col_izq:
-        st.markdown("""
-            <div class="orb-container">
+        st.markdown(f"""
+        <div class="orb-container">
+            <div class="orb-wrapper">
                 <div class="orb-glow"></div>
                 <div class="orb-body">
                     <div class="orb-inner"></div>
                 </div>
-                <h1 class="nova-title">NOVA</h1>
-                <p class="nova-subtitle">How can I help you today?</p>
             </div>
+            <div class="nova-title">{NOMBRE_IA.upper()}</div>
+            <div class="nova-subtitle">How can I help you today?</div>
+        </div>
         """, unsafe_allow_html=True)
 
+    # COLUMNA DERECHA: Chat con Glassmorphism
     with col_der:
-        st.markdown('<div class="chat-panel">', unsafe_allow_html=True)
-        st.markdown('<div class="chat-header">Chat Log</div>', unsafe_allow_html=True)
+        st.markdown('<div class="chat-header">Conversación Activa</div>', unsafe_allow_html=True)
         
-        # Contenedor con altura fija para el scroll interno
-        chat_container = st.container(height=520)
-        with chat_container:
+        # Contenedor simulado para agrupar burbujas nativas con CSS personalizado
+        with st.container():
+            st.markdown('<div class="chat-panel">', unsafe_allow_html=True)
             for message in st.session_state.messages:
                 with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
-        st.markdown('</div>', unsafe_allow_html=True)
+                    st.write(message["content"])
+            st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- LÓGICA DE ENTRADA ---
-    prompt = st.chat_input(f"Ask {NOMBRE_IA}...")
+    # --- CAPTURA DE ENTRADA (BOTÓN DE CHAT INFERIOR) ---
+    prompt = st.chat_input("Ask Nova...")
 
-    with st.sidebar:
-        st.markdown("### ⚙️ System")
-        activar_voz = st.checkbox("🔊 Voz activa", value=True)
-        audio_grabado = st.audio_input("🎤 Hablar", key=f"mic_{st.session_state.mic_key}")
-        archivo_subido = st.file_uploader("📂 Código")
-        codigo_actual = archivo_subido.read().decode("utf-8") if archivo_subido else ""
-        if st.button("🗑️ Limpiar Chat"):
-            st.session_state.messages = []
-            st.session_state.mic_key += 1
-            st.rerun()
-
-    # --- PROCESAMIENTO ---
-    if audio_grabado or prompt:
-        texto_usuario = ""
+    if prompt:
+        # 1. Guardar y mostrar mensaje del usuario
+        st.session_state.messages.append({"role": "user", "content": prompt})
         
-        if audio_grabado and not prompt:
-            with st.spinner("Escuchando..."):
-                try:
-                    transcripcion = cliente.audio.transcriptions.create(
-                        file=("audio.wav", audio_grabado.read()),
-                        model="whisper-large-v3",
-                        language="es"
-                    )
-                    texto_usuario = transcripcion.text
-                except Exception as e:
-                    st.error(f"Error de audio: {e}")
-        elif prompt:
-            texto_usuario = prompt
-            
-        if texto_usuario:
-            st.session_state.messages.append({"role": "user", "content": texto_usuario})
-
-            contexto_ia = texto_usuario
-            if codigo_actual:
-                contexto_ia = f"Código:\n```python\n{codigo_actual}\n```\nPetición: {texto_usuario}"
-
-            try:
-                respuesta = cliente.chat.completions.create(
-                    model="openai/gpt-oss-120b",
-                    messages=[
-                        {"role": "system", "content": instrucciones},
-                        {"role": "user", "content": contexto_ia}
-                    ],
-                    temperature=0.7,
-                    max_tokens=2048
-                )
-                
-                texto_respuesta = respuesta.choices[0].message.content
-                st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
-                
-                if activar_voz: 
-                    try:
-                        audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
-                        st.session_state.audio_pendiente = audio_buffer
-                    except Exception:
-                        pass
-                
-                st.session_state.mic_key += 1
-                st.rerun()
-                
-            except Exception as e:
-                st.error(f"Error de Groq: {e}")
-
-    if st.session_state.audio_pendiente:
-        autoplay_audio(st.session_state.audio_pendiente)
-        st.session_state.audio_pendiente = None
-
-except KeyError:
-    st.warning("⚠️ Falta la API Key de Groq.")
+        # Preparar mensajes para la API de Groq
+        mensajes_api = [{"role": "system", "content": instrucciones}]
