@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v16.1 - SaaS UI Fixed"
+VERSION = "v17.0 - Exact SaaS Replica"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -78,136 +78,126 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS AVANZADO (RÉPLICA DE LA FOTO) ---
+# --- CSS AVANZADO (RÉPLICA EXACTA DE LA FOTO) ---
 st.markdown("""
 <style>
-    /* Fondo atmosférico */
+    /* 1. FONDO CON MONTAÑA Y CAPA OSCURA */
     .stApp {
         background-image: url('https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=2094&auto=format&fit=crop'); 
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
-        background-color: #121214; 
+        background-color: #000000; 
     }
-    
-    /* Superposición oscura para que resalte la UI */
     .stApp::before {
         content: "";
         position: fixed; inset: 0;
-        background: rgba(15, 15, 20, 0.7);
+        background: rgba(20, 10, 35, 0.6); /* Tinte morado oscuro */
         z-index: -1;
     }
-
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
-    [data-testid="column"] { padding: 0 !important; }
+    .block-container { padding: 0 !important; max-width: 100% !important; }
 
-    /* =========================================
-       BARRA LATERAL (SIDEBAR)
-       ========================================= */
+    /* 2. BARRA LATERAL FLOTANTE (Como en la foto) */
     [data-testid="stSidebar"] {
-        background-color: #18181b !important;
-        border-right: none !important;
-        border-radius: 20px !important;
-        margin: 15px 0 15px 15px !important;
-        height: calc(100vh - 30px) !important;
-        border: 1px solid #27272a !important;
-    }
-    
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { 
-        font-weight: 600 !important; color: #a78bfa !important; font-size: 12px !important; text-transform: none !important; 
-        letter-spacing: 0px !important; margin-bottom: 10px !important;
-    }
-    
-    /* Botones de la barra lateral */
-    [data-testid="stSidebar"] button {
-        background: transparent !important; color: #d4d4d8 !important; border: none !important;
-        text-align: left !important; border-radius: 10px !important; padding: 8px 12px !important;
-        margin-bottom: 2px !important; font-weight: 500 !important;
-    }
-    [data-testid="stSidebar"] button:hover {
-        background: #27272a !important; color: white !important;
-    }
-    
-    /* Botón especial de Nuevo Chat */
-    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
-        background: #27272a !important; color: white !important; border: 1px solid #3f3f46 !important;
-        text-align: center !important; font-size: 14px !important;
-    }
-
-    /* =========================================
-       ORBE Y ÁREA CENTRAL
-       ========================================= */
-    .welcome-area {
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        height: 100%; text-align: center; padding-top: 50px;
-    }
-    
-    .saas-orb {
-        width: 60px; height: 60px; border-radius: 50%;
-        background: radial-gradient(circle at 30% 30%, #d8b4fe, #8b5cf6, #1e1b4b);
-        box-shadow: 0 0 40px rgba(139, 92, 246, 0.6), inset 0 0 15px rgba(255,255,255,0.5);
-        animation: float 4s ease-in-out infinite;
-        margin-bottom: 20px;
-    }
-    
-    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-    
-    .welcome-text {
-        font-size: 28px; font-weight: 500; color: white; margin-bottom: 25px;
-    }
-    
-    /* Píldoras de sugerencia */
-    .pill-container { display: flex; gap: 10px; justify-content: center; margin-bottom: 40px; }
-    .pill { 
-        background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); 
-        padding: 6px 16px; border-radius: 20px; color: #d4d4d8; font-size: 12px; cursor: pointer;
-        transition: all 0.2s;
-    }
-    .pill:hover { background: rgba(255, 255, 255, 0.1); color: white; }
-
-    /* =========================================
-       BARRA DE TEXTO (CHAT INPUT)
-       ========================================= */
-    [data-testid="stBottomBlockContainer"] {
-        background: transparent !important; padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important;
-    }
-    .stChatInput {
-        background: #18181b !important;
-        border: 1px solid #3f3f46 !important;
-        border-radius: 20px !important;
+        background-color: #1a1a1f !important;
+        border: 1px solid #2d2d35 !important;
+        border-radius: 16px !important;
+        margin: 20px 0 20px 20px !important;
+        height: calc(100vh - 40px) !important;
+        padding: 15px !important;
         box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
     }
-    .stChatInput:focus-within { border: 1px solid #8b5cf6 !important; }
-    [data-testid="stChatInput"] textarea { color: white !important; font-size: 14px !important; }
+    [data-testid="stSidebar"] > div:first-child { padding-top: 0 !important; }
     
-    /* Botón de enviar del chat input */
-    [data-testid="stChatInput"] button {
-        background: #8b5cf6 !important; color: white !important; border-radius: 12px !important;
-        border: none !important; width: 32px !important; height: 32px !important;
+    /* Títulos de la barra lateral */
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { 
+        font-weight: 600 !important; color: #a1a1aa !important; font-size: 11px !important; 
+        text-transform: uppercase; letter-spacing: 1px !important; margin: 15px 0 5px 0 !important;
     }
-    [data-testid="stChatInput"] button svg { fill: white !important; }
+    
+    /* Botones de la barra lateral (Texto plano como en la foto) */
+    [data-testid="stSidebar"] button {
+        background: transparent !important; color: #e4e4e7 !important; border: none !important;
+        text-align: left !important; border-radius: 8px !important; padding: 8px 10px !important;
+        margin-bottom: 2px !important; font-weight: 500 !important; font-size: 13px !important;
+    }
+    [data-testid="stSidebar"] button:hover { background: #27272a !important; color: white !important; }
+    
+    /* Botón de Nuevo Chat (Destacado) */
+    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
+        background: #27272a !important; color: white !important; border: 1px solid #3f3f46 !important;
+        text-align: center !important; font-size: 13px !important; margin-bottom: 20px !important;
+    }
 
-    /* =========================================
-       TARJETAS INFERIORES (BENTO BOX)
-       ========================================= */
-    .card-container { display: flex; gap: 15px; justify-content: center; margin-top: 30px; max-width: 900px; margin: 30px auto 0 auto; }
-    .saas-card {
-        background: rgba(24, 24, 27, 0.8); border: 1px solid #27272a; border-radius: 15px;
-        padding: 15px; flex: 1; text-align: left; backdrop-filter: blur(10px);
+    /* 3. ÁREA CENTRAL (Orbe, texto, input, tarjetas) */
+    .main-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin-left: 280px; /* Espacio para la barra lateral */
+        padding-bottom: 80px;
     }
-    .card-title { color: white; font-size: 13px; font-weight: 600; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-    .card-desc { color: #a1a1aa; font-size: 11px; line-height: 1.4; margin-bottom: 10px; }
-    .card-btn { 
-        background: #27272a; color: #e4e4e7; font-size: 10px; padding: 4px 10px; border-radius: 6px; 
-        display: inline-block; border: 1px solid #3f3f46;
+
+    .saas-orb {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #ffffff, #a78bfa, #4c1d95);
+        box-shadow: 0 0 30px #8b5cf6, inset 0 0 10px #ffffff;
+        margin-bottom: 20px;
     }
+    .welcome-text { font-size: 26px; font-weight: 500; color: white; margin-bottom: 30px; font-family: sans-serif; }
     
+    /* Píldoras de arriba del input */
+    .pill-container { display: flex; gap: 10px; margin-bottom: 15px; }
+    .pill { 
+        background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); 
+        padding: 6px 14px; border-radius: 20px; color: #d4d4d8; font-size: 12px;
+    }
+
+    /* 4. EL INPUT DE CHAT FLOTANTE */
+    [data-testid="stBottomBlockContainer"] {
+        background: transparent !important;
+        position: fixed !important;
+        top: 55% !important; /* Lo ponemos en el medio */
+        left: 60% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 100% !important; max-width: 650px !important;
+        padding: 0 !important;
+        z-index: 1000;
+    }
+    .stChatInput {
+        background: #131316 !important;
+        border: 1px solid #3f3f46 !important;
+        border-radius: 16px !important;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8) !important;
+        padding: 5px !important;
+    }
+    [data-testid="stChatInput"] textarea { color: white !important; font-size: 14px !important; padding: 15px !important; }
+    [data-testid="stChatInput"] button {
+        background: #8b5cf6 !important; color: white !important; border-radius: 10px !important;
+        width: 35px !important; height: 35px !important; margin: 10px !important;
+    }
+
+    /* 5. TARJETAS INFERIORES */
+    .card-container { display: flex; gap: 15px; position: fixed; bottom: 30px; left: 60%; transform: translateX(-50%); width: 100%; max-width: 700px; z-index: 10; }
+    .saas-card {
+        background: rgba(24, 24, 27, 0.8); border: 1px solid #27272a; border-radius: 12px;
+        padding: 15px; flex: 1; backdrop-filter: blur(10px);
+    }
+    .card-title { color: white; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+    .card-desc { color: #a1a1aa; font-size: 10px; line-height: 1.3; margin-bottom: 10px; }
+    .card-btn { background: #27272a; color: #e4e4e7; font-size: 9px; padding: 4px 8px; border-radius: 4px; border: 1px solid #3f3f46; display: inline-block; }
+    
+    /* Ocultar audios y ajustar chat cuando ya hay mensajes */
     audio, div[data-testid="stAudio"] { display: none !important; }
     
-    /* Estilos para los mensajes del chat cuando ya hay conversación */
-    div[data-testid="stChatMessage"] { background: transparent !important; padding: 10px 0 !important; }
-    div[data-testid="stChatMessageAvatarUser"] { background: #8b5cf6 !important; border-radius: 10px !important; }
-    div[data-testid="stChatMessageAvatarAssistant"] { background: #27272a !important; border-radius: 10px !important; }
+    /* Si hay mensajes, movemos el input abajo de nuevo */
+    .chat-mode [data-testid="stBottomBlockContainer"] {
+        top: auto !important;
+        bottom: 20px !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -220,7 +210,7 @@ if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
 
-# --- SIDEBAR (RÉPLICA DE LA IMAGEN) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.markdown("<h2 style='color: white; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;'>✨ Lili AI</h2>", unsafe_allow_html=True)
     
@@ -230,17 +220,15 @@ with st.sidebar:
         st.session_state.todos_los_chats[nuevo_id] = []
         st.rerun()
 
-    st.markdown("---")
-    st.markdown("### Features")
+    st.markdown("Features")
     st.button("💬 Chat", use_container_width=True)
     st.button("📦 Archived", use_container_width=True)
     st.button("📚 Library", use_container_width=True)
     
-    st.markdown("### Workspaces")
+    st.markdown("Workspaces")
     st.button("📁 New Project", use_container_width=True)
     
-    # El historial de chats va aquí (CON EL ERROR CORREGIDO)
-    st.markdown("### Historial")
+    st.markdown("Historial")
     for chat_id in sorted(st.session_state.todos_los_chats.keys(), reverse=True):
         if len(st.session_state.todos_los_chats[chat_id]) > 0:
             prefijo = "🟣" if chat_id == st.session_state.chat_actual_id else "⚪"
@@ -248,9 +236,8 @@ with st.sidebar:
                 st.session_state.chat_actual_id = chat_id
                 st.rerun()
 
-    # Ajustes abajo
-    st.markdown("---")
-    with st.expander("⚙️ Configuration"):
+    # Ajustes
+    with st.expander("⚙️ Configuración"):
         voz_activa = st.checkbox("🔊 Voz activa", value=True)
         token = st.secrets.get("GITHUB_TOKEN")
         usuario_github = "leivercontreras18-ux"
@@ -276,36 +263,24 @@ if "GROQ_API_KEY" not in st.secrets:
     st.stop()
 cliente = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- LAYOUT PRINCIPAL (CENTRADO Y MINIMALISTA) ---
+# --- LAYOUT PRINCIPAL ---
 mensajes_actuales = st.session_state.todos_los_chats[st.session_state.chat_actual_id]
 
-# Si no hay mensajes, mostramos la pantalla de bienvenida
+# Si no hay mensajes, mostramos la interfaz exacta de la foto
 if len(mensajes_actuales) == 0:
     st.markdown("""
-        <div class="welcome-area">
+        <div class="main-container">
             <div class="saas-orb"></div>
             <div class="welcome-text">Ready to Create Something New?</div>
+            <div class="pill-container">
+                <div class="pill">✨ Create Image</div>
+                <div class="pill">🧠 Brainstorm</div>
+                <div class="pill">📝 Make a plan</div>
+            </div>
         </div>
     """, unsafe_allow_html=True)
     
-    # Las píldoras mágicas (solo visuales por ahora)
-    st.markdown("""
-        <div class="pill-container">
-            <div class="pill">✨ Brainstorm</div>
-            <div class="pill">💻 Code</div>
-            <div class="pill">📝 Make a plan</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-# Si ya hay mensajes, los mostramos
-else:
-    st.markdown("<div style='height: 50px;'></div>", unsafe_allow_html=True)
-    for message in mensajes_actuales:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-# Tarjetas inferiores (Bento Box de la foto)
-if len(mensajes_actuales) == 0:
+    # Las 3 tarjetas de abajo
     st.markdown("""
         <div class="card-container">
             <div class="saas-card">
@@ -315,16 +290,27 @@ if len(mensajes_actuales) == 0:
             </div>
             <div class="saas-card">
                 <div class="card-title">📊 AI Presentation</div>
-                <div class="card-desc">Turn ideas into engaging, professional presentations.</div>
+                <div class="card-desc">Turn ideas into engaging presentations.</div>
                 <div class="card-btn">Make Slides</div>
             </div>
             <div class="saas-card">
                 <div class="card-title">💻 Dev Assistant</div>
-                <div class="card-desc">Generate clean, production-ready code in seconds.</div>
+                <div class="card-desc">Generate clean, production-ready code.</div>
                 <div class="card-btn">Generate Code</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
+
+# Si ya hay mensajes, mostramos el chat normal
+else:
+    # Clase CSS para bajar el input cuando ya hay chat
+    st.markdown("<style>.stChatInput { top: auto !important; bottom: 20px !important; }</style>", unsafe_allow_html=True)
+    
+    st.markdown("<div style='margin-left: 280px; padding: 20px; max-width: 800px; margin-top: 20px;'>", unsafe_allow_html=True)
+    for message in mensajes_actuales:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # --- PROCESAMIENTO DE ENTRADA ---
 prompt = st.chat_input("Ask Anything...")
@@ -356,10 +342,8 @@ if audio_grabado or prompt:
         instrucciones = f"""Eres {NOMBRE_IA}, una IA avanzada, cercana y carismática.
         REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
         CONTEXTO DEL USUARIO: Te habla Leiver, de Venezuela. Eres su asistente de programación.
+        REGLA DE PROGRAMACIÓN: NUNCA devuelvas archivos completos. Dile: "Borra desde la línea X hasta la Y" y dale el bloque de código exacto."""
         
-        REGLA DE PROGRAMACIÓN: 
-        NUNCA devuelvas archivos completos. Dile: "Borra desde la línea X hasta la Y" y dale el bloque de código exacto.
-        """
         if codigo_actual:
             instrucciones += f"\n\nCódigo actual:\n```\n{codigo_actual[:10000]}\n```"
 
