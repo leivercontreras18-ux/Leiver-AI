@@ -14,7 +14,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v14.0 - Multi-Chat"
+VERSION = "v14.3 - Clear UI"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -111,31 +111,40 @@ st.markdown("""
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { font-weight: 200 !important; letter-spacing: 2px; color: #e9d5ff !important; text-transform: uppercase; font-size: 14px !important; }
     [data-testid="stFileUploader"] { display: none !important; }
     [data-testid="stAudioInput"] { background-color: rgba(0, 242, 254, 0.05) !important; border: 1px solid rgba(0, 242, 254, 0.2) !important; border-radius: 15px !important; padding: 10px !important; }
-    
-    /* BOTONES DE CHAT EN LA BARRA LATERAL */
-    [data-testid="stSidebar"] button {
+
+    /* Estilos generales para botones de la barra lateral */
+    [data-testid="stSidebar"] button { 
+        background: rgba(168, 85, 247, 0.1) !important; 
+        color: #e9d5ff !important; 
+        border: 1px solid rgba(168, 85, 247, 0.3) !important; 
+        border-radius: 8px !important; 
+        text-align: center !important;
+        transition: all 0.2s ease !important; 
+    }
+    [data-testid="stSidebar"] button:hover { 
+        background: rgba(168, 85, 247, 0.3) !important; 
+        color: #ffffff !important;
+        box-shadow: 0 0 10px rgba(168, 85, 247, 0.5) !important;
+    }
+
+    /* Estilo especial para los chats en el historial (para que parezcan texto) */
+    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button {
         background: transparent !important;
-        color: #a78bfa !important; /* Color lila */
-        border: 1px solid transparent !important;
-        border-radius: 8px !important;
-        font-weight: normal !important;
+        border: none !important;
         text-align: left !important;
-        padding: 5px 10px !important;
-        margin-bottom: 2px !important;
-        transition: all 0.2s ease !important;
+        color: #a78bfa !important;
     }
-    [data-testid="stSidebar"] button:hover {
+    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button:hover {
         background: rgba(168, 85, 247, 0.1) !important;
-        color: #e9d5ff !important;
     }
-    /* Estilo especial para el botón de borrar/limpiar */
-    [data-testid="stSidebar"] button:contains("Limpiar") {
-        background: rgba(255, 0, 85, 0.1) !important;
-        color: #ff3366 !important;
-        border: 1px solid rgba(255, 0, 85, 0.3) !important;
-        margin-top: 20px !important;
-    }
-    [data-testid="stSidebar"] .stCheckbox p { font-size: 13px !important; color: #a78bfa !important; }
+
+    /* Notificación de éxito en la barra lateral */
+    div[data-testid="stNotification"] { background-color: rgba(20, 20, 30, 0.85) !important; backdrop-filter: blur(15px) !important; border-radius: 10px !important; padding: 10px !important; margin-bottom: 10px !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) { border: 1px solid #34d399 !important; box-shadow: 0 0 10px rgba(52, 211, 153, 0.2) !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) * { color: #a7f3d0 !important; font-size: 12px; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentInfo"]) { border: 1px solid #00f2fe !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentInfo"]) * { color: #a5f3fc !important; font-size: 12px;}
+    div[data-testid="stNotification"] svg { display: none !important; }
     
     @media (max-width: 768px) {
         .block-container { height: auto !important; overflow: auto !important; padding-bottom: 5rem !important; }
@@ -173,11 +182,9 @@ if "todos_los_chats" not in st.session_state:
 if "chat_actual_id" not in st.session_state:
     st.session_state.chat_actual_id = datetime.datetime.now().strftime("%d/%m %H:%M")
 
-# Si el chat actual no existe en el diccionario, lo creamos
 if st.session_state.chat_actual_id not in st.session_state.todos_los_chats:
     st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
 
-# Variables de sesión para el audio y github
 if "audio_pendiente" not in st.session_state:
     st.session_state.audio_pendiente = None
 if "mic_key" not in st.session_state:
@@ -191,7 +198,6 @@ if "archivo_cargado_nombre" not in st.session_state:
 
 # --- SIDEBAR (HISTORIAL Y CONFIGURACIÓN) ---
 with st.sidebar:
-    # 1. NUEVO CHAT
     if st.button("➕ Nuevo Chat", use_container_width=True):
         nuevo_id = datetime.datetime.now().strftime("%d/%m %H:%M")
         st.session_state.chat_actual_id = nuevo_id
@@ -200,13 +206,9 @@ with st.sidebar:
 
     st.markdown("---")
     
-    # 2. HISTORIAL DE CHATS
     st.subheader("Fijado")
-    # Ordenar los chats del más reciente al más antiguo
     for chat_id in sorted(st.session_state.todos_los_chats.keys(), reverse=True):
-        # Si el chat está vacío, no lo mostramos en el historial (para evitar basura)
         if len(st.session_state.todos_los_chats[chat_id]) > 0:
-            # Un pequeño truco para resaltar el chat activo
             prefijo = "👉 " if chat_id == st.session_state.chat_actual_id else "💬 "
             if st.button(f"{prefijo} {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
                 st.session_state.chat_actual_id = chat_id
@@ -214,7 +216,6 @@ with st.sidebar:
     
     st.markdown("---")
 
-    # 3. CONTROLES DE VOZ Y GITHUB
     voz_activa = st.checkbox("🔊 Voz activa", value=True)
     
     st.subheader("🐙 GitHub")
@@ -228,26 +229,29 @@ with st.sidebar:
             archivos = obtener_archivos(usuario_github, repo_seleccionado, token)
             if archivos:
                 archivo_seleccionado = st.selectbox("2. Archivo", archivos)
-                if st.button("Leer archivo", use_container_width=True):
+                
+                # 🔥 AQUÍ ESTÁ EL BOTÓN ARREGLADO
+                if st.button("📥 Leer archivo de GitHub", use_container_width=True):
                     with st.spinner("Descargando..."):
                         exito, resultado = descargar_archivo_github(usuario_github, repo_seleccionado, archivo_seleccionado, token)
                         if exito:
                             st.session_state.codigo_github = resultado
                             st.session_state.archivo_cargado_nombre = archivo_seleccionado
-                            st.success(f"✅ {archivo_seleccionado} cargado")
-                            st.rerun()
+                            st.rerun() # Recargamos para mostrar el mensaje verde
                         else:
                             st.error(resultado)
             else:
                 st.info("No hay archivos válidos.")
         
-    # Limpiar Chat Actual
+        # 🔥 INDICADOR DE ARCHIVO EN MEMORIA
+        if st.session_state.archivo_cargado_nombre:
+            st.success(f"✅ Leyendo: {st.session_state.archivo_cargado_nombre}")
+        
     st.markdown("---")
     if st.button("🗑️ Borrar este Chat", use_container_width=True):
         if st.session_state.chat_actual_id in st.session_state.todos_los_chats:
             del st.session_state.todos_los_chats[st.session_state.chat_actual_id]
             guardar_todos_los_chats(st.session_state.todos_los_chats)
-        # Creamos uno nuevo automáticamente
         st.session_state.chat_actual_id = datetime.datetime.now().strftime("%d/%m %H:%M")
         st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
         st.rerun()
@@ -278,7 +282,6 @@ with col_izq:
 
 with col_der:
     with st.container(border=True, height=550):
-        # Mostrar SOLO los mensajes del chat actual
         mensajes_actuales = st.session_state.todos_los_chats[st.session_state.chat_actual_id]
         for message in mensajes_actuales:
             with st.chat_message(message["role"]):
@@ -291,7 +294,6 @@ if prompt:
     texto_usuario = prompt
     
     if texto_usuario:
-        # Añadir al chat actual
         st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "user", "content": texto_usuario})
         guardar_todos_los_chats(st.session_state.todos_los_chats)
         
@@ -316,24 +318,21 @@ if prompt:
             instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```\n{codigo_actual}\n```"
 
         mensajes_para_groq = [{"role": "system", "content": instrucciones}]
-        # Le pasamos el historial SOLO de este chat
         for msg in mensajes_actuales:
             mensajes_para_groq.append({"role": msg["role"], "content": msg["content"]})
-        # Añadimos el mensaje nuevo
         mensajes_para_groq.append({"role": "user", "content": texto_usuario})
 
         try:
             with st.spinner("Pensando..."):
                 respuesta = cliente.chat.completions.create(
-                    model="openai/gpt-oss-120b",
+                    model="llama-3.1-8b-instant", 
                     messages=mensajes_para_groq,
                     temperature=0.8,
-                    max_tokens=2048
+                    max_tokens=1024
                 )
                 
                 texto_respuesta = respuesta.choices[0].message.content
                 
-                # Guardar la respuesta en el chat actual
                 st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "assistant", "content": texto_respuesta})
                 guardar_todos_los_chats(st.session_state.todos_los_chats)
                 
