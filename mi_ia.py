@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v24.0 - Slate Futurist"
+VERSION = "v24.1 - Slate Fixed"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌐", layout="wide")
@@ -78,12 +78,12 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS FUTURISTA (PALETA SLATE - MÁS CLARA) ---
+# --- CSS FUTURISTA (SLATE Y ARREGLO DE LA BARRA NEGRA) ---
 st.markdown("""
 <style>
-    /* 1. FONDO GRIS PIZARRA (Más claro y elegante) */
+    /* 1. FONDO PRINCIPAL */
     .stApp {
-        background-color: #1e293b !important; /* Slate 800 */
+        background-color: #1e293b !important; 
         color: #f8fafc !important;
     }
 
@@ -91,14 +91,14 @@ st.markdown("""
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
     /* =========================================
-       BARRA LATERAL (Slate 900)
+       BARRA LATERAL
        ========================================= */
     [data-testid="stSidebar"] {
-        background-color: #0f172a !important; /* Slate 900 */
-        border-right: 1px solid #334155 !important; /* Borde sutil */
+        background-color: #0f172a !important; 
+        border-right: 1px solid #334155 !important; 
     }
     [data-testid="stSidebar"] h3 {
-        color: #38bdf8 !important; /* Azul cielo */
+        color: #38bdf8 !important; 
         text-align: center;
     }
     [data-testid="stSidebar"] button {
@@ -114,7 +114,7 @@ st.markdown("""
     }
 
     /* =========================================
-       CHAT (BURBUJAS HUD)
+       CHAT
        ========================================= */
     div[data-testid="stChatMessage"] {
         background-color: transparent !important; border: none !important; padding: 0 !important;
@@ -122,45 +122,57 @@ st.markdown("""
     }
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
 
-    /* TUS MENSAJES (Derecha - Azul Cielo Suave) */
+    /* TUS MENSAJES (Derecha) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         flex-direction: row-reverse !important; justify-content: flex-start !important;
         margin-left: auto !important; width: fit-content !important; max-width: 80% !important;
     }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
-        background: #0ea5e9 !important; /* Azul cielo sólido */
+        background: #0ea5e9 !important; 
         color: #ffffff !important; 
         border-radius: 15px 15px 0 15px !important; padding: 12px 18px !important;
         box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
     }
 
-    /* MENSAJES DE LILI (Izquierda - Gris Slate Claro) */
+    /* MENSAJES DE LILI (Izquierda) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
         flex-direction: row !important; justify-content: flex-start !important;
         margin-right: auto !important; width: fit-content !important; max-width: 80% !important;
     }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
-        background: #334155 !important; /* Slate 700 */
+        background: #334155 !important; 
         color: #f8fafc !important; 
         border-radius: 15px 15px 15px 0 !important; padding: 12px 18px !important;
         border: 1px solid #475569 !important;
     }
 
     /* =========================================
-       CAJA DE TEXTO (FONDO MÁS CLARO)
+       CAJA DE TEXTO Y ELIMINACIÓN DEL FONDO NEGRO
        ========================================= */
+    
+    /* 🔥 AQUÍ ESTÁ EL TRUCO: Eliminar el fondo negro de Streamlit */
+    [data-testid="stBottom"], 
+    [data-testid="stBottom"] > div,
     [data-testid="stBottomBlockContainer"] {
-        background: transparent !important; padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important;
+        background-color: transparent !important;
+        background: transparent !important;
+    }
+
+    /* Contenedor de la barra */
+    [data-testid="stBottomBlockContainer"] {
+        padding-bottom: 2rem !important; 
+        max-width: 800px !important; 
+        margin: 0 auto !important;
     }
     
     .stChatInput {
-        background: #334155 !important; /* Slate 700 (más claro que el fondo) */
+        background: #334155 !important; 
         border: 1px solid #475569 !important; 
         border-radius: 30px !important; 
         box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
     }
     
-    /* El truco de transparencia para que no se vea el fondo feo */
+    /* Transparencia forzada para el input interno */
     .stChatInput > div,
     .stChatInput div,
     .stChatInput div[data-baseweb="base-input"],
@@ -175,7 +187,6 @@ st.markdown("""
         color: #f8fafc !important;
     }
     
-    /* Al hacer clic, el borde se ilumina en azul */
     .stChatInput:focus-within { 
         border: 1px solid #38bdf8 !important; 
         box-shadow: 0 0 15px rgba(56, 189, 248, 0.2) !important;
@@ -183,7 +194,7 @@ st.markdown("""
 
     /* Botón de enviar */
     [data-testid="stChatInput"] button {
-        background: #38bdf8 !important; /* Fondo azul para el botón */
+        background: #38bdf8 !important; 
         color: #0f172a !important; 
         border-radius: 50% !important;
         border: none !important;
@@ -206,7 +217,7 @@ if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
 
-# --- SIDEBAR (HISTORIAL Y BORRAR) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.markdown("<h3>🌐 Lili AI</h3>", unsafe_allow_html=True)
     
