@@ -5,9 +5,10 @@ import re
 import io
 import asyncio
 import edge_tts
+import base64
 
 # --- ¡AQUÍ PONES EL NOMBRE DE TU IA! ---
-NOMBRE_IA = "Nova"  # <--- Cambia "Nova" por el nombre que tú quieras
+NOMBRE_IA = "Nova"
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🤖", layout="wide")
@@ -48,7 +49,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNCIÓN PARA GENERAR EL AUDIO CON EDGE-TTS ---
+# --- FUNCIÓN PARA GENERAR EL AUDIO ---
 async def generar_audio_edge(texto, voz):
     comunicar = edge_tts.Communicate(texto, voz)
     audio_buffer = io.BytesIO()
@@ -58,23 +59,33 @@ async def generar_audio_edge(texto, voz):
     audio_buffer.seek(0)
     return audio_buffer
 
+# --- FUNCIÓN PARA REPRODUCIR AUDIO SIN MOSTRAR EL REPRODUCTOR ---
+def autoplay_audio(audio_buffer, format="audio/mp3"):
+    audio_bytes = audio_buffer.read()
+    b64 = base64.b64encode(audio_bytes).decode()
+    md = f"""
+        <audio autoplay="true" hidden="true">
+        <source src="data:{format};base64,{b64}" type="{format}">
+        </audio>
+        """
+    st.markdown(md, unsafe_allow_html=True)
+
 # --- BARRA LATERAL ---
 with st.sidebar:
     st.title(f"🤖 {NOMBRE_IA}")
-    st.caption("v2.6 - Asistente Personal")
+    st.caption("v2.7 - Asistente Personal")
     st.divider()
     
     st.subheader("⚙️ Configuración")
     activar_voz = st.checkbox("🔊 Hablar respuestas en voz alta", value=True)
     
-    # Selección de voz (Español por defecto)
     voz_seleccionada = st.selectbox(
         "🎙️ Selecciona la voz",
         options=[
             "es-MX-DaliaNeural",  # Español Latino (Recomendada)
             "es-ES-ElviraNeural", # Español de España
             "es-US-PalomaNeural", # Español de Estados Unidos
-            "en-GB-SoniaNeural"   # Inglés Británico (por si quieres probar)
+            "en-GB-SoniaNeural"   # Inglés Británico
         ],
         index=0
     )
@@ -97,7 +108,6 @@ try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
     
-    # Aquí le damos la personalidad usando el nombre que elegiste
     instrucciones = f"Eres {NOMBRE_IA}, un asistente experto, elegante, amable y directo (estilo Jarvis/Viernes). Siempre respondes en español de forma clara, fluida y con un toque de sofisticación."
     modelo = genai.GenerativeModel('gemini-3.5-flash', system_instruction=instrucciones)
 
@@ -157,8 +167,10 @@ try:
                         
                         if activar_voz and len(texto_respuesta) < 600: 
                             try:
+                                # Generamos el audio
                                 audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, voz_seleccionada))
-                                st.audio(audio_buffer, format="audio/mp3", autoplay=True)
+                                # Lo reproducimos sin el reproductor feo
+                                autoplay_audio(audio_buffer, format="audio/mp3")
                             except Exception as e:
                                 st.warning(f"No se pudo generar la voz: {e}")
                         elif activar_voz:
