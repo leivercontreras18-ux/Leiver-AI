@@ -13,7 +13,7 @@ NOMBRE_IA = "Nova"
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🤖", layout="wide")
 
-# --- CSS PERSONALIZADO (ESTILO DEEPSEEK/CHATGPT FORZADO) ---
+# --- CSS PERSONALIZADO ---
 st.markdown("""
 <style>
     #MainMenu {visibility: hidden;}
@@ -40,37 +40,49 @@ st.markdown("""
     }
 
     /* =========================================
-       MENSAJES DEL USUARIO (A LA DERECHA)
+       ESTILO DE LOS MENSAJES (CHAT)
        ========================================= */
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
-        display: flex !important;
-        flex-direction: row-reverse !important; /* Invierte el avatar y el texto */
-        background-color: #2f2f2f !important;
-        border-radius: 15px !important;
-        padding: 1rem !important;
-        margin-bottom: 1rem !important;
-        margin-left: auto !important;  /* Empuja la burbuja a la derecha */
-        margin-right: 0 !important;
-        width: fit-content !important; /* La burbuja se ajusta al texto */
-        max-width: 85% !important;
-    }
-
-    /* Alinear el texto del usuario a la derecha */
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
-        text-align: right !important;
-    }
-
-    /* =========================================
-       MENSAJES DE LA IA (A LA IZQUIERDA)
-       ========================================= */
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
-        display: flex !important;
+    /* Ocultamos el contenedor por defecto para darle nuestro propio estilo */
+    div[data-testid="stChatMessage"] {
         background-color: transparent !important;
-        text-align: left !important;
+        border: none !important;
+        padding: 0 !important;
+        display: flex !important;
+        margin-bottom: 15px !important;
+    }
+
+    /* Para TUS mensajes (Usuario) */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
+        flex-direction: row-reverse !important; /* Avatar a la derecha */
+        justify-content: flex-start !important; /* Empuja todo a la derecha */
+        margin-left: auto !important;
         width: fit-content !important;
-        max-width: 85% !important;
+        max-width: 80% !important;
+    }
+    
+    /* La burbuja de tus mensajes */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
+        background-color: #2f2f2f !important;
+        border-radius: 15px 15px 0 15px !important; /* Bordes redondeados estilo WhatsApp */
+        padding: 10px 15px !important;
+        text-align: right !important;
+        color: white !important;
+    }
+
+    /* Para los mensajes de NOVA (IA) */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
+        flex-direction: row !important; /* Avatar a la izquierda */
+        justify-content: flex-start !important;
         margin-right: auto !important;
-        margin-left: 0 !important;
+        width: fit-content !important;
+        max-width: 80% !important;
+    }
+
+    /* La burbuja de Nova */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
+        background-color: transparent !important;
+        padding: 10px 15px !important;
+        text-align: left !important;
     }
 
     /* Fijar la caja de texto abajo */
@@ -204,9 +216,8 @@ try:
                             match = re.search(r'retry_delay\s*{\s*seconds:\s*(\d+)', error_str)
                             espera = int(match.group(1)) if match else 30
                             
-                            # Si la espera es mayor a 120 segundos, significa que la cuota DIARIA se agotó
                             if espera > 120:
-                                st.error("❌ Se ha agotado la cuota diaria de tu API Key. Para seguir usando a Nova hoy, ve a Google AI Studio, crea una nueva clave en un nuevo proyecto y pégala en los Secrets de Streamlit.")
+                                st.error("❌ Se ha agotado la cuota diaria de tu API Key. Ve a Google AI Studio, crea una nueva clave en un NUEVO proyecto y pégala en los Secrets de Streamlit para seguir usando a Nova hoy.")
                                 break
                             
                             if intento < max_reintentos - 1:
