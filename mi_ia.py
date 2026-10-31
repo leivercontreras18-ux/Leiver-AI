@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v31.1 - Dev Mode Fixed"
+VERSION = "v31.2 - Self-Aware Dev"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💻", layout="wide")
@@ -185,6 +185,7 @@ with st.sidebar:
 
     st.markdown("---")
     
+    # GITHUB CON AUTOSELECCIÓN
     if st.session_state.modo_actual == "💻 Programación":
         st.markdown("#### 🐙 Repositorios")
         token = st.secrets.get("GITHUB_TOKEN")
@@ -197,10 +198,16 @@ with st.sidebar:
                 
             repos = obtener_repositorios(token, usuario_github)
             if repos:
-                repo_sel = st.selectbox("Repositorio", repos)
+                # 🔥 Autoseleccionar el repositorio "Leiver-AI"
+                idx_repo = repos.index("Leiver-AI") if "Leiver-AI" in repos else 0
+                repo_sel = st.selectbox("Repositorio", repos, index=idx_repo)
+                
                 archivos = obtener_archivos(usuario_github, repo_sel, token)
                 if archivos:
-                    arch_sel = st.selectbox("Archivo", archivos)
+                    # 🔥 Autoseleccionar el archivo "mi_ia.py"
+                    idx_archivo = archivos.index("mi_ia.py") if "mi_ia.py" in archivos else 0
+                    arch_sel = st.selectbox("Archivo", archivos, index=idx_archivo)
+                    
                     if st.button("📥 Cargar Archivo", use_container_width=True):
                         exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
                         if exito:
@@ -272,7 +279,6 @@ if audio_grabado or prompt:
         
         codigo_actual = st.session_state.codigo_github
         
-        # --- LÓGICA DE PROMPTS CORREGIDA ---
         if st.session_state.modo_actual == "💻 Programación":
             instrucciones = """Eres Lili Dev, una IA experta en programación y arquitectura de software.
             REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
