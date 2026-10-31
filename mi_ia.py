@@ -42,7 +42,6 @@ st.markdown("""
     /* =========================================
        ESTILO DE LOS MENSAJES (CHAT)
        ========================================= */
-    /* Ocultamos el contenedor por defecto para darle nuestro propio estilo */
     div[data-testid="stChatMessage"] {
         background-color: transparent !important;
         border: none !important;
@@ -53,17 +52,16 @@ st.markdown("""
 
     /* Para TUS mensajes (Usuario) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
-        flex-direction: row-reverse !important; /* Avatar a la derecha */
-        justify-content: flex-start !important; /* Empuja todo a la derecha */
+        flex-direction: row-reverse !important; 
+        justify-content: flex-start !important; 
         margin-left: auto !important;
         width: fit-content !important;
         max-width: 80% !important;
     }
     
-    /* La burbuja de tus mensajes */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
         background-color: #2f2f2f !important;
-        border-radius: 15px 15px 0 15px !important; /* Bordes redondeados estilo WhatsApp */
+        border-radius: 15px 15px 0 15px !important; 
         padding: 10px 15px !important;
         text-align: right !important;
         color: white !important;
@@ -71,14 +69,13 @@ st.markdown("""
 
     /* Para los mensajes de NOVA (IA) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
-        flex-direction: row !important; /* Avatar a la izquierda */
+        flex-direction: row !important; 
         justify-content: flex-start !important;
         margin-right: auto !important;
         width: fit-content !important;
         max-width: 80% !important;
     }
 
-    /* La burbuja de Nova */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
         background-color: transparent !important;
         padding: 10px 15px !important;
@@ -213,11 +210,25 @@ try:
                     except Exception as e:
                         error_str = str(e)
                         if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                            # Extraemos el tiempo de espera en segundos
                             match = re.search(r'retry_delay\s*{\s*seconds:\s*(\d+)', error_str)
                             espera = int(match.group(1)) if match else 30
                             
+                            # Si el tiempo es mayor a 2 minutos, es porque se agotó la cuota diaria
                             if espera > 120:
-                                st.error("❌ Se ha agotado la cuota diaria de tu API Key. Ve a Google AI Studio, crea una nueva clave en un NUEVO proyecto y pégala en los Secrets de Streamlit para seguir usando a Nova hoy.")
+                                # Convertimos los segundos a un formato bonito (Horas, Minutos, Segundos)
+                                horas = espera // 3600
+                                minutos = (espera % 3600) // 60
+                                segundos = espera % 60
+                                
+                                tiempo_texto = ""
+                                if horas > 0:
+                                    tiempo_texto += f"{horas} horas, "
+                                if minutos > 0:
+                                    tiempo_texto += f"{minutos} minutos y "
+                                tiempo_texto += f"{segundos} segundos"
+                                
+                                st.error(f"❌ Se ha agotado la cuota diaria de tu API Key. Podrás volver a usar a Nova en aproximadamente **{tiempo_texto}**.\n\n*(También puedes crear una nueva clave en un NUEVO proyecto en Google AI Studio para seguir hoy).*")
                                 break
                             
                             if intento < max_reintentos - 1:
