@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v22.0 - Clean & Stable"
+VERSION = "v23.0 - Friday HUD"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="🌐", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,44 +78,72 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS LIMPIO Y ESTABLE (MODO OSCURO) ---
+# --- CSS FUTURISTA (ESTILO F.R.I.D.A.Y.) ---
 st.markdown("""
 <style>
-    /* Fondo oscuro elegante */
+    /* 1. FONDO OSCURO PROFUNDO (Azul Noche) */
     .stApp {
-        background-color: #121214 !important;
+        background-color: #0a0f1a !important; /* Azul muy oscuro */
+        background-image: radial-gradient(circle at 50% 0%, #111d33 0%, #0a0f1a 80%) !important;
         color: #ffffff !important;
     }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
-    /* BARRA LATERAL */
+    /* =========================================
+       BARRA LATERAL (MANTENIDA Y MEJORADA)
+       ========================================= */
     [data-testid="stSidebar"] {
-        background-color: #18181b !important;
-        border-right: 1px solid #27272a !important;
+        background-color: #0d1421 !important;
+        border-right: 1px solid rgba(0, 242, 254, 0.2) !important; /* Borde cian sutil */
     }
-    [data-testid="stSidebar"] button {
-        background: transparent !important; color: #d4d4d4 !important; border: none !important;
-        text-align: left !important; padding: 8px 12px !important; border-radius: 8px !important;
-    }
-    [data-testid="stSidebar"] button:hover {
-        background: #27272a !important; color: white !important;
+    
+    [data-testid="stSidebar"] h3 {
+        color: #00f2fe !important; /* Título cian */
+        text-align: center;
+        text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
     }
 
-    /* BURBUJAS DE CHAT (TU A LA DERECHA, LILI A LA IZQUIERDA) */
+    [data-testid="stSidebar"] button {
+        background: transparent !important; 
+        color: #a1a1aa !important; 
+        border: 1px solid transparent !important;
+        text-align: left !important; 
+        padding: 8px 12px !important; 
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
+    }
+    [data-testid="stSidebar"] button:hover {
+        background: rgba(0, 242, 254, 0.1) !important; 
+        color: #00f2fe !important;
+        border: 1px solid rgba(0, 242, 254, 0.3) !important;
+    }
+    
+    /* Botón Nuevo Chat resaltado */
+    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
+        background: rgba(0, 242, 254, 0.15) !important;
+        color: #00f2fe !important;
+        border: 1px solid rgba(0, 242, 254, 0.4) !important;
+        text-align: center !important;
+        font-weight: bold !important;
+    }
+
+    /* =========================================
+       CHAT FUTURISTA (BURBUJAS HUD)
+       ========================================= */
     div[data-testid="stChatMessage"] {
         background-color: transparent !important;
         border: none !important;
         padding: 0 !important;
-        margin-bottom: 15px !important;
+        margin-bottom: 20px !important;
         display: flex !important;
     }
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { 
         display: none !important; 
     }
 
-    /* TUS MENSAJES (Derecha) */
+    /* TUS MENSAJES (Derecha - Cian Neón) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         flex-direction: row-reverse !important;
         justify-content: flex-start !important;
@@ -124,13 +152,15 @@ st.markdown("""
         max-width: 80% !important;
     }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
-        background: #27272a !important; /* Gris oscuro */
+        background: rgba(0, 242, 254, 0.1) !important; /* Fondo cian translúcido */
+        border: 1px solid rgba(0, 242, 254, 0.4) !important;
         color: #ffffff !important;
-        border-radius: 18px 18px 0 18px !important; 
+        border-radius: 15px 15px 0 15px !important; 
         padding: 12px 18px !important;
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.1) !important;
     }
 
-    /* MENSAJES DE LILI (Izquierda) */
+    /* MENSAJES DE LILI (Izquierda - Morado Holográfico) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
         flex-direction: row !important;
         justify-content: flex-start !important;
@@ -139,27 +169,53 @@ st.markdown("""
         max-width: 80% !important;
     }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
-        background: #18181b !important; 
+        background: rgba(139, 92, 246, 0.1) !important; /* Fondo morado translúcido */
+        border: 1px solid rgba(139, 92, 246, 0.4) !important;
         color: #e5e5e5 !important;
-        border-radius: 18px 18px 18px 0 !important; 
+        border-radius: 15px 15px 15px 0 !important; 
         padding: 12px 18px !important;
-        border: 1px solid #27272a !important;
+        box-shadow: 0 0 15px rgba(139, 92, 246, 0.1) !important;
+    }
+    
+    /* Texto dentro de las burbujas */
+    div[data-testid="stChatMessage"] p {
+        font-size: 15px !important;
+        line-height: 1.5 !important;
+        margin: 0 !important;
     }
 
-    /* CAJA DE TEXTO */
+    /* =========================================
+       CAJA DE TEXTO (HUD CÁPSULA)
+       ========================================= */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important; padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important;
     }
+    
     .stChatInput {
-        background: #18181b !important;
-        border: 1px solid #3f3f46 !important;
-        border-radius: 15px !important;
+        background: rgba(13, 20, 33, 0.9) !important;
+        border: 1px solid #00f2fe !important; /* Borde cian neón */
+        border-radius: 30px !important; /* Cápsula */
+        box-shadow: 0 0 20px rgba(0, 242, 254, 0.2) !important;
+        transition: all 0.3s ease !important;
     }
-    .stChatInput:focus-within { border: 1px solid #8b5cf6 !important; }
+    .stChatInput:focus-within { 
+        border: 1px solid #00f2fe !important; 
+        box-shadow: 0 0 30px rgba(0, 242, 254, 0.4) !important;
+    }
+    [data-testid="stChatInput"] textarea { 
+        color: #ffffff !important; font-size: 16px !important; padding: 12px 20px !important; 
+    }
+    
+    /* Botón de enviar */
     [data-testid="stChatInput"] button {
-        background: #8b5cf6 !important; color: white !important; border-radius: 50% !important;
+        background: transparent !important; 
+        color: #00f2fe !important; 
+        border: none !important; 
     }
-    [data-testid="stChatInput"] button svg { fill: white !important; }
+    [data-testid="stChatInput"] button svg { fill: #00f2fe !important; }
+    [data-testid="stChatInput"] button:hover {
+        background: rgba(0, 242, 254, 0.1) !important;
+    }
 
     audio, div[data-testid="stAudio"] { display: none !important; }
 </style>
@@ -176,7 +232,7 @@ if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_ca
 
 # --- SIDEBAR (HISTORIAL Y BORRAR) ---
 with st.sidebar:
-    st.markdown("<h3 style='color: #a78bfa; text-align: center;'>💜 Lili AI</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>🌐 Lili AI</h3>", unsafe_allow_html=True)
     
     if st.button("➕ Nuevo Chat", use_container_width=True):
         nuevo_id = datetime.datetime.now().strftime("%H:%M:%S")
@@ -188,6 +244,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**Historial**")
     
+    # Historial con botón de borrar
     for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
         if len(st.session_state.todos_los_chats[chat_id]) > 0:
             col1, col2 = st.columns([0.8, 0.2])
@@ -244,8 +301,8 @@ for message in mensajes_actuales:
 if len(mensajes_actuales) == 0:
     st.markdown("""
         <div style="text-align: center; margin-top: 25vh;">
-            <h1 style="font-size: 36px; font-weight: 300; color: #ffffff; margin-bottom: 10px;">Hola, Leiver 👋</h1>
-            <p style="font-size: 16px; color: #a1a1aa;">¿En qué puedo ayudarte hoy?</p>
+            <h1 style="font-size: 32px; font-weight: 300; color: #00f2fe; text-shadow: 0 0 15px rgba(0,242,254,0.5);">Sistemas en Línea</h1>
+            <p style="font-size: 16px; color: #a1a1aa;">Bienvenido de nuevo, Leiver. ¿Cuál es la misión de hoy?</p>
         </div>
     """, unsafe_allow_html=True)
 
