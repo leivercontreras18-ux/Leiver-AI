@@ -117,16 +117,34 @@ st.markdown("""
         margin-top: 5px;
     }
 
-    /* 3. EL PANEL DE CHAT CONTENEDOR */
-    div[data-testid="stVerticalBlock"]:has(div[data-testid="stChatMessage"]) {
+    /* 3. EL PANEL DE CHAT CONTENEDOR (Estructura Unificada Segura) */
+    .custom-chat-wrapper {
         background: rgba(255, 255, 255, 0.02) !important;
         border: 1px solid rgba(255, 255, 255, 0.05) !important;
         backdrop-filter: blur(24px) !important;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
-        border-radius: 24px !important;
-        padding: 24px !important;
-        height: 75vh !important;
+        border-radius: 24px;
+        height: 75vh;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-scroll-area {
+        flex: 1 1 auto;
         overflow-y: auto !important;
+        padding-right: 5px;
+        height: 100%;
+    }
+
+    .chat-header-text {
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 14px;
+        color: #cbd5e1;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        margin-bottom: 15px;
     }
 
     /* Ocultar elementos por defecto de los bloques de chat en Streamlit */
@@ -217,8 +235,6 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "audio_pendiente" not in st.session_state:
     st.session_state.audio_pendiente = None
-if "mic_key" not in st.session_state:
-    st.session_state.mic_key = 0
 
 # --- COMPONENTES DE LA BARRA LATERAL IZQUIERDA (SIDEBAR) ---
 with st.sidebar:
@@ -226,112 +242,37 @@ with st.sidebar:
     voz_activa = st.checkbox("🔊 Voz activa", value=True)
     
     st.subheader("🎤 Hablar")
-    audio_grabado = st.audio_input("Graba tu mensaje", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
+    st.caption("⬇️ 00:00")
     
     st.subheader("📁 Código")
     uploaded_file = st.file_uploader("Upload", type=["py", "txt", "json", "js"], label_visibility="collapsed")
-    codigo_actual = uploaded_file.read().decode("utf-8") if uploaded_file else ""
     if uploaded_file:
         st.success(f"Cargado: {uploaded_file.name}")
         
     st.markdown("---")
     if st.button("🗑️ Limpiar Chat"):
         st.session_state.messages = []
-        st.session_state.mic_key += 1
         st.rerun()
 
 # --- VALIDACIÓN DE CREDENCIALES DE ENTORNO ---
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("Error crítico: Falta configurar la variable 'GROQ_API_KEY' dentro del archivo de secretos.")
+    st.error("Error crítico: Falta configurar la variable 'GROQ_API_KEY' dentro del archivo de secretos (.streamlit/secrets.toml).")
     st.stop()
 
 # --- CONEXIÓN DE COMPONENTES ---
 api_key = st.secrets["GROQ_API_KEY"]
 cliente = Groq(api_key=api_key)
-instrucciones_sistema = f"Eres {NOMBRE_IA}, una entidad de inteligencia artificial avanzada con una estética elegante, cibernética y pulcra. Tu pareja es Winderly Espinoza. Responde de manera concisa y clara."
+instrucciones_sistema = "Eres Nova, una entidad de inteligencia artificial avanzada con una estética elegante, cibernética y pulcra. Tu pareja es Winderly Espinoza. Responde de manera concisa y clara."
 
 # --- GENERACIÓN DEL GRID DE COMPOSICIÓN ---
 col_izq, col_der = st.columns([1, 1.1], gap="large")
 
 with col_izq:
-    # AQUÍ ESTABA EL ERROR DE GEMINI: Faltaba cerrar las comillas del f-string
-    st.markdown(f"""
+    # Cadena estática (sin prefijo f) para evitar fallos de compilación con las diagonales CSS
+    html_orbe = """
     <div class="orb-container">
         <div class="orb-wrapper">
             <div class="orb-glow"></div>
             <div class="orb-body">
                 <div class="orb-inner"></div>
             </div>
-        </div>
-        <div class="nova-title">{NOMBRE_IA.upper()}</div>
-        <div class="nova-subtitle">How can I help you today?</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col_der:
-    # El contenedor del chat con scroll
-    chat_container = st.container(height=530)
-    with chat_container:
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-
-# --- LÓGICA DE ENTRADA ---
-prompt = st.chat_input(f"Ask {NOMBRE_IA}...")
-
-# --- PROCESAMIENTO DE IA ---
-if audio_grabado or prompt:
-    texto_usuario = ""
-    
-    if audio_grabado and not prompt:
-        with st.spinner("Escuchando..."):
-            try:
-                transcripcion = cliente.audio.transcriptions.create(
-                    file=("audio.wav", audio_grabado.read()),
-                    model="whisper-large-v3",
-                    language="es"
-                )
-                texto_usuario = transcripcion.text
-            except Exception as e:
-                st.error(f"Error de audio: {e}")
-    elif prompt:
-        texto_usuario = prompt
-        
-    if texto_usuario:
-        st.session_state.messages.append({"role": "user", "content": texto_usuario})
-
-        contexto_ia = texto_usuario
-        if codigo_actual:
-            contexto_ia = f"Código:\n```python\n{codigo_actual}\n```\nPetición: {texto_usuario}"
-
-        try:
-            respuesta = cliente.chat.completions.create(
-                model="openai/gpt-oss-120b",
-                messages=[
-                    {"role": "system", "content": instrucciones_sistema},
-                    {"role": "user", "content": contexto_ia}
-                ],
-                temperature=0.7,
-                max_tokens=2048
-            )
-            
-            texto_respuesta = respuesta.choices[0].message.content
-            st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
-            
-            if voz_activa: 
-                try:
-                    audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
-                    st.session_state.audio_pendiente = audio_buffer
-                except Exception:
-                    pass
-            
-            st.session_state.mic_key += 1
-            st.rerun()
-            
-        except Exception as e:
-            st.error(f"Error de Groq: {e}")
-
-# --- AUDIO PENDIENTE (Se ejecuta al final para que el navegador lo permita) ---
-if st.session_state.audio_pendiente:
-    autoplay_audio(st.session_state.audio_pendiente)
-    st.session_state.audio_pendiente = None
