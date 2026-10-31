@@ -11,7 +11,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Nova"
 VOZ_FIJA = "es-MX-DaliaNeural"
-VERSION = "v11.0"
+VERSION = "v11.1 - Mobile Edition"
 ARCHIVO_HISTORIAL = "historial_nova.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
@@ -39,7 +39,15 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header { background: transparent !important; }
-    .block-container { padding-top: 2rem !important; padding-bottom: 0 !important; max-width: 95% !important; height: 100vh !important; overflow: hidden !important; }
+    
+    /* PC Layout (Escritorio) */
+    .block-container { 
+        padding-top: 2rem !important; 
+        padding-bottom: 0 !important;
+        max-width: 95% !important; 
+        height: 100vh !important; 
+        overflow: hidden !important; 
+    }
 
     /* 2. EL ORBE */
     @keyframes blob {
@@ -89,6 +97,34 @@ st.markdown("""
     [data-testid="stSidebar"] button { background: rgba(255, 0, 85, 0.1) !important; color: #ff3366 !important; border: 1px solid rgba(255, 0, 85, 0.3) !important; border-radius: 10px !important; font-weight: bold !important; letter-spacing: 1px !important; transition: all 0.3s ease !important; }
     [data-testid="stSidebar"] button:hover { background: rgba(255, 0, 85, 0.3) !important; box-shadow: 0 0 15px rgba(255, 0, 85, 0.5) !important; color: white !important; border: 1px solid rgba(255, 0, 85, 0.8) !important; }
     [data-testid="stSidebar"] .stCheckbox p { font-size: 13px !important; color: #a78bfa !important; }
+
+    /* =======================================================
+       6. MAGIA RESPONSIVE (SOLO PARA TELÉFONOS)
+       ======================================================= */
+    @media (max-width: 768px) {
+        /* Permitir scroll en el teléfono */
+        .block-container { 
+            height: auto !important; 
+            overflow: auto !important; 
+            padding-bottom: 5rem !important; 
+        }
+        
+        /* Achicar el Orbe para que quepa en la pantalla del celular */
+        .orb-wrapper { width: 180px; height: 180px; margin-bottom: 10px; }
+        .orb-body { width: 150px; height: 150px; }
+        .orb-glow { width: 180px; height: 180px; filter: blur(30px); }
+        .nova-title { font-size: 24px; margin-top: 10px; }
+        .nova-subtitle { font-size: 11px; }
+
+        /* Achicar la caja del chat */
+        div[data-testid="stVerticalBlockBorderWrapper"] { 
+            height: 400px !important; /* Altura fija más pequeña para móvil */
+            margin-top: 20px;
+        }
+
+        /* Ajustar la barra de texto */
+        [data-testid="stChatInput"] { width: 95% !important; margin: 0 auto !important; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -141,7 +177,7 @@ with st.sidebar:
     if st.button("🗑️ Limpiar Chat", use_container_width=True):
         st.session_state.messages = []
         if os.path.exists(ARCHIVO_HISTORIAL):
-            os.remove(ARCHIVO_HISTORIAL) # Borramos el archivo físico
+            os.remove(ARCHIVO_HISTORIAL)
         st.session_state.mic_key += 1
         st.rerun()
 
@@ -196,21 +232,14 @@ if audio_grabado or prompt:
                 st.error(f"Error de audio: {e}")
                 
     if texto_usuario:
-        # 1. Guardar mensaje del usuario en el estado y en el archivo
         st.session_state.messages.append({"role": "user", "content": texto_usuario})
         guardar_historial(st.session_state.messages)
         
-        # 2. Construir el contexto para Groq (Instrucciones + Código + Historial)
         instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa y clara."
-        
-        # Si hay código, se lo añadimos a las instrucciones para que lo tenga presente
         if codigo_actual:
             instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```python\n{codigo_actual}\n```"
 
-        # Preparamos la lista de mensajes para Groq
         mensajes_para_groq = [{"role": "system", "content": instrucciones}]
-        
-        # Añadimos todo el historial (memoria)
         for msg in st.session_state.messages:
             mensajes_para_groq.append({"role": msg["role"], "content": msg["content"]})
 
@@ -224,8 +253,6 @@ if audio_grabado or prompt:
                 )
                 
                 texto_respuesta = respuesta.choices[0].message.content
-                
-                # 3. Guardar la respuesta de Nova
                 st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
                 guardar_historial(st.session_state.messages)
                 
