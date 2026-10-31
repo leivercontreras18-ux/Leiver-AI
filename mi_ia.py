@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v27.0 - Refined HUD"
+VERSION = "v28.0 - Neural Core"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="💠", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="🧠", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,12 +78,12 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS REFINADO (OSCURO Y ELEGANTE) ---
+# --- CSS NEURAL CORE (DISEÑO OSCURO + ANIMACIÓN) ---
 st.markdown("""
 <style>
-    /* 1. FONDO OSCURO PROFUNDO (Gris Pizarra) */
+    /* FONDO OSCURO ESPACIAL */
     .stApp {
-        background-color: #0f172a !important; /* Slate 900 */
+        background: radial-gradient(circle at 50% 50%, #0f172a 0%, #050810 100%) !important;
         color: #f8fafc !important;
     }
 
@@ -91,139 +91,145 @@ st.markdown("""
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
     /* =========================================
-       BARRA LATERAL (SÓLIDA Y OSCURA)
+       BARRA LATERAL
        ========================================= */
     [data-testid="stSidebar"] {
-        background-color: #1e293b !important; /* Slate 800 */
-        border-right: 1px solid #334155 !important;
+        background-color: #0b1120 !important; 
+        border-right: 1px solid #1e293b !important;
     }
-    
-    [data-testid="stSidebar"] h3 {
-        color: #38bdf8 !important; /* Azul claro */
-        text-align: left;
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
-    
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] .stCaption {
-        color: #94a3b8 !important;
-    }
-
-    /* Botones del sidebar */
+    [data-testid="stSidebar"] h3 { color: #00f2fe !important; text-align: left; font-weight: 600; }
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] .stCaption { color: #94a3b8 !important; }
     [data-testid="stSidebar"] button {
         background: transparent !important; color: #cbd5e1 !important; border: 1px solid transparent !important;
         text-align: left !important; padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.2s ease !important;
     }
-    [data-testid="stSidebar"] button:hover {
-        background: #334155 !important; color: #ffffff !important; 
-    }
-    
-    /* Botón Nuevo Chat destacado */
+    [data-testid="stSidebar"] button:hover { background: #1e293b !important; color: #ffffff !important; }
     [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
-        background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%) !important; 
-        color: #ffffff !important; 
-        text-align: center !important; 
-        font-weight: 600 !important;
-        border: none !important;
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3) !important;
+        background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%) !important; 
+        color: #000000 !important; text-align: center !important; font-weight: bold !important; border: none !important;
     }
 
     /* =========================================
-       CHAT (BURBUJAS DE ALTO CONTRASTE)
+       CHAT
        ========================================= */
     div[data-testid="stChatMessage"] {
         background-color: transparent !important; border: none !important; padding: 0 !important;
         margin-bottom: 20px !important; display: flex !important;
     }
-    div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { 
-        display: none !important; 
-    }
+    div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
 
-    /* TUS MENSAJES (Derecha - Azul Sólido) */
+    /* TUS MENSAJES (Derecha) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         flex-direction: row-reverse !important; justify-content: flex-start !important;
         margin-left: auto !important; width: fit-content !important; max-width: 80% !important;
     }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
-        background: #2563eb !important; /* Blue 600 */
-        color: #ffffff !important; 
+        background: #1e293b !important; color: #ffffff !important; 
         border-radius: 16px 16px 0 16px !important; padding: 12px 18px !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
+        border: 1px solid #334155 !important;
     }
 
-    /* MENSAJES DE LILI (Izquierda - Gris Sólido) */
+    /* MENSAJES DE LILI (Izquierda) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
         flex-direction: row !important; justify-content: flex-start !important;
         margin-right: auto !important; width: fit-content !important; max-width: 80% !important;
     }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
-        background: #334155 !important; /* Slate 700 */
-        color: #f8fafc !important; 
-        border-radius: 16px 16px 16px 0 !important; padding: 12px 18px !important;
-        border: 1px solid #475569 !important;
+        background: linear-gradient(135deg, rgba(0, 242, 254, 0.1) 0%, rgba(79, 172, 254, 0.1) 100%) !important; 
+        color: #ffffff !important; border-radius: 16px 16px 16px 0 !important; padding: 12px 18px !important;
+        border: 1px solid rgba(0, 242, 254, 0.3) !important;
     }
 
     /* =========================================
-       CAJA DE TEXTO (CÁPSULA ELEGANTE)
+       CAJA DE TEXTO
        ========================================= */
-    
-    [data-testid="stBottom"], 
-    [data-testid="stBottom"] > div,
-    [data-testid="stBottomBlockContainer"] {
-        background-color: transparent !important;
-        background: transparent !important;
+    [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] {
+        background-color: transparent !important; background: transparent !important;
     }
-
-    [data-testid="stBottomBlockContainer"] {
-        padding-bottom: 2rem !important; 
-        max-width: 800px !important; 
-        margin: 0 auto !important;
-    }
+    [data-testid="stBottomBlockContainer"] { padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
     
     .stChatInput {
-        background: #1e293b !important; 
-        border: 1px solid #334155 !important; 
-        border-radius: 30px !important; 
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
-        transition: all 0.3s ease !important;
+        background: #0f172a !important; border: 1px solid #1e293b !important; border-radius: 30px !important; 
+        box-shadow: 0 0 20px rgba(0, 242, 254, 0.1) !important;
     }
-    
     .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input {
-        background-color: transparent !important;
-        background: transparent !important;
-        border: none !important;
-        outline: none !important;
-        box-shadow: none !important;
-        color: #ffffff !important;
+        background-color: transparent !important; background: transparent !important;
+        border: none !important; outline: none !important; box-shadow: none !important; color: #ffffff !important;
     }
-    
-    .stChatInput textarea::placeholder {
-        color: #64748b !important;
-    }
-    
-    .stChatInput:focus-within { 
-        border: 1px solid #3b82f6 !important; 
-        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2) !important;
-    }
-
-    /* Botón de enviar */
+    .stChatInput:focus-within { border: 1px solid #00f2fe !important; box-shadow: 0 0 25px rgba(0, 242, 254, 0.2) !important; }
     [data-testid="stChatInput"] button {
-        background: #3b82f6 !important; 
-        border-radius: 50% !important;
-        border: none !important;
-        margin: 5px !important;
-        width: 35px !important;
-        height: 35px !important;
-        transition: all 0.2s ease !important;
+        background: #00f2fe !important; border-radius: 50% !important; border: none !important;
+        margin: 5px !important; width: 35px !important; height: 35px !important;
     }
-    [data-testid="stChatInput"] button:hover {
-        background: #2563eb !important;
+    [data-testid="stChatInput"] button svg { fill: #000000 !important; }
+    audio, div[data-testid="stAudio"] { display: none !important; }
+
+    /* =========================================
+       EL NÚCLEO NEURONAL (ANIMACIÓN CSS)
+       ========================================= */
+    .neural-container {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        margin-top: 10vh; margin-bottom: 20px;
     }
-    [data-testid="stChatInput"] button svg { 
-        fill: #ffffff !important; 
+    
+    /* El núcleo con gradientes animados */
+    .neural-core {
+        width: 250px; height: 250px; border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #00f2fe, #4facfe, #9d4edd, #1e1b4b);
+        box-shadow: 0 0 60px rgba(0, 242, 254, 0.6), inset 0 0 40px rgba(157, 78, 221, 0.8);
+        position: relative; overflow: hidden;
+        animation: pulse-glow 2.5s infinite alternate, spin-core 10s linear infinite;
     }
 
-    audio, div[data-testid="stAudio"] { display: none !important; }
+    /* Las "sinapsis" (líneas internas) */
+    .neural-core::before {
+        content: ""; position: absolute; inset: 0;
+        background: repeating-conic-gradient(
+            from 0deg,
+            transparent 0deg 15deg,
+            rgba(255,255,255,0.4) 15deg 20deg,
+            transparent 20deg 30deg
+        );
+        border-radius: 50%; mix-blend-mode: overlay;
+        animation: spin-synapse 15s linear infinite reverse;
+    }
+    
+    .neural-core::after {
+        content: ""; position: absolute; inset: 20px;
+        background: repeating-radial-gradient(
+            circle at 50% 50%,
+            transparent 0px 10px,
+            rgba(0, 242, 254, 0.5) 10px 12px
+        );
+        border-radius: 50%; mix-blend-mode: screen;
+        animation: expand-synapse 3s ease-in-out infinite alternate;
+    }
+
+    /* Anillos orbitantes */
+    .neural-ring {
+        position: absolute; width: 300px; height: 300px;
+        border: 1px solid rgba(0, 242, 254, 0.3); border-radius: 50%;
+        animation: spin-ring 20s linear infinite;
+    }
+    .neural-ring-2 {
+        position: absolute; width: 350px; height: 350px;
+        border: 1px dashed rgba(157, 78, 221, 0.3); border-radius: 50%;
+        animation: spin-ring 30s linear infinite reverse;
+    }
+
+    .neural-text {
+        margin-top: 40px; font-size: 14px; letter-spacing: 3px; color: #00f2fe; text-transform: uppercase;
+        text-shadow: 0 0 10px rgba(0,242,254,0.5); z-index: 10;
+    }
+
+    @keyframes pulse-glow {
+        0% { transform: scale(0.95); filter: brightness(0.8); }
+        100% { transform: scale(1.05); filter: brightness(1.2); }
+    }
+    @keyframes spin-core { 100% { transform: rotate(360deg); } }
+    @keyframes spin-synapse { 100% { transform: rotate(360deg); } }
+    @keyframes expand-synapse { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.1); opacity: 1; } }
+    @keyframes spin-ring { 100% { transform: rotate(360deg); } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -238,7 +244,7 @@ if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_ca
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h3>💠 Lili AI</h3>", unsafe_allow_html=True)
+    st.markdown("<h3>🧠 Lili AI</h3>", unsafe_allow_html=True)
     st.caption(f"{VERSION}")
     
     if st.button("+ Nuevo Chat", use_container_width=True):
@@ -304,11 +310,17 @@ for message in mensajes_actuales:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# Si no hay mensajes, mostramos el Núcleo Neuronal
 if len(mensajes_actuales) == 0:
     st.markdown("""
-        <div style="text-align: center; margin-top: 25vh;">
-            <h1 style="font-size: 32px; font-weight: 300; color: #f8fafc;">¿Qué vamos a construir hoy?</h1>
-            <p style="font-size: 16px; color: #94a3b8;">Hola Leiver. Estoy lista cuando tú lo estés.</p>
+        <div class="neural-container">
+            <div class="neural-ring"></div>
+            <div class="neural-ring-2"></div>
+            <div class="neural-core"></div>
+            <div class="neural-text">Neural Core Active</div>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <p style="font-size: 16px; color: #94a3b8;">Hola Leiver. El núcleo está listo. ¿Qué misión tenemos hoy?</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -352,6 +364,7 @@ if audio_grabado or prompt:
         mensajes_para_groq.append({"role": "user", "content": texto_usuario})
 
         try:
+            # Mostramos un spinner que dice "Pensando..." mientras el núcleo late
             with st.spinner("Pensando..."):
                 respuesta = cliente.chat.completions.create(
                     model="openai/gpt-oss-20b", messages=mensajes_para_groq, temperature=0.8, max_tokens=1024
