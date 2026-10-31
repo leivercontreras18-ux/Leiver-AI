@@ -6,8 +6,11 @@ import io
 import asyncio
 import edge_tts
 
+# --- ¡AQUÍ PONES EL NOMBRE DE TU IA! ---
+NOMBRE_IA = "Nova"  # <--- Cambia "Nova" por el nombre que tú quieras
+
 # --- CONFIGURACIÓN DE LA PÁGINA ---
-st.set_page_config(page_title="Leiver AI", page_icon="🤖", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="🤖", layout="wide")
 
 # --- CSS PERSONALIZADO (DISEÑO PREMIUM) ---
 st.markdown("""
@@ -57,23 +60,23 @@ async def generar_audio_edge(texto, voz):
 
 # --- BARRA LATERAL ---
 with st.sidebar:
-    st.title("🤖 Leiver AI")
-    st.caption("v2.6 - Viernes Edition")
+    st.title(f"🤖 {NOMBRE_IA}")
+    st.caption("v2.6 - Asistente Personal")
     st.divider()
     
     st.subheader("⚙️ Configuración")
     activar_voz = st.checkbox("🔊 Hablar respuestas en voz alta", value=True)
     
-    # Selección de voz (puedes cambiarla por otra de la lista)
+    # Selección de voz (Español por defecto)
     voz_seleccionada = st.selectbox(
-        "🎙️ Selecciona la voz de la IA",
+        "🎙️ Selecciona la voz",
         options=[
-            "en-GB-SoniaNeural", # Voz femenina británica, muy elegante
-            "en-GB-LibbyNeural",  # Otra opción británica femenina
-            "es-ES-ElviraNeural", # Voz femenina en español de España
-            "es-MX-DaliaNeural"   # Voz femenina en español de México
+            "es-MX-DaliaNeural",  # Español Latino (Recomendada)
+            "es-ES-ElviraNeural", # Español de España
+            "es-US-PalomaNeural", # Español de Estados Unidos
+            "en-GB-SoniaNeural"   # Inglés Británico (por si quieres probar)
         ],
-        index=0 # Por defecto, la británica
+        index=0
     )
     
     st.divider()
@@ -94,13 +97,14 @@ try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
     
-    instrucciones = "Eres Leiver AI, un asistente experto, elegante, amable y directo (estilo Jarvis/Viernes). Siempre respondes en español de forma clara."
+    # Aquí le damos la personalidad usando el nombre que elegiste
+    instrucciones = f"Eres {NOMBRE_IA}, un asistente experto, elegante, amable y directo (estilo Jarvis/Viernes). Siempre respondes en español de forma clara, fluida y con un toque de sofisticación."
     modelo = genai.GenerativeModel('gemini-3.5-flash', system_instruction=instrucciones)
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    st.subheader("💬 Centro de Mando")
+    st.subheader(f"💬 Centro de Mando - {NOMBRE_IA}")
     
     for message in st.session_state.messages:
         avatar = "👤" if message["role"] == "user" else "🤖"
@@ -113,7 +117,7 @@ try:
         audio_grabado = st.audio_input("Habla aquí", label_visibility="collapsed")
     with col2:
         st.write("⌨️ **Texto:**")
-        prompt = st.chat_input("Escribe tu mensaje...")
+        prompt = st.chat_input(f"Habla con {NOMBRE_IA}...")
 
     if audio_grabado or prompt:
         if prompt:
@@ -152,7 +156,6 @@ try:
                         st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
                         
                         if activar_voz and len(texto_respuesta) < 600: 
-                            # Generar audio con edge-tts (usando asyncio)
                             try:
                                 audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, voz_seleccionada))
                                 st.audio(audio_buffer, format="audio/mp3", autoplay=True)
