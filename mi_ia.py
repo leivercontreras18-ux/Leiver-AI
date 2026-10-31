@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v25.0 - Neon Vibe" # 🔥 Versión visible
+VERSION = "v25.1 - Serious Interface"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="⚡", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="💠", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,7 +78,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS NEÓN VIBRANTE (VIERNES + COLOR) ---
+# --- CSS NEÓN SERIO (VIERNES + COLOR) ---
 st.markdown("""
 <style>
     /* 1. FONDO OSCURO CON DEGRADADO VIOLETA */
@@ -97,17 +97,28 @@ st.markdown("""
         background-color: #170b26 !important; 
         border-right: 1px solid #4c1d95 !important; 
     }
+    
+    /* Título de la barra lateral */
     [data-testid="stSidebar"] h3 {
-        color: #f472b6 !important; /* Rosa Neón */
+        color: #f472b6 !important; 
         text-align: center;
         text-shadow: 0 0 10px rgba(244, 114, 182, 0.5);
+        font-weight: 500 !important;
+        letter-spacing: 1px;
     }
     
-    /* Textos de versión e historial */
-    [data-testid="stSidebar"] .stCaption, [data-testid="stSidebar"] p {
+    /* Subtítulos y textos de la barra lateral */
+    [data-testid="stSidebar"] .stCaption {
         color: #a78bfa !important;
+        text-align: center;
+        font-size: 12px !important;
+    }
+    
+    [data-testid="stSidebar"] p {
+        color: #d8b4fe !important;
     }
 
+    /* Botones del sidebar */
     [data-testid="stSidebar"] button {
         background: transparent !important; color: #d8b4fe !important; border: 1px solid transparent !important;
         text-align: left !important; padding: 8px 12px !important; border-radius: 8px !important; transition: all 0.3s ease !important;
@@ -165,7 +176,6 @@ st.markdown("""
        CAJA DE TEXTO (CÁPSULA BRILLANTE)
        ========================================= */
     
-    /* Fondo transparente para la franja inferior */
     [data-testid="stBottom"], 
     [data-testid="stBottom"] > div,
     [data-testid="stBottomBlockContainer"] {
@@ -181,13 +191,12 @@ st.markdown("""
     
     .stChatInput {
         background: rgba(23, 11, 38, 0.8) !important; 
-        border: 2px solid #f472b6 !important; /* Borde rosa neón */
+        border: 2px solid #f472b6 !important; 
         border-radius: 30px !important; 
         box-shadow: 0 0 20px rgba(244, 114, 182, 0.2) !important;
         backdrop-filter: blur(10px) !important;
     }
     
-    /* Transparencia forzada */
     .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input {
         background-color: transparent !important;
         background: transparent !important;
@@ -202,9 +211,8 @@ st.markdown("""
         box-shadow: 0 0 25px rgba(236, 72, 153, 0.4) !important;
     }
 
-    /* Botón de enviar */
     [data-testid="stChatInput"] button {
-        background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%) !important; /* Cian a Azul */
+        background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%) !important; 
         border-radius: 50% !important;
         border: none !important;
         margin: 5px !important;
@@ -227,12 +235,12 @@ if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
 
-# --- SIDEBAR ---
+# --- SIDEBAR (SERIA) ---
 with st.sidebar:
-    st.markdown("<h3>⚡ Lili AI</h3>", unsafe_allow_html=True)
-    st.caption(f"⚙️ {VERSION}") # 🔥 AQUÍ SE MUESTRA LA VERSIÓN
+    st.markdown("<h3>💠 Lili AI</h3>", unsafe_allow_html=True)
+    st.caption(f"{VERSION}")
     
-    if st.button("➕ Nuevo Chat", use_container_width=True):
+    if st.button("+ Nuevo Chat", use_container_width=True):
         nuevo_id = datetime.datetime.now().strftime("%H:%M:%S")
         st.session_state.chat_actual_id = nuevo_id
         st.session_state.todos_los_chats[nuevo_id] = []
@@ -246,12 +254,14 @@ with st.sidebar:
         if len(st.session_state.todos_los_chats[chat_id]) > 0:
             col1, col2 = st.columns([0.8, 0.2])
             with col1:
-                icono = "🟢" if chat_id == st.session_state.chat_actual_id else "⚪"
+                # Indicadores minimalistas
+                icono = "▸" if chat_id == st.session_state.chat_actual_id else "▫"
                 if st.button(f"{icono} {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
                     st.session_state.chat_actual_id = chat_id
                     st.rerun()
             with col2:
-                if st.button("🗑️", key=f"del_{chat_id}", use_container_width=True):
+                # Botón de borrar con una 'X' limpia
+                if st.button("✕", key=f"del_{chat_id}", use_container_width=True):
                     del st.session_state.todos_los_chats[chat_id]
                     guardar_todos_los_chats(st.session_state.todos_los_chats)
                     if chat_id == st.session_state.chat_actual_id:
@@ -262,8 +272,8 @@ with st.sidebar:
                     st.rerun()
 
     st.markdown("---")
-    with st.expander("⚙️ Ajustes"):
-        voz_activa = st.checkbox("🔊 Voz activa", value=True)
+    with st.expander("Sistema"):
+        voz_activa = st.checkbox("Voz activa", value=True)
         token = st.secrets.get("GITHUB_TOKEN")
         usuario_github = "leivercontreras18-ux"
         if token:
@@ -273,14 +283,14 @@ with st.sidebar:
                 archivos = obtener_archivos(usuario_github, repo_sel, token)
                 if archivos:
                     arch_sel = st.selectbox("Archivo", archivos)
-                    if st.button("📥 Cargar", use_container_width=True):
+                    if st.button("Cargar Archivo", use_container_width=True):
                         exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
                         if exito:
                             st.session_state.codigo_github = resultado
                             st.session_state.archivo_cargado_nombre = arch_sel
                             st.rerun()
             if st.session_state.archivo_cargado_nombre:
-                st.success(f"✅ {st.session_state.archivo_cargado_nombre}")
+                st.success(f"Cargado: {st.session_state.archivo_cargado_nombre}")
 
 # --- CONEXIÓN CON GROQ ---
 if "GROQ_API_KEY" not in st.secrets:
@@ -298,7 +308,7 @@ for message in mensajes_actuales:
 if len(mensajes_actuales) == 0:
     st.markdown("""
         <div style="text-align: center; margin-top: 25vh;">
-            <h1 style="font-size: 36px; font-weight: 300; color: #f472b6; text-shadow: 0 0 20px rgba(244, 114, 182, 0.6);">Sistemas en Línea</h1>
+            <h1 style="font-size: 32px; font-weight: 300; color: #f472b6; text-shadow: 0 0 20px rgba(244, 114, 182, 0.6);">Sistemas en Línea</h1>
             <p style="font-size: 16px; color: #a78bfa;">Bienvenido de nuevo, Leiver. ¿Cuál es la misión de hoy?</p>
         </div>
     """, unsafe_allow_html=True)
@@ -307,7 +317,7 @@ if len(mensajes_actuales) == 0:
 prompt = st.chat_input("Escribe tu mensaje...")
 
 with st.sidebar:
-    with st.expander("🎤 Micrófono"):
+    with st.expander("Micrófono"):
         audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
 
 if audio_grabado or prompt:
