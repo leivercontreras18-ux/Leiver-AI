@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v28.1 - Neural Radar"
+VERSION = "v28.2 - Radar Sweep"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="📡", layout="wide")
@@ -78,7 +78,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS NEURAL RADAR (DISEÑO OSCURO + NUEVO NÚCLEO) ---
+# --- CSS NEURAL RADAR SWEEP (DISEÑO OSCURO) ---
 st.markdown("""
 <style>
     /* FONDO OSCURO ESPACIAL */
@@ -165,7 +165,7 @@ st.markdown("""
     audio, div[data-testid="stAudio"] { display: none !important; }
 
     /* =========================================
-       EL NUEVO NÚCLEO (RADAR GEOMÉTRICO)
+       EL NÚCLEO RADAR CON ESCANEO
        ========================================= */
     .neural-container {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -176,9 +176,8 @@ st.markdown("""
     .neural-radar {
         width: 280px; height: 280px; border-radius: 50%;
         position: relative; overflow: hidden;
-        /* Degradado base: Cian a la izquierda, Morado a la derecha */
-        background: linear-gradient(90deg, #00f2fe 0%, #00f2fe 35%, #9d4edd 65%, #9d4edd 100%);
-        box-shadow: 0 0 50px rgba(0, 242, 254, 0.4), 0 0 100px rgba(157, 78, 221, 0.3);
+        background: linear-gradient(135deg, #00f2fe 0%, #00f2fe 40%, #9d4edd 60%, #9d4edd 100%);
+        box-shadow: 0 0 60px rgba(0, 242, 254, 0.4), inset 0 0 40px rgba(157, 78, 221, 0.6);
         animation: pulse-glow 3s infinite alternate;
     }
 
@@ -188,31 +187,46 @@ st.markdown("""
         background: repeating-conic-gradient(
             from 0deg,
             transparent 0deg 14deg,
-            rgba(255, 255, 255, 0.4) 14deg 15deg,
+            rgba(255, 255, 255, 0.3) 14deg 15deg,
             transparent 15deg 30deg
         );
         border-radius: 50%;
     }
     
-    /* Círculos concéntricos */
+    /* Círculos concéntricos punteados */
     .neural-radar::after {
         content: ""; position: absolute; inset: 0;
         background: repeating-radial-gradient(
             circle at 50% 50%,
             transparent 0px,
             transparent 18px,
-            rgba(255, 255, 255, 0.4) 18px,
-            rgba(255, 255, 255, 0.4) 19px
+            rgba(255, 255, 255, 0.5) 18px,
+            rgba(255, 255, 255, 0.5) 19px
         );
         border-radius: 50%;
+    }
+
+    /* 🔥 LA LÍNEA DE ESCANEO GIRATORIA */
+    .radar-sweep {
+        position: absolute; inset: 0;
+        border-radius: 50%;
+        background: conic-gradient(
+            from 0deg,
+            rgba(0, 242, 254, 0.8) 0deg,
+            transparent 60deg,
+            transparent 360deg
+        );
+        animation: sweep 3s linear infinite;
+        mix-blend-mode: screen;
+        pointer-events: none;
     }
     
     /* Borde exterior brillante */
     .neural-ring {
         position: absolute; width: 300px; height: 300px;
-        border: 2px solid rgba(0, 242, 254, 0.5); border-radius: 50%;
-        box-shadow: inset 0 0 20px rgba(0, 242, 254, 0.2);
-        animation: spin-ring 10s linear infinite;
+        border: 1px solid rgba(0, 242, 254, 0.5); border-radius: 50%;
+        box-shadow: inset 0 0 30px rgba(0, 242, 254, 0.2);
+        animation: spin-ring 15s linear infinite reverse;
     }
 
     .neural-text {
@@ -225,6 +239,7 @@ st.markdown("""
         100% { transform: scale(1.02); filter: brightness(1.1); }
     }
     @keyframes spin-ring { 100% { transform: rotate(360deg); } }
+    @keyframes sweep { 100% { transform: rotate(360deg); } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -310,7 +325,9 @@ if len(mensajes_actuales) == 0:
     st.markdown("""
         <div class="neural-container">
             <div class="neural-ring"></div>
-            <div class="neural-radar"></div>
+            <div class="neural-radar">
+                <div class="radar-sweep"></div>
+            </div>
             <div class="neural-text">Neural Core Active</div>
         </div>
         <div style="text-align: center; margin-top: 20px;">
