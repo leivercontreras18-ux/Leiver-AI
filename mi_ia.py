@@ -6,12 +6,13 @@ import edge_tts
 import base64
 import json
 import os
+import re  # Nueva librería para limpiar el texto
 from groq import Groq
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Nova"
 VOZ_FIJA = "es-MX-DaliaNeural"
-VERSION = "v11.1 - Mobile Edition"
+VERSION = "v11.2 - TTS Fix"
 ARCHIVO_HISTORIAL = "historial_nova.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
@@ -27,6 +28,18 @@ def guardar_historial(mensajes):
     with open(ARCHIVO_HISTORIAL, "w", encoding="utf-8") as f:
         json.dump(mensajes, f, ensure_ascii=False, indent=4)
 
+# --- FUNCIÓN PARA LIMPIAR EL TEXTO DE LA VOZ ---
+def limpiar_texto_para_voz(texto):
+    # 1. Quitar asteriscos, numerales, guiones bajos y backticks (formato markdown)
+    texto_limpio = re.sub(r'[*#_`]', '', texto)
+    # 2. Quitar guiones de listas al inicio de línea
+    texto_limpio = re.sub(r'^\s*-\s*', '', texto_limpio, flags=re.MULTILINE)
+    # 3. Quitar enlaces markdown [texto](url) dejando solo el texto
+    texto_limpio = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', texto_limpio)
+    # 4. Quitar comas de los números (ej. 1,500 -> 1500) para que lo lea como un entero
+    texto_limpio = re.sub(r'(?<=\d),(?=\d)', '', texto_limpio)
+    return texto_limpio.strip()
+
 # --- CSS AVANZADO ---
 st.markdown("""
 <style>
@@ -40,21 +53,10 @@ st.markdown("""
     footer {visibility: hidden;}
     header { background: transparent !important; }
     
-    /* PC Layout (Escritorio) */
-    .block-container { 
-        padding-top: 2rem !important; 
-        padding-bottom: 0 !important;
-        max-width: 95% !important; 
-        height: 100vh !important; 
-        overflow: hidden !important; 
-    }
+    .block-container { padding-top: 2rem !important; padding-bottom: 0 !important; max-width: 95% !important; height: 100vh !important; overflow: hidden !important; }
 
     /* 2. EL ORBE */
-    @keyframes blob {
-        0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; transform: scale(1); }
-        33% { border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%; transform: scale(1.03) rotate(4deg); }
-        66% { border-radius: 28% 72% 35% 65% / 40% 60% 30% 70%; transform: scale(0.97) rotate(-4deg); }
-    }
+    @keyframes blob { 0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; transform: scale(1); } 33% { border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%; transform: scale(1.03) rotate(4deg); } 66% { border-radius: 28% 72% 35% 65% / 40% 60% 30% 70%; transform: scale(0.97) rotate(-4deg); } }
     .orb-wrapper { position: relative; display: flex; align-items: center; justify-content: center; width: 300px; height: 300px; margin: 0 auto; }
     .orb-glow { position: absolute; width: 300px; height: 300px; border-radius: 50%; background: linear-gradient(to top right, rgba(168, 85, 247, 0.4), rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.4)); filter: blur(60px); animation: pulse 3s infinite alternate; }
     .orb-body { width: 256px; height: 256px; background: linear-gradient(to right, rgba(192, 132, 252, 0.4), rgba(249, 168, 212, 0.5), rgba(129, 140, 248, 0.4)); backdrop-filter: blur(12px); box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.2); animation: blob 8s infinite ease-in-out; border: 1px solid rgba(255, 255, 255, 0.2); position: relative; overflow: hidden; }
@@ -71,11 +73,9 @@ st.markdown("""
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
     div[data-testid="stChatMessage"] button { display: none !important; }
 
-    /* BURBUJAS */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) { background: linear-gradient(135deg, rgba(147, 51, 234, 0.4), rgba(88, 28, 135, 0.4)) !important; border: 1px solid rgba(168, 85, 247, 0.3) !important; color: #f3e8ff !important; border-radius: 25px 25px 5px 25px !important; margin-left: auto !important; width: fit-content !important; max-width: 85% !important; padding: 14px 20px !important; margin-bottom: 15px !important; backdrop-filter: blur(10px) !important; }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) { background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) !important; border: 1px solid rgba(255, 255, 255, 0.05) !important; color: rgba(252, 231, 243, 0.95) !important; border-radius: 25px 25px 25px 5px !important; margin-right: auto !important; width: fit-content !important; max-width: 85% !important; padding: 14px 20px !important; margin-bottom: 15px !important; backdrop-filter: blur(10px) !important; }
 
-    /* SCROLL */
     div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar { width: 6px !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-track { background: transparent !important; }
     div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.4) !important; border-radius: 10px !important; }
@@ -98,31 +98,15 @@ st.markdown("""
     [data-testid="stSidebar"] button:hover { background: rgba(255, 0, 85, 0.3) !important; box-shadow: 0 0 15px rgba(255, 0, 85, 0.5) !important; color: white !important; border: 1px solid rgba(255, 0, 85, 0.8) !important; }
     [data-testid="stSidebar"] .stCheckbox p { font-size: 13px !important; color: #a78bfa !important; }
 
-    /* =======================================================
-       6. MAGIA RESPONSIVE (SOLO PARA TELÉFONOS)
-       ======================================================= */
+    /* 6. MAGIA RESPONSIVE */
     @media (max-width: 768px) {
-        /* Permitir scroll en el teléfono */
-        .block-container { 
-            height: auto !important; 
-            overflow: auto !important; 
-            padding-bottom: 5rem !important; 
-        }
-        
-        /* Achicar el Orbe para que quepa en la pantalla del celular */
+        .block-container { height: auto !important; overflow: auto !important; padding-bottom: 5rem !important; }
         .orb-wrapper { width: 180px; height: 180px; margin-bottom: 10px; }
         .orb-body { width: 150px; height: 150px; }
         .orb-glow { width: 180px; height: 180px; filter: blur(30px); }
         .nova-title { font-size: 24px; margin-top: 10px; }
         .nova-subtitle { font-size: 11px; }
-
-        /* Achicar la caja del chat */
-        div[data-testid="stVerticalBlockBorderWrapper"] { 
-            height: 400px !important; /* Altura fija más pequeña para móvil */
-            margin-top: 20px;
-        }
-
-        /* Ajustar la barra de texto */
+        div[data-testid="stVerticalBlockBorderWrapper"] { height: 400px !important; margin-top: 20px; }
         [data-testid="stChatInput"] { width: 95% !important; margin: 0 auto !important; }
     }
 </style>
@@ -235,7 +219,9 @@ if audio_grabado or prompt:
         st.session_state.messages.append({"role": "user", "content": texto_usuario})
         guardar_historial(st.session_state.messages)
         
-        instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa y clara."
+        # MEJORA EN LAS INSTRUCCIONES: Le pedimos que no use asteriscos
+        instrucciones = f"Eres {NOMBRE_IA}, una IA avanzada, elegante y servicial. Responde de forma concisa y clara. IMPORTANTE: No uses formato Markdown, ni asteriscos, ni numerales en tus respuestas. Escribe en texto plano."
+        
         if codigo_actual:
             instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```python\n{codigo_actual}\n```"
 
@@ -258,10 +244,12 @@ if audio_grabado or prompt:
                 
                 if voz_activa: 
                     try:
-                        audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
+                        # AQUÍ APLICAMOS LA LIMPIEZA ANTES DE GENERAR EL AUDIO
+                        texto_para_hablar = limpiar_texto_para_voz(texto_respuesta)
+                        audio_buffer = asyncio.run(generar_audio_edge(texto_para_hablar, VOZ_FIJA))
                         st.session_state.audio_pendiente = audio_buffer
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"Error de voz: {e}")
                 
                 st.session_state.mic_key += 1
                 st.rerun()
