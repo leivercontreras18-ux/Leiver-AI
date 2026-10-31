@@ -44,16 +44,15 @@ st.markdown("""
        ========================================= */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         display: flex !important;
-        flex-direction: row-reverse !important;
+        flex-direction: row-reverse !important; /* Invierte el avatar y el texto */
         background-color: #2f2f2f !important;
         border-radius: 15px !important;
         padding: 1rem !important;
         margin-bottom: 1rem !important;
-        margin-left: auto !important;  /* Empuja a la derecha */
+        margin-left: auto !important;  /* Empuja la burbuja a la derecha */
         margin-right: 0 !important;
-        width: fit-content !important; /* Ajusta al ancho del texto */
+        width: fit-content !important; /* La burbuja se ajusta al texto */
         max-width: 85% !important;
-        align-self: flex-end !important;
     }
 
     /* Alinear el texto del usuario a la derecha */
@@ -72,7 +71,6 @@ st.markdown("""
         max-width: 85% !important;
         margin-right: auto !important;
         margin-left: 0 !important;
-        align-self: flex-start !important;
     }
 
     /* Fijar la caja de texto abajo */
@@ -203,13 +201,19 @@ try:
                     except Exception as e:
                         error_str = str(e)
                         if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                            match = re.search(r'retry_delay\s*{\s*seconds:\s*(\d+)', error_str)
+                            espera = int(match.group(1)) if match else 30
+                            
+                            # Si la espera es mayor a 120 segundos, significa que la cuota DIARIA se agotó
+                            if espera > 120:
+                                st.error("❌ Se ha agotado la cuota diaria de tu API Key. Para seguir usando a Nova hoy, ve a Google AI Studio, crea una nueva clave en un nuevo proyecto y pégala en los Secrets de Streamlit.")
+                                break
+                            
                             if intento < max_reintentos - 1:
-                                match = re.search(r'retry_delay\s*{\s*seconds:\s*(\d+)', error_str)
-                                espera = int(match.group(1)) + 2 if match else 30
-                                st.warning(f"⏳ Límite alcanzado. Esperando {espera} segundos...")
+                                st.warning(f"⏳ Límite por minuto alcanzado. Esperando {espera} segundos...")
                                 time.sleep(espera)
                             else:
-                                st.error("❌ Límite de la API superado.")
+                                st.error("❌ Límite de la API superado. Intenta de nuevo en un minuto.")
                         else:
                             st.error(f"Error: {e}")
                             break
