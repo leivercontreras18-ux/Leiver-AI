@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v21.1 - One Piece & Delete Chats"
+VERSION = "v22.0 - Clean & Stable"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="🏴‍☠️", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,70 +78,32 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS ESTILO ANIME ONE PIECE (BURBUJAS Y ALINEACIÓN) ---
+# --- CSS LIMPIO Y ESTABLE (MODO OSCURO) ---
 st.markdown("""
 <style>
-    /* 1. FONDO DE ONE PIECE (Luffy / Going Merry) */
+    /* Fondo oscuro elegante */
     .stApp {
-        background-image: url('https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=2000&auto=format&fit=crop'); /* Fondo marítimo/pirata de alta calidad */
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-        background-color: #000000;
-    }
-    /* Capa oscura para legibilidad */
-    .stApp::before {
-        content: "";
-        position: fixed; inset: 0;
-        background: rgba(10, 5, 5, 0.8); /* Oscuro con un toque rojizo/marrón */
-        z-index: -1;
+        background-color: #121214 !important;
+        color: #ffffff !important;
     }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
-    /* =========================================
-       BARRA LATERAL
-       ========================================= */
+    /* BARRA LATERAL */
     [data-testid="stSidebar"] {
-        background-color: rgba(15, 10, 10, 0.85) !important;
-        border-right: 1px solid #8b0000 !important;
-        backdrop-filter: blur(10px) !important;
+        background-color: #18181b !important;
+        border-right: 1px solid #27272a !important;
     }
-    
-    [data-testid="stSidebar"] h2 {
-        color: #ff4d4d !important;
-        text-align: center;
-        font-weight: 300;
-    }
-    
-    /* Botones del sidebar */
     [data-testid="stSidebar"] button {
-        background: transparent !important; 
-        color: #d4d4d4 !important; 
-        border: 1px solid transparent !important;
-        text-align: left !important; 
-        padding: 10px 15px !important;
-        transition: all 0.2s ease !important;
+        background: transparent !important; color: #d4d4d4 !important; border: none !important;
+        text-align: left !important; padding: 8px 12px !important; border-radius: 8px !important;
     }
     [data-testid="stSidebar"] button:hover {
-        color: #ffffff !important; 
-        border-left: 3px solid #ff4d4d !important;
-        background: rgba(255, 77, 77, 0.1) !important;
-    }
-    
-    /* Botón Nuevo Chat */
-    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
-        background: rgba(255, 77, 77, 0.2) !important;
-        border: 1px solid #ff4d4d !important;
-        text-align: center !important;
-        border-radius: 8px !important;
-        margin-bottom: 15px !important;
+        background: #27272a !important; color: white !important;
     }
 
-    /* =========================================
-       CHAT (BURBUJAS Y ALINEACIÓN)
-       ========================================= */
+    /* BURBUJAS DE CHAT (TU A LA DERECHA, LILI A LA IZQUIERDA) */
     div[data-testid="stChatMessage"] {
         background-color: transparent !important;
         border: none !important;
@@ -153,7 +115,7 @@ st.markdown("""
         display: none !important; 
     }
 
-    /* TUS MENSAJES (A LA DERECHA) */
+    /* TUS MENSAJES (Derecha) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         flex-direction: row-reverse !important;
         justify-content: flex-start !important;
@@ -161,18 +123,14 @@ st.markdown("""
         width: fit-content !important;
         max-width: 80% !important;
     }
-    
-    /* Burbuja de tus mensajes */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
-        background: rgba(200, 30, 30, 0.3) !important; /* Rojo One Piece */
-        border: 1px solid rgba(200, 30, 30, 0.5) !important;
+        background: #27272a !important; /* Gris oscuro */
         color: #ffffff !important;
-        border-radius: 20px 20px 0 20px !important; 
+        border-radius: 18px 18px 0 18px !important; 
         padding: 12px 18px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
     }
 
-    /* MENSAJES DE LILI (A LA IZQUIERDA) */
+    /* MENSAJES DE LILI (Izquierda) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
         flex-direction: row !important;
         justify-content: flex-start !important;
@@ -180,56 +138,28 @@ st.markdown("""
         width: fit-content !important;
         max-width: 80% !important;
     }
-    
-    /* Burbuja de Lili */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
-        background: rgba(255, 255, 255, 0.1) !important; 
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        color: #f0f0f0 !important;
-        border-radius: 20px 20px 20px 0 !important; 
+        background: #18181b !important; 
+        color: #e5e5e5 !important;
+        border-radius: 18px 18px 18px 0 !important; 
         padding: 12px 18px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
-    }
-    
-    div[data-testid="stChatMessage"] p {
-        font-size: 15px !important;
-        line-height: 1.5 !important;
-        margin: 0 !important;
+        border: 1px solid #27272a !important;
     }
 
-    /* =========================================
-       CAJA DE TEXTO
-       ========================================= */
+    /* CAJA DE TEXTO */
     [data-testid="stBottomBlockContainer"] {
-        background: transparent !important; 
-        padding-bottom: 2rem !important; 
-        max-width: 800px !important; 
-        margin: 0 auto !important;
+        background: transparent !important; padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important;
     }
-    
     .stChatInput {
-        background: rgba(20, 10, 10, 0.9) !important;
-        border: 1px solid #ff4d4d !important; 
+        background: #18181b !important;
+        border: 1px solid #3f3f46 !important;
         border-radius: 15px !important;
-        box-shadow: 0 0 15px rgba(255, 77, 77, 0.3) !important;
     }
-    .stChatInput:focus-within { 
-        border: 1px solid #ff8080 !important; 
-        box-shadow: 0 0 25px rgba(255, 77, 77, 0.5) !important;
-    }
-    [data-testid="stChatInput"] textarea { 
-        color: #ffffff !important; font-size: 16px !important; padding: 12px 20px !important; 
-    }
-    
+    .stChatInput:focus-within { border: 1px solid #8b5cf6 !important; }
     [data-testid="stChatInput"] button {
-        background: #ffffff !important; 
-        color: #000000 !important; 
-        border-radius: 50% !important;
-        border: none !important; 
-        width: 35px !important; height: 35px !important;
-        margin: 8px !important;
+        background: #8b5cf6 !important; color: white !important; border-radius: 50% !important;
     }
-    [data-testid="stChatInput"] button svg { fill: #000000 !important; }
+    [data-testid="stChatInput"] button svg { fill: white !important; }
 
     audio, div[data-testid="stAudio"] { display: none !important; }
 </style>
@@ -244,9 +174,9 @@ if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
 
-# --- SIDEBAR (HISTORIAL Y BOTÓN DE BORRAR) ---
+# --- SIDEBAR (HISTORIAL Y BORRAR) ---
 with st.sidebar:
-    st.markdown("<h2>🏴‍☠️ Lili AI</h2>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #a78bfa; text-align: center;'>💜 Lili AI</h3>", unsafe_allow_html=True)
     
     if st.button("➕ Nuevo Chat", use_container_width=True):
         nuevo_id = datetime.datetime.now().strftime("%H:%M:%S")
@@ -256,9 +186,8 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    st.markdown("### Historial")
+    st.markdown("**Historial**")
     
-    # AQUÍ ESTÁ LA MAGIA PARA BORRAR CHATS
     for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
         if len(st.session_state.todos_los_chats[chat_id]) > 0:
             col1, col2 = st.columns([0.8, 0.2])
@@ -271,7 +200,6 @@ with st.sidebar:
                 if st.button("🗑️", key=f"del_{chat_id}", use_container_width=True):
                     del st.session_state.todos_los_chats[chat_id]
                     guardar_todos_los_chats(st.session_state.todos_los_chats)
-                    # Si borramos el chat actual, creamos uno nuevo vacío
                     if chat_id == st.session_state.chat_actual_id:
                         nuevo_id = datetime.datetime.now().strftime("%H:%M:%S")
                         st.session_state.chat_actual_id = nuevo_id
@@ -315,9 +243,9 @@ for message in mensajes_actuales:
 
 if len(mensajes_actuales) == 0:
     st.markdown("""
-        <div style="text-align: center; margin-top: 20vh; color: #ffffff;">
-            <h1 style="font-size: 30px; font-weight: 300; letter-spacing: 1px;">Hey</h1>
-            <p style="font-size: 18px; color: #ff4d4d;">¡Hola Leiver! ¿En qué puedo ayudarte hoy?</p>
+        <div style="text-align: center; margin-top: 25vh;">
+            <h1 style="font-size: 36px; font-weight: 300; color: #ffffff; margin-bottom: 10px;">Hola, Leiver 👋</h1>
+            <p style="font-size: 16px; color: #a1a1aa;">¿En qué puedo ayudarte hoy?</p>
         </div>
     """, unsafe_allow_html=True)
 
