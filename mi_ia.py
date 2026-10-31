@@ -12,75 +12,79 @@ VOZ_FIJA = "es-MX-DaliaNeural"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS AVANZADO (ESTILO CYBERPUNK / NEBULOSA) ---
+# --- CSS AVANZADO (EL ALMA DE LA INTERFAZ SCI-FI) ---
 st.markdown("""
 <style>
-    /* Fondo de Nebulosa con Capa Oscura */
+    /* Fondo espacial sólido (evita problemas de carga) */
     .stApp {
-        background-image: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2048&auto=format&fit=crop');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
+        background: radial-gradient(circle at 50% 50%, #0a0f1a 0%, #000000 100%);
         color: #e0e0e0;
     }
     
-    /* Capa oscura para que el texto resalte */
-    .stApp::before {
-        content: "";
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        background: rgba(5, 5, 15, 0.85); /* Tinte azul/negro oscuro */
-        z-index: -1;
-    }
-
-    /* Líneas de Escaneo (Scanlines) */
-    .stApp::after {
-        content: "";
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        background: repeating-linear-gradient(
-            0deg,
-            rgba(0, 0, 0, 0.15),
-            rgba(0, 0, 0, 0.15) 1px,
-            transparent 1px,
-            transparent 2px
-        );
-        pointer-events: none;
-        z-index: 9999;
-    }
-
+    /* Ocultar menús */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header { background: transparent !important; }
     .block-container { padding-top: 1rem !important; max-width: 95% !important; }
 
     /* -----------------------------------------
-       EL ORBE HOLOGRÁFICO (Más Grande)
+       EL NÚCLEO DE PLASMA (CSS PURO - NUNCA FALLA)
        ----------------------------------------- */
     .orb-container {
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        height: 65vh;
+        height: 60vh;
         position: relative;
     }
     
-    .orb-gif {
-        width: 420px;  /* Aumentado de 320px a 420px */
-        height: 420px;
+    .orb-core {
+        width: 220px;
+        height: 220px;
         border-radius: 50%;
-        background-image: url('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z5Z3R6cXZ4Z3R6cXZ4Z3R6cXZ4Z3R6cXZ4Z3R6cXZ4Z3R6cXZ4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKr3nzbCg4rO5u8/giphy.gif');
-        background-size: cover;
-        background-position: center;
-        box-shadow: 0 0 60px rgba(0, 242, 254, 0.6), 0 0 150px rgba(255, 0, 128, 0.4);
-        animation: pulse 2s infinite alternate ease-in-out;
-        margin-top: 20px;
+        /* Gradiente de plasma hiperrealista */
+        background: radial-gradient(circle at 30% 30%, #ffffff 0%, #00f2fe 20%, #4facfe 40%, #ff00ff 80%, #0d1117 100%);
+        box-shadow: 0 0 50px #00f2fe, 0 0 100px #ff00ff, inset 0 0 30px #ffffff;
+        animation: plasma-pulse 2s infinite alternate ease-in-out, plasma-rotate 10s linear infinite;
+        position: relative;
+        z-index: 10;
     }
 
-    @keyframes pulse {
+    /* Anillos orbitando el núcleo */
+    .orb-ring {
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        border: 2px solid rgba(0, 242, 254, 0.4);
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+        animation: spin 8s linear infinite;
+        z-index: 5;
+    }
+    .orb-ring-2 {
+        position: absolute;
+        width: 360px;
+        height: 360px;
+        border-radius: 50%;
+        border: 1px dashed rgba(255, 0, 255, 0.4);
+        box-shadow: 0 0 15px rgba(255, 0, 255, 0.2);
+        animation: spin 15s linear infinite reverse;
+        z-index: 5;
+    }
+
+    @keyframes plasma-pulse {
         0% { transform: scale(0.95); filter: brightness(0.8); }
-        100% { transform: scale(1.05); filter: brightness(1.3); }
+        100% { transform: scale(1.05); filter: brightness(1.2); }
+    }
+
+    @keyframes plasma-rotate {
+        0% { filter: hue-rotate(0deg); }
+        100% { filter: hue-rotate(360deg); }
+    }
+
+    @keyframes spin {
+        100% { transform: rotate(360deg); }
     }
 
     /* -----------------------------------------
@@ -88,37 +92,38 @@ st.markdown("""
        ----------------------------------------- */
     div[data-testid="stChatMessage"] {
         background: rgba(10, 15, 30, 0.7) !important;
-        backdrop-filter: blur(12px) !important;
-        border-radius: 10px !important;
+        backdrop-filter: blur(10px) !important;
+        border-radius: 12px !important;
         padding: 15px !important;
         margin-bottom: 15px !important;
+        transition: all 0.3s ease;
     }
 
     /* Panel del Usuario (Borde Magenta Neón) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         border: 1px solid #ff00ff !important;
-        box-shadow: 0 0 15px rgba(255, 0, 255, 0.4), inset 0 0 10px rgba(255, 0, 255, 0.2) !important;
+        box-shadow: 0 0 10px rgba(255, 0, 255, 0.3) !important;
     }
 
     /* Panel de Nova (Borde Cian Neón) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
         border: 1px solid #00f2fe !important;
-        box-shadow: 0 0 15px rgba(0, 242, 254, 0.4), inset 0 0 10px rgba(0, 242, 254, 0.2) !important;
+        box-shadow: 0 0 10px rgba(0, 242, 254, 0.3) !important;
     }
 
-    /* Barra de texto */
+    /* Barra de texto futurista */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
         padding-bottom: 1rem !important;
     }
     .stChatInput {
-        background: rgba(10, 15, 30, 0.9) !important;
-        backdrop-filter: blur(15px) !important;
+        background: rgba(5, 10, 20, 0.9) !important;
         border: 1px solid #00f2fe !important;
         border-radius: 10px !important;
-        box-shadow: 0 0 20px rgba(0, 242, 254, 0.3) !important;
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.2) !important;
     }
 
+    /* Ocultar audio nativo */
     audio { display: none !important; }
     div[data-testid="stAudio"] { display: none !important; }
 </style>
@@ -168,15 +173,17 @@ try:
     instrucciones = f"Eres {NOMBRE_IA}, un asistente experto. Responde de forma directa, elegante y concisa."
 
     # --- LAYOUT PRINCIPAL ---
-    col_izq, col_der = st.columns([1.2, 1])
+    col_izq, col_der = st.columns([1, 1.2])
 
     with col_izq:
         st.markdown("""
             <div class="orb-container">
-                <div class="orb-gif"></div>
-                <div style="text-align: center; margin-top: 20px; z-index: 10;">
+                <div class="orb-ring"></div>
+                <div class="orb-ring-2"></div>
+                <div class="orb-core"></div>
+                <div style="text-align: center; margin-top: 40px; z-index: 10;">
                     <h2 style="color: #00f2fe; letter-spacing: 8px; text-shadow: 0 0 15px #00f2fe; margin-bottom: 0;">NOVA</h2>
-                    <p style="color: #aaa; font-size: 12px; letter-spacing: 2px;">STATUS: ONLINE</p>
+                    <p style="color: #888; font-size: 12px; letter-spacing: 2px;">SISTEMAS OPERATIVOS</p>
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -184,7 +191,7 @@ try:
     with col_der:
         st.markdown("<h3 style='color: #00f2fe; margin-bottom: 10px; margin-top: 0; text-shadow: 0 0 5px #00f2fe;'>REGISTRO DE MISIÓN</h3>", unsafe_allow_html=True)
         
-        chat_container = st.container(height=500)
+        chat_container = st.container(height=480)
         with chat_container:
             for message in st.session_state.messages:
                 avatar = "👤" if message["role"] == "user" else "🤖"
