@@ -15,7 +15,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v36.0 - Clean HUD"
+VERSION = "v36.1 - Balanced HUD"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -78,7 +78,7 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS PREMIUM HUD (INTEGRACIÓN TOTAL CON TU NUEVO CSS) ---
+# --- CSS PREMIUM HUD (CON TU CSS CORREGIDO) ---
 st.markdown("""
 <style>
     /* Variables de Sistema */
@@ -149,30 +149,9 @@ st.markdown("""
     }
 
     /* =========================================
-       PANEL DE GITHUB (TU CSS DE LIMPIEZA ABSOLUTA)
+       PANEL DE GITHUB (TU CSS CORREGIDO)
        ========================================= */
-    /* 1. Eliminar Emojis e Iconos Nativos del Encabezado */
-    [data-testid="stExpander"] summary span p {
-        display: inline-flex;
-        align-items: center;
-    }
-    [data-testid="stExpander"] summary img, 
-    [data-testid="stExpander"] summary span[role="img"] {
-        display: none !important;
-    }
-    /* Ocultar la flechita del expander */
-    [data-testid="stExpander"] summary svg { display: none !important; }
-
-    /* 2. Redistribución Visual y Espaciado del Contenedor */
-    [data-testid="stExpander"] {
-        background: rgba(19, 24, 34, 0.3) !important;
-        border: 1px solid rgba(0, 229, 255, 0.08) !important;
-        border-radius: 8px !important;
-        padding: 4px !important;
-        margin-top: 15px !important;
-    }
-
-    /* Forzar fuentes limpias y en mayúsculas para el encabezado */
+    /* 1. Asegurar que los textos principales permanezcan visibles */
     [data-testid="stExpander"] summary {
         font-size: 0.8rem !important;
         font-weight: 600 !important;
@@ -183,9 +162,12 @@ st.markdown("""
     }
     [data-testid="stExpander"] summary:hover { color: #ffffff !important; }
 
-    /* 3. Limpieza Absoluta de Botones (Sincronizar y Cargar) */
+    /* Ocultar la flechita del expander */
+    [data-testid="stExpander"] summary svg { display: none !important; }
+
+    /* 2. Re-estilizar los botones para que mantengan su contenido textual */
     [data-testid="stExpander"] button {
-        background: transparent !important;
+        background: rgba(0, 229, 255, 0.03) !important;
         border: 1px solid rgba(0, 229, 255, 0.2) !important;
         border-radius: 6px !important;
         color: #00e5ff !important;
@@ -195,40 +177,39 @@ st.markdown("""
         text-transform: uppercase !important;
         width: 100% !important;
         padding: 10px !important;
-        box-shadow: none !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-        gap: 0px !important;
+        height: auto !important;
     }
-    [data-testid="stExpander"] button img,
-    [data-testid="stExpander"] button span { display: none !important; }
 
     [data-testid="stExpander"] button:hover {
         border-color: #00e5ff !important;
-        background: rgba(0, 229, 255, 0.05) !important;
+        background: rgba(0, 229, 255, 0.08) !important;
         color: #ffffff !important;
-        text-shadow: 0 0 5px rgba(0, 229, 255, 0.5) !important;
     }
 
-    /* 4. Estilizar Cajas de Selección (Repositorio / Archivo) */
+    /* Ocultar únicamente las imágenes nativas o emojis dentro del botón sin romper el texto */
+    [data-testid="stExpander"] button img,
+    [data-testid="stExpander"] button span[role="img"] {
+        display: none !important;
+    }
+
+    /* 3. Corregir el espaciado e indicadores de los selectores */
     [data-testid="stExpander"] [data-baseweb="select"] {
         background-color: rgba(10, 14, 22, 0.6) !important;
-        border: 1px solid rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(0, 229, 255, 0.1) !important;
         border-radius: 6px !important;
     }
+
     [data-testid="stExpander"] [data-baseweb="select"]:focus-within {
-        border-color: rgba(0, 229, 255, 0.3) !important;
+        border-color: #00e5ff !important;
+        box-shadow: 0 0 8px rgba(0, 229, 255, 0.2) !important;
     }
 
-    /* Ajustar etiquetas de texto internas */
-    [data-testid="stExpander"] label {
-        color: #56667a !important;
-        font-size: 0.75rem !important;
-        font-weight: 500 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.8px !important;
-        margin-top: 10px !important;
+    /* Mantener las flechas de los selectores visibles en cian */
+    [data-testid="stExpander"] svg {
+        color: #00e5ff !important;
     }
     
     /* Asegurar que el texto seleccionado en el dropdown sea visible */
@@ -402,14 +383,14 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
     
-    # PANEL DE GITHUB (SIN EMOJIS EN EL TÍTULO)
+    # PANEL DE GITHUB
     if st.session_state.modo_actual == "Programación":
-        with st.expander("GitHub"): # <- Quitamos el emoji 🐙 de aquí
+        with st.expander("GitHub"):
             token = st.secrets.get("GITHUB_TOKEN")
             usuario_github = "leivercontreras18-ux"
             
             if token:
-                if st.button("Sincronizar", use_container_width=True): # <- Quitamos el emoji 🔄
+                if st.button("Sincronizar", use_container_width=True):
                     st.cache_data.clear()
                     st.rerun()
                     
@@ -423,7 +404,7 @@ with st.sidebar:
                         idx_archivo = archivos.index("mi_ia.py") if "mi_ia.py" in archivos else 0
                         arch_sel = st.selectbox("Archivo", archivos, index=idx_archivo)
                         
-                        if st.button("Cargar Archivo", use_container_width=True): # <- Quitamos el emoji 📥
+                        if st.button("Cargar Archivo", use_container_width=True):
                             exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
                             if exito:
                                 st.session_state.codigo_github = resultado
