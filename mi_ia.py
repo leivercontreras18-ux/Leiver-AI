@@ -3,7 +3,8 @@ import google.generativeai as genai
 import time
 import re
 import io
-from gtts import gTTS
+import asyncio
+import edge_tts
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Leiver AI", page_icon="🤖", layout="wide")
@@ -11,27 +12,18 @@ st.set_page_config(page_title="Leiver AI", page_icon="🤖", layout="wide")
 # --- CSS PERSONALIZADO (DISEÑO PREMIUM) ---
 st.markdown("""
 <style>
-    /* Ocultar menú de Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    
-    /* Hacer el encabezado transparente para que la flechita se vea */
     header { background: transparent !important; }
-
-    /* Fondo con degradado espacial */
     .stApp {
         background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
         color: #e0e0e0;
     }
-
-    /* Barra lateral con efecto cristal */
     [data-testid="stSidebar"] {
         background: rgba(15, 12, 41, 0.7);
         backdrop-filter: blur(12px);
         border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
-
-    /* Burbujas de chat estilo cristal */
     .stChatMessage {
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
@@ -42,8 +34,6 @@ st.markdown("""
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         color: #ffffff;
     }
-
-    /* Botones elegantes */
     .stButton>button {
         background: linear-gradient(90deg, #4b33a8 0%, #1d4ed8 100%);
         color: white;
@@ -51,20 +41,40 @@ st.markdown("""
         border-radius: 10px;
         transition: transform 0.2s;
     }
-    .stButton>button:hover {
-        transform: scale(1.05);
-    }
+    .stButton>button:hover { transform: scale(1.05); }
 </style>
 """, unsafe_allow_html=True)
+
+# --- FUNCIÓN PARA GENERAR EL AUDIO CON EDGE-TTS ---
+async def generar_audio_edge(texto, voz):
+    comunicar = edge_tts.Communicate(texto, voz)
+    audio_buffer = io.BytesIO()
+    async for chunk in comunicar.stream():
+        if chunk["type"] == "audio":
+            audio_buffer.write(chunk["data"])
+    audio_buffer.seek(0)
+    return audio_buffer
 
 # --- BARRA LATERAL ---
 with st.sidebar:
     st.title("🤖 Leiver AI")
-    st.caption("v2.5 - Premium Edition")
+    st.caption("v2.6 - Viernes Edition")
     st.divider()
     
     st.subheader("⚙️ Configuración")
     activar_voz = st.checkbox("🔊 Hablar respuestas en voz alta", value=True)
+    
+    # Selección de voz (puedes cambiarla por otra de la lista)
+    voz_seleccionada = st.selectbox(
+        "🎙️ Selecciona la voz de la IA",
+        options=[
+            "en-GB-SoniaNeural", # Voz femenina británica, muy elegante
+            "en-GB-LibbyNeural",  # Otra opción británica femenina
+            "es-ES-ElviraNeural", # Voz femenina en español de España
+            "es-MX-DaliaNeural"   # Voz femenina en español de México
+        ],
+        index=0 # Por defecto, la británica
+    )
     
     st.divider()
     st.subheader("📂 Sube tu código")
@@ -84,22 +94,19 @@ try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
     
-    instrucciones = "Eres Leiver AI, un asistente experto, elegante, amable y directo (estilo Jarvis). Siempre respondes en español de forma clara."
+    instrucciones = "Eres Leiver AI, un asistente experto, elegante, amable y directo (estilo Jarvis/Viernes). Siempre respondes en español de forma clara."
     modelo = genai.GenerativeModel('gemini-3.5-flash', system_instruction=instrucciones)
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # --- ÁREA PRINCIPAL DEL CHAT ---
     st.subheader("💬 Centro de Mando")
     
-    # Mostrar historial
     for message in st.session_state.messages:
         avatar = "👤" if message["role"] == "user" else "🤖"
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
-    # --- ZONA DE ENTRADA (Voz y Texto) ---
     col1, col2 = st.columns([1, 4])
     with col1:
         st.write("🎤 **Voz:**")
@@ -108,7 +115,6 @@ try:
         st.write("⌨️ **Texto:**")
         prompt = st.chat_input("Escribe tu mensaje...")
 
-    # --- LÓGICA DE PROCESAMIENTO ---
     if audio_grabado or prompt:
         if prompt:
             texto_usuario = prompt
@@ -146,10 +152,12 @@ try:
                         st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
                         
                         if activar_voz and len(texto_respuesta) < 600: 
-                            tts = gTTS(text=texto_respuesta, lang='es', slow=False)
-                            audio_salida = io.BytesIO()
-                            tts.write_to_fp(audio_salida)
-                            st.audio(audio_salida, format="audio/mp3", autoplay=True)
+                            # Generar audio con edge-tts (usando asyncio)
+                            try:
+                                audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, voz_seleccionada))
+                                st.audio(audio_buffer, format="audio/mp3", autoplay=True)
+                            except Exception as e:
+                                st.warning(f"No se pudo generar la voz: {e}")
                         elif activar_voz:
                             st.info("🔇 Respuesta larga (código). No se lee en voz alta.")
                         
