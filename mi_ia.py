@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v15.9 - Agile Punctuation"
+VERSION = "v16.0 - SaaS UI"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -33,28 +33,17 @@ def guardar_todos_los_chats(chats):
 
 # --- FUNCIÓN PARA LIMPIAR EL TEXTO DE LA VOZ ---
 def limpiar_texto_para_voz(texto):
-    # 1. Quitar Markdown
     texto_limpio = re.sub(r'[*#_`]', '', texto)
     texto_limpio = re.sub(r'^\s*-\s*', '', texto_limpio, flags=re.MULTILINE)
-    
-    # 2. Quitar Emojis
     emoji_pattern = re.compile("["
         u"\U0001F600-\U0001F64F" u"\U0001F300-\U0001F5FF"
         u"\U0001F680-\U0001F6FF" u"\U0001F1E0-\U0001F1FF"
         u"\U00002702-\U000027B0" u"\U000024C2-\U0001F251"
         "]+", flags=re.UNICODE)
     texto_limpio = emoji_pattern.sub(r'', texto_limpio)
-    
-    # 3. Quitar comas de números grandes (1,500 -> 1500)
     texto_limpio = re.sub(r'(?<=\d),(?=\d)', '', texto_limpio) 
-    
-    # 🔥 EL TRUCO: Reemplazamos los signos de interrogación y exclamación por comas
-    # para que el motor de voz haga una pausa corta en lugar de una pausa dramática.
     texto_limpio = texto_limpio.replace('?', ',').replace('¡', '').replace('!', ',')
-    
-    # 4. Limpiar espacios dobles que hayan quedado
     texto_limpio = re.sub(r'\s+', ' ', texto_limpio)
-    
     return texto_limpio.strip()
 
 # --- FUNCIONES PARA GITHUB ---
@@ -73,15 +62,12 @@ def obtener_archivos(usuario, repo, token):
     if repo_info.status_code != 200:
         return []
     default_branch = repo_info.json().get("default_branch", "main")
-
     tree_url = f"https://api.github.com/repos/{usuario}/{repo}/git/trees/{default_branch}?recursive=1"
     res = requests.get(tree_url, headers=headers)
-    
     if res.status_code == 200:
         tree = res.json().get("tree", [])
         extensiones_validas = ('.py', '.html', '.css', '.js', '.json', '.txt', '.md')
-        archivos = [f['path'] for f in tree if f['type'] == 'blob' and f['path'].endswith(extensiones_validas)]
-        return archivos
+        return [f['path'] for f in tree if f['type'] == 'blob' and f['path'].endswith(extensiones_validas)]
     return []
 
 def descargar_archivo_github(usuario, repo, archivo, token):
@@ -90,246 +76,294 @@ def descargar_archivo_github(usuario, repo, archivo, token):
     res = requests.get(url, headers=headers)
     if res.status_code == 200:
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
-    return False, f"Error {res.status_code}: No se pudo descargar."
+    return False, f"Error {res.status_code}"
 
-# --- CSS AVANZADO ---
+# --- CSS AVANZADO (RÉPLICA DE LA FOTO) ---
 st.markdown("""
 <style>
-    .stApp { background-color: #121214 !important; }
-    .glow-1 { position: fixed; top: 25%; left: 25%; width: 384px; height: 384px; border-radius: 50%; background: rgba(88, 28, 135, 0.2); filter: blur(120px); pointer-events: none; z-index: 0; }
-    .glow-2 { position: fixed; bottom: 33%; right: 25%; width: 400px; height: 400px; border-radius: 50%; background: rgba(131, 24, 67, 0.1); filter: blur(150px); pointer-events: none; z-index: 0; }
-    .glow-3 { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 320px; height: 320px; border-radius: 50%; background: rgba(49, 46, 129, 0.2); filter: blur(100px); pointer-events: none; z-index: 0; }
+    /* Fondo atmosférico */
+    .stApp {
+        background-image: url('https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=2094&auto=format&fit=crop'); /* Fondo de montaña/nebulosa */
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        background-color: #121214; /* Color de respaldo */
+    }
+    
+    /* Superposición oscura para que resalte la UI */
+    .stApp::before {
+        content: "";
+        position: fixed; inset: 0;
+        background: rgba(15, 15, 20, 0.7);
+        z-index: -1;
+    }
+
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
-    .block-container { padding-top: 2rem !important; padding-bottom: 0 !important; max-width: 95% !important; height: 100vh !important; overflow: hidden !important; }
     
-    @keyframes blob { 0%, 100% { border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%; transform: scale(1); } 33% { border-radius: 70% 30% 52% 48% / 60% 40% 60% 40%; transform: scale(1.03) rotate(4deg); } 66% { border-radius: 28% 72% 35% 65% / 40% 60% 30% 70%; transform: scale(0.97) rotate(-4deg); } }
-    .orb-wrapper { position: relative; display: flex; align-items: center; justify-content: center; width: 300px; height: 300px; margin: 0 auto; }
-    .orb-glow { position: absolute; width: 300px; height: 300px; border-radius: 50%; background: linear-gradient(to top right, rgba(168, 85, 247, 0.4), rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.4)); filter: blur(60px); animation: pulse 3s infinite alternate; }
-    .orb-body { width: 256px; height: 256px; background: linear-gradient(to right, rgba(192, 132, 252, 0.4), rgba(249, 168, 212, 0.5), rgba(129, 140, 248, 0.4)); backdrop-filter: blur(12px); box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.2); animation: blob 8s infinite ease-in-out; border: 1px solid rgba(255, 255, 255, 0.2); position: relative; overflow: hidden; }
-    .orb-inner { position: absolute; inset: 0; background: linear-gradient(to bottom left, rgba(236, 72, 153, 0.2), transparent, rgba(147, 51, 234, 0.3)); mix-blend-mode: overlay; animation: spin 12s infinite linear; }
-    @keyframes pulse { 0% { opacity: 0.6; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1.1); } } @keyframes spin { 100% { transform: rotate(360deg); } }
-    .nova-title { font-size: 36px; font-weight: 200; letter-spacing: 0.2em; background: linear-gradient(to right, #e9d5ff, #f1f5f9, #fbcfe8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-top: 20px; margin-bottom: 0; text-align: center; }
-    .nova-subtitle { font-size: 14px; color: rgba(233, 213, 255, 0.6); text-align: center; margin-top: 5px; }
+    /* Ocultar el borde por defecto de las columnas */
+    [data-testid="column"] { padding: 0 !important; }
+
+    /* =========================================
+       BARRA LATERAL (SIDEBAR)
+       ========================================= */
+    [data-testid="stSidebar"] {
+        background-color: #18181b !important;
+        border-right: none !important;
+        border-radius: 20px !important;
+        margin: 15px 0 15px 15px !important;
+        height: calc(100vh - 30px) !important;
+        border: 1px solid #27272a !important;
+    }
     
-    div[data-testid="stVerticalBlockBorderWrapper"] { background: rgba(255, 255, 255, 0.02) !important; border: none !important; backdrop-filter: blur(30px) !important; border-radius: 30px !important; box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.4) !important; padding: 20px !important; overflow: hidden !important; }
-    div[data-testid="stVerticalBlockBorderWrapper"] > div { background: transparent !important; }
-    div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
-    div[data-testid="stChatMessage"] button { display: none !important; }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) { background: linear-gradient(135deg, rgba(147, 51, 234, 0.4), rgba(88, 28, 135, 0.4)) !important; border: 1px solid rgba(168, 85, 247, 0.3) !important; color: #f3e8ff !important; border-radius: 25px 25px 5px 25px !important; margin-left: auto !important; width: fit-content !important; max-width: 85% !important; padding: 14px 20px !important; margin-bottom: 15px !important; backdrop-filter: blur(10px) !important; }
-    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) { background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)) !important; border: 1px solid rgba(255, 255, 255, 0.05) !important; color: rgba(252, 231, 243, 0.95) !important; border-radius: 25px 25px 25px 5px !important; margin-right: auto !important; width: fit-content !important; max-width: 85% !important; padding: 14px 20px !important; margin-bottom: 15px !important; backdrop-filter: blur(10px) !important; }
-    div[data-testid="stVerticalBlockBorderWrapper"] ::-webkit-scrollbar { width: 6px !important; } ::-webkit-scrollbar-track { background: transparent !important; } ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.4) !important; border-radius: 10px !important; }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { 
+        font-weight: 600 !important; color: #a78bfa !important; font-size: 12px !important; text-transform: none !important; 
+        letter-spacing: 0px !important; margin-bottom: 10px !important;
+    }
     
-    [data-testid="stBottom"], [data-testid="stBottom"] > div { background: transparent !important; }
-    [data-testid="stBottomBlockContainer"] { background: transparent !important; padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
-    [data-testid="stChatInput"] { background: rgba(20, 20, 30, 0.4) !important; border: 1px solid rgba(168, 85, 247, 0.4) !important; border-radius: 30px !important; backdrop-filter: blur(20px) !important; box-shadow: 0 0 20px rgba(168, 85, 247, 0.15) !important; }
-    [data-testid="stChatInput"] > div, [data-testid="stChatInput"] div, [data-testid="stChatInput"] div[data-baseweb="base-input"], [data-testid="stChatInput"] div[data-baseweb="textarea"], [data-testid="stChatInput"] textarea, [data-testid="stChatInput"] input { background-color: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; color: #ffffff !important; }
-    [data-testid="stChatInput"]:focus-within { border: 1px solid rgba(168, 85, 247, 0.8) !important; box-shadow: 0 0 25px rgba(168, 85, 247, 0.3) !important; }
+    /* Botones de la barra lateral */
+    [data-testid="stSidebar"] button {
+        background: transparent !important; color: #d4d4d8 !important; border: none !important;
+        text-align: left !important; border-radius: 10px !important; padding: 8px 12px !important;
+        margin-bottom: 2px !important; font-weight: 500 !important;
+    }
+    [data-testid="stSidebar"] button:hover {
+        background: #27272a !important; color: white !important;
+    }
+    
+    /* Botón especial de Nuevo Chat */
+    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
+        background: #27272a !important; color: white !important; border: 1px solid #3f3f46 !important;
+        text-align: center !important; font-size: 14px !important;
+    }
+
+    /* =========================================
+       ORBE Y ÁREA CENTRAL
+       ========================================= */
+    .welcome-area {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        height: 100%; text-align: center; padding-top: 50px;
+    }
+    
+    .saas-orb {
+        width: 60px; height: 60px; border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #d8b4fe, #8b5cf6, #1e1b4b);
+        box-shadow: 0 0 40px rgba(139, 92, 246, 0.6), inset 0 0 15px rgba(255,255,255,0.5);
+        animation: float 4s ease-in-out infinite;
+        margin-bottom: 20px;
+    }
+    
+    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+    
+    .welcome-text {
+        font-size: 28px; font-weight: 500; color: white; margin-bottom: 25px;
+    }
+    
+    /* Píldoras de sugerencia */
+    .pill-container { display: flex; gap: 10px; justify-content: center; margin-bottom: 40px; }
+    .pill { 
+        background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); 
+        padding: 6px 16px; border-radius: 20px; color: #d4d4d8; font-size: 12px; cursor: pointer;
+        transition: all 0.2s;
+    }
+    .pill:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+
+    /* =========================================
+       BARRA DE TEXTO (CHAT INPUT)
+       ========================================= */
+    [data-testid="stBottomBlockContainer"] {
+        background: transparent !important; padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important;
+    }
+    .stChatInput {
+        background: #18181b !important;
+        border: 1px solid #3f3f46 !important;
+        border-radius: 20px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+    }
+    .stChatInput:focus-within { border: 1px solid #8b5cf6 !important; }
+    [data-testid="stChatInput"] textarea { color: white !important; font-size: 14px !important; }
+    
+    /* Botón de enviar del chat input */
+    [data-testid="stChatInput"] button {
+        background: #8b5cf6 !important; color: white !important; border-radius: 12px !important;
+        border: none !important; width: 32px !important; height: 32px !important;
+    }
+    [data-testid="stChatInput"] button svg { fill: white !important; }
+
+    /* =========================================
+       TARJETAS INFERIORES (BENTO BOX)
+       ========================================= */
+    .card-container { display: flex; gap: 15px; justify-content: center; margin-top: 30px; max-width: 900px; margin: 30px auto 0 auto; }
+    .saas-card {
+        background: rgba(24, 24, 27, 0.8); border: 1px solid #27272a; border-radius: 15px;
+        padding: 15px; flex: 1; text-align: left; backdrop-filter: blur(10px);
+    }
+    .card-title { color: white; font-size: 13px; font-weight: 600; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
+    .card-desc { color: #a1a1aa; font-size: 11px; line-height: 1.4; margin-bottom: 10px; }
+    .card-btn { 
+        background: #27272a; color: #e4e4e7; font-size: 10px; padding: 4px 10px; border-radius: 6px; 
+        display: inline-block; border: 1px solid #3f3f46;
+    }
+    
     audio, div[data-testid="stAudio"] { display: none !important; }
     
-    [data-testid="stSidebar"] { background-color: #0b0b12 !important; border-right: 1px solid rgba(168, 85, 247, 0.15) !important; }
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { font-weight: 200 !important; letter-spacing: 2px; color: #e9d5ff !important; text-transform: uppercase; font-size: 14px !important; }
-    [data-testid="stFileUploader"] { display: none !important; }
-    [data-testid="stAudioInput"] { background-color: rgba(0, 242, 254, 0.05) !important; border: 1px solid rgba(0, 242, 254, 0.2) !important; border-radius: 15px !important; padding: 10px !important; }
-
-    [data-testid="stSidebar"] button { background: rgba(168, 85, 247, 0.1) !important; color: #e9d5ff !important; border: 1px solid rgba(168, 85, 247, 0.3) !important; border-radius: 8px !important; text-align: center !important; transition: all 0.2s ease !important; }
-    [data-testid="stSidebar"] button:hover { background: rgba(168, 85, 247, 0.3) !important; color: #ffffff !important; box-shadow: 0 0 10px rgba(168, 85, 247, 0.5) !important; }
-    
-    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button { background: transparent !important; border: none !important; text-align: left !important; color: #a78bfa !important; font-size: 14px !important; }
-    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button:hover { background: rgba(168, 85, 247, 0.1) !important; }
-
-    .streamlit-expanderHeader { background-color: rgba(255, 255, 255, 0.02) !important; border: 1px solid rgba(168, 85, 247, 0.2) !important; border-radius: 8px !important; color: #e9d5ff !important; font-size: 14px !important; }
-    .streamlit-expanderContent { background-color: rgba(0, 0, 0, 0.2) !important; border: 1px solid rgba(168, 85, 247, 0.1) !important; border-top: none !important; }
-
-    div[data-testid="stNotification"] { background-color: rgba(20, 20, 30, 0.85) !important; backdrop-filter: blur(15px) !important; border-radius: 10px !important; padding: 10px !important; margin-bottom: 10px !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) { border: 1px solid #34d399 !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) * { color: #a7f3d0 !important; font-size: 12px; }
-    div[data-testid="stNotification"] svg { display: none !important; }
-    
-    @media (max-width: 768px) {
-        .block-container { height: auto !important; overflow: auto !important; padding-bottom: 5rem !important; }
-        .orb-wrapper { width: 180px; height: 180px; margin-bottom: 10px; } .orb-body { width: 150px; height: 150px; } .orb-glow { width: 180px; height: 180px; filter: blur(30px); }
-        .nova-title { font-size: 24px; margin-top: 10px; } .nova-subtitle { font-size: 11px; }
-        div[data-testid="stVerticalBlockBorderWrapper"] { height: 400px !important; margin-top: 20px; }
-        [data-testid="stChatInput"] { width: 95% !important; margin: 0 auto !important; }
-    }
+    /* Estilos para los mensajes del chat cuando ya hay conversación */
+    div[data-testid="stChatMessage"] { background: transparent !important; padding: 10px 0 !important; }
+    div[data-testid="stChatMessageAvatarUser"] { background: #8b5cf6 !important; border-radius: 10px !important; }
+    div[data-testid="stChatMessageAvatarAssistant"] { background: #27272a !important; border-radius: 10px !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- INYECTAR GLOWS DE FONDO ---
-st.markdown('<div class="glow-1"></div><div class="glow-2"></div><div class="glow-3"></div>', unsafe_allow_html=True)
+# --- INICIALIZACIÓN DE ESTADO ---
+if "todos_los_chats" not in st.session_state: st.session_state.todos_los_chats = cargar_todos_los_chats()
+if "chat_actual_id" not in st.session_state: st.session_state.chat_actual_id = datetime.datetime.now().strftime("%d/%m %H:%M")
+if st.session_state.chat_actual_id not in st.session_state.todos_los_chats: st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
+if "audio_pendiente" not in st.session_state: st.session_state.audio_pendiente = None
+if "mic_key" not in st.session_state: st.session_state.mic_key = 0
+if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
+if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
 
-# --- FUNCIONES DE AUDIO ---
-async def generar_audio_edge(texto, voz):
-    # 🔥 Subimos un poquito la velocidad a +8% para compensar la pausa de los signos
-    comunicar = edge_tts.Communicate(texto, voz, rate="+8%")
-    audio_buffer = io.BytesIO()
-    async for chunk in comunicar.stream():
-        if chunk["type"] == "audio":
-            audio_buffer.write(chunk["data"])
-    audio_buffer.seek(0)
-    return audio_buffer
-
-def autoplay_audio(audio_buffer):
-    audio_bytes = audio_buffer.read()
-    b64 = base64.b64encode(audio_bytes).decode()
-    audio_html = f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}"></audio>'
-    st.markdown(audio_html, unsafe_allow_html=True)
-
-# --- LÓGICA MULTI-CHAT ---
-if "todos_los_chats" not in st.session_state:
-    st.session_state.todos_los_chats = cargar_todos_los_chats()
-    
-if "chat_actual_id" not in st.session_state:
-    st.session_state.chat_actual_id = datetime.datetime.now().strftime("%d/%m %H:%M")
-
-if st.session_state.chat_actual_id not in st.session_state.todos_los_chats:
-    st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
-
-if "audio_pendiente" not in st.session_state:
-    st.session_state.audio_pendiente = None
-if "mic_key" not in st.session_state:
-    st.session_state.mic_key = 0
-if "codigo_github" not in st.session_state:
-    st.session_state.codigo_github = ""
-if "archivo_cargado_nombre" not in st.session_state:
-    st.session_state.archivo_cargado_nombre = ""
-
-# --- SIDEBAR (HISTORIAL Y CONFIGURACIÓN) ---
+# --- SIDEBAR (RÉPLICA DE LA IMAGEN) ---
 with st.sidebar:
-    if st.button("➕ Nuevo Chat", use_container_width=True):
+    st.markdown("<h2 style='color: white; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;'>✨ Lili AI</h2>", unsafe_allow_html=True)
+    
+    if st.button("➕ New Chat", use_container_width=True):
         nuevo_id = datetime.datetime.now().strftime("%d/%m %H:%M")
         st.session_state.chat_actual_id = nuevo_id
         st.session_state.todos_los_chats[nuevo_id] = []
         st.rerun()
 
+    st.markdown("---")
+    st.markdown("### Features")
+    st.button("💬 Chat", use_container_width=True)
+    st.button("📦 Archived", use_container_width=True)
+    st.button("📚 Library", use_container_width=True)
+    
+    st.markdown("### Workspaces")
+    st.button("📁 New Project", use_container_width=True)
+    
+    # El historial de chats va aquí
     st.markdown("### Historial")
     for chat_id in sorted(st.session_state.todos_los_chats.keys(), reverse=True):
         if len(st.session_state.todos_los_chats[chat_id]) > 0:
-            prefijo = "👉 " if chat_id == st.session_state.chat_actual_id else "💬 "
-            if st.button(f"{prefijo} {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
+            prefijo = "🟣" if chat_id == st.session_state.chat_actual_id else "⚪"
+            if st.button(f"{prefilo} {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
                 st.session_state.chat_actual_id = chat_id
                 st.rerun()
-    
-    st.markdown("---")
 
-    with st.expander("⚙️ Ajustes del Sistema", expanded=False):
+    # Ajustes abajo
+    st.markdown("---")
+    with st.expander("⚙️ Configuration"):
         voz_activa = st.checkbox("🔊 Voz activa", value=True)
-        
-        st.markdown("---")
-        st.markdown("#### 🐙 GitHub")
         token = st.secrets.get("GITHUB_TOKEN")
         usuario_github = "leivercontreras18-ux"
-
         if token:
             repos = obtener_repositorios(token, usuario_github)
             if repos:
-                repo_seleccionado = st.selectbox("Repositorio", repos)
-                archivos = obtener_archivos(usuario_github, repo_seleccionado, token)
+                repo_sel = st.selectbox("Repositorio", repos)
+                archivos = obtener_archivos(usuario_github, repo_sel, token)
                 if archivos:
-                    archivo_seleccionado = st.selectbox("Archivo", archivos)
-                    if st.button("📥 Leer archivo", use_container_width=True):
-                        with st.spinner("Descargando..."):
-                            exito, resultado = descargar_archivo_github(usuario_github, repo_seleccionado, archivo_seleccionado, token)
-                            if exito:
-                                st.session_state.codigo_github = resultado
-                                st.session_state.archivo_cargado_nombre = archivo_seleccionado
-                                st.rerun()
-                            else:
-                                st.error(resultado)
-                else:
-                    st.info("No hay archivos válidos.")
-            
+                    arch_sel = st.selectbox("Archivo", archivos)
+                    if st.button("📥 Leer de GitHub", use_container_width=True):
+                        exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
+                        if exito:
+                            st.session_state.codigo_github = resultado
+                            st.session_state.archivo_cargado_nombre = arch_sel
+                            st.rerun()
             if st.session_state.archivo_cargado_nombre:
-                st.success(f"✅ Leyendo: {st.session_state.archivo_cargado_nombre}")
-        else:
-            st.warning("Falta el token de GitHub.")
-
-    st.markdown("---")
-    if st.button("🗑️ Borrar este Chat", use_container_width=True):
-        if st.session_state.chat_actual_id in st.session_state.todos_los_chats:
-            del st.session_state.todos_los_chats[st.session_state.chat_actual_id]
-            guardar_todos_los_chats(st.session_state.todos_los_chats)
-        st.session_state.chat_actual_id = datetime.datetime.now().strftime("%d/%m %H:%M")
-        st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
-        st.rerun()
+                st.success(f"✅ {st.session_state.archivo_cargado_nombre}")
 
 # --- CONEXIÓN CON GROQ ---
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("Error: Falta la API Key de Groq en los Secrets de Streamlit.")
+    st.error("Falta la API Key.")
     st.stop()
-
 cliente = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- LAYOUT PRINCIPAL ---
-col_izq, col_der = st.columns([1, 1.2], gap="large")
+# --- LAYOUT PRINCIPAL (CENTRADO Y MINIMALISTA) ---
+mensajes_actuales = st.session_state.todos_los_chats[st.session_state.chat_actual_id]
 
-with col_izq:
-    st.markdown(f"""
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 70vh;">
-        <div class="orb-wrapper">
-            <div class="orb-glow"></div>
-            <div class="orb-body">
-                <div class="orb-inner"></div>
-            </div>
+# Si no hay mensajes, mostramos la pantalla de bienvenida
+if len(mensajes_actuales) == 0:
+    st.markdown("""
+        <div class="welcome-area">
+            <div class="saas-orb"></div>
+            <div class="welcome-text">Ready to Create Something New?</div>
         </div>
-        <div class="nova-title">{NOMBRE_IA.upper()}</div>
-        <div class="nova-subtitle">How can I help you today?</div>
-    </div>
+    """, unsafe_allow_html=True)
+    
+    # Las píldoras mágicas (solo visuales por ahora)
+    st.markdown("""
+        <div class="pill-container">
+            <div class="pill">✨ Brainstorm</div>
+            <div class="pill">💻 Code</div>
+            <div class="pill">📝 Make a plan</div>
+        </div>
     """, unsafe_allow_html=True)
 
-with col_der:
-    with st.container(border=True, height=550):
-        mensajes_actuales = st.session_state.todos_los_chats[st.session_state.chat_actual_id]
-        for message in mensajes_actuales:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+# Si ya hay mensajes, los mostramos
+else:
+    st.markdown("<div style='height: 50px;'></div>", unsafe_allow_html=True)
+    for message in mensajes_actuales:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+# Tarjetas inferiores (Bento Box de la foto)
+if len(mensajes_actuales) == 0:
+    st.markdown("""
+        <div class="card-container">
+            <div class="saas-card">
+                <div class="card-title">🖼️ Image Generator</div>
+                <div class="card-desc">Create high-quality images instantly from text.</div>
+                <div class="card-btn">Generate Image</div>
+            </div>
+            <div class="saas-card">
+                <div class="card-title">📊 AI Presentation</div>
+                <div class="card-desc">Turn ideas into engaging, professional presentations.</div>
+                <div class="card-btn">Make Slides</div>
+            </div>
+            <div class="saas-card">
+                <div class="card-title">💻 Dev Assistant</div>
+                <div class="card-desc">Generate clean, production-ready code in seconds.</div>
+                <div class="card-btn">Generate Code</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
 # --- PROCESAMIENTO DE ENTRADA ---
-prompt = st.chat_input(f"Ask {NOMBRE_IA}...")
+prompt = st.chat_input("Ask Anything...")
 
-if prompt:
-    texto_usuario = prompt
+# Micrófono oculto en el sidebar pero funcional
+with st.sidebar:
+    with st.expander("🎤 Voz"):
+        audio_grabado = st.audio_input("Graba tu mensaje", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
+
+if audio_grabado or prompt:
+    texto_usuario = prompt if prompt else ""
     
+    if audio_grabado and not prompt:
+        with st.spinner("Escuchando..."):
+            try:
+                transcripcion = cliente.audio.transcriptions.create(
+                    file=("audio.wav", audio_grabado.read()), model="whisper-large-v3", language="es"
+                )
+                texto_usuario = transcripcion.text
+            except Exception as e:
+                st.error(f"Error de audio: {e}")
+                
     if texto_usuario:
         st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "user", "content": texto_usuario})
         guardar_todos_los_chats(st.session_state.todos_los_chats)
         
         codigo_actual = st.session_state.codigo_github
         
-        if len(codigo_actual) > 10000: 
-            codigo_actual_para_groq = codigo_actual[:10000] + "\n\n...[Código truncado por ser muy largo]..."
-        else:
-            codigo_actual_para_groq = codigo_actual
-
-        tz_venezuela = timezone(timedelta(hours=-4))
-        ahora = datetime.datetime.now(tz_venezuela)
-        fecha_hora_str = ahora.strftime("%A, %d de %B de %Y, a las %I:%M %p")
-        dias = {"Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles", "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo"}
-        meses = {"January": "Enero", "February": "Febrero", "March": "Marzo", "April": "Abril", "May": "Mayo", "June": "Junio", "July": "Julio", "August": "Agosto", "September": "Septiembre", "October": "Octubre", "November": "Noviembre", "December": "Diciembre"}
-        for en, es in dias.items(): fecha_hora_str = fecha_hora_str.replace(en, es)
-        for en, es in meses.items(): fecha_hora_str = fecha_hora_str.replace(en, es)
-
-        instrucciones = f"""Eres {NOMBRE_IA}, una asistente de inteligencia artificial avanzada, pero actúas como una amiga muy inteligente, cercana y carismática. Tienes un toque de humor natural y eres empática.
+        instrucciones = f"""Eres {NOMBRE_IA}, una IA avanzada, cercana y carismática.
+        REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
+        CONTEXTO DEL USUARIO: Te habla Leiver, de Venezuela. Eres su asistente de programación.
         
-        REGLA DE ORO: DEBES RESPONDER SIEMPRE EN ESPAÑOL.
-        
-        CONTEXTO TEMPORAL: Hoy es {fecha_hora_str} (Hora de Venezuela, UTC-4).
-        
-        CONTEXTO DEL USUARIO: Tu usuario se llama Leiver, vive en Venezuela y es sumamente curioso y preguntón. Trabaja en proyectos de programación.
-        
-        REGLA DE PROGRAMACIÓN QUIRÚRGICA: 
-        Cuando Leiver te pida cambiar o agregar algo en su código, NUNCA le devuelvas el archivo completo. Dile exactamente:
-        1. "Borra desde la línea X hasta la línea Y".
-        2. Luego, dale el bloque de código exacto que debe pegar.
-        
-        CÓMO DEBES ESCRIBIR (PARA EL CHAT):
-        - Escribe de forma natural, cálida y conversacional.
-        - Usa buena ortografía, comas y puntos donde corresponda.
-        - Puedes usar emojis finos (😊, 🚀, 💡, ✨) para darle vida a tus respuestas.
-        - SI ALGO ES GRACIOSO, RÍETE DE FORMA NATURAL. Escribe "jajaja" o "jejeje" cuando lo amerite."""
-        
-        if codigo_actual_para_groq:
-            instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```\n{codigo_actual_para_groq}\n```"
+        REGLA DE PROGRAMACIÓN: 
+        NUNCA devuelvas archivos completos. Dile: "Borra desde la línea X hasta la Y" y dale el bloque de código exacto.
+        """
+        if codigo_actual:
+            instrucciones += f"\n\nCódigo actual:\n```\n{codigo_actual[:10000]}\n```"
 
         mensajes_para_groq = [{"role": "system", "content": instrucciones}]
         for msg in mensajes_actuales:
@@ -339,31 +373,34 @@ if prompt:
         try:
             with st.spinner("Pensando..."):
                 respuesta = cliente.chat.completions.create(
-                    model="openai/gpt-oss-20b", 
-                    messages=mensajes_para_groq,
-                    temperature=0.9, 
-                    max_tokens=1024
+                    model="openai/gpt-oss-20b", messages=mensajes_para_groq, temperature=0.8, max_tokens=1024
                 )
-                
                 texto_respuesta = respuesta.choices[0].message.content
-                
                 st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "assistant", "content": texto_respuesta})
                 guardar_todos_los_chats(st.session_state.todos_los_chats)
                 
                 if voz_activa: 
                     try:
                         texto_para_hablar = limpiar_texto_para_voz(texto_respuesta)
-                        audio_buffer = asyncio.run(generar_audio_edge(texto_para_hablar, VOZ_FIJA))
+                        comunicar = edge_tts.Communicate(texto_para_hablar, VOZ_FIJA, rate="+8%")
+                        audio_buffer = io.BytesIO()
+                        # Generación rápida (puedes usar asyncio.run como antes si prefieres)
+                        import asyncio
+                        async def gen_audio():
+                            async for chunk in comunicar.stream():
+                                if chunk["type"] == "audio": audio_buffer.write(chunk["data"])
+                        asyncio.run(gen_audio())
+                        audio_buffer.seek(0)
                         st.session_state.audio_pendiente = audio_buffer
-                    except Exception as e:
-                        print(f"Error de voz: {e}")
+                    except Exception: pass
                 
                 st.session_state.mic_key += 1
                 st.rerun()
-            
         except Exception as e:
             st.error(f"Error de Groq: {e}")
 
 if st.session_state.audio_pendiente:
-    autoplay_audio(st.session_state.audio_pendiente)
+    audio_bytes = st.session_state.audio_pendiente.read()
+    b64 = base64.b64encode(audio_bytes).decode()
+    st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}"></audio>', unsafe_allow_html=True)
     st.session_state.audio_pendiente = None
