@@ -47,7 +47,7 @@ async def generar_audio_edge(texto, voz):
     audio_buffer.seek(0)
     return audio_buffer
 
-# --- FUNCIÓN PARA REPRODUCIR AUDIO ---
+# --- FUNCIÓN PARA REPRODUCIR AUDIO (Con texto de ayuda) ---
 def autoplay_audio(audio_buffer, format="audio/mp3"):
     audio_bytes = audio_buffer.read()
     b64 = base64.b64encode(audio_bytes).decode()
@@ -105,7 +105,7 @@ try:
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
-    # --- ZONA DE ENTRADA (Solo texto, sin micrófono) ---
+    # --- ZONA DE ENTRADA ---
     prompt = st.chat_input(f"Escribe tu mensaje para {NOMBRE_IA}...")
 
     # --- LÓGICA DE PROCESAMIENTO ---
@@ -122,9 +122,8 @@ try:
             contexto_ia = f"Te adjunto el código actual del archivo:\n\n```python\n{codigo_actual}\n```\n\nMi petición es: {texto_usuario}\n\nPor favor, devuélveme el código completo modificado dentro de un bloque de código."
 
         with st.chat_message("assistant", avatar="🤖"):
-            with st.spinner("Pensando a la velocidad de la luz..."):
+            with st.spinner("Pensando..."):
                 try:
-                    # Llamada a Groq
                     respuesta = cliente.chat.completions.create(
                         model="openai/gpt-oss-120b",
                         messages=[
@@ -139,8 +138,8 @@ try:
                     st.markdown(texto_respuesta)
                     st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
                     
-                    # Reproducir voz de Nova
-                    if activar_voz and len(texto_respuesta) < 600: 
+                    # Reproducir voz de Nova (Sin límite de 600 caracteres)
+                    if activar_voz: 
                         try:
                             audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, voz_seleccionada))
                             autoplay_audio(audio_buffer, format="audio/mp3")
