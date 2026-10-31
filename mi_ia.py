@@ -14,7 +14,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v14.4 - Stylish Errors"
+VERSION = "v15.0 - Clean Sidebar"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="💜", layout="wide")
@@ -107,38 +107,61 @@ st.markdown("""
     [data-testid="stChatInput"]:focus-within { border: 1px solid rgba(168, 85, 247, 0.8) !important; box-shadow: 0 0 25px rgba(168, 85, 247, 0.3) !important; }
     audio, div[data-testid="stAudio"] { display: none !important; }
     
+    /* SIDEBAR BASE */
     [data-testid="stSidebar"] { background-color: #0b0b12 !important; border-right: 1px solid rgba(168, 85, 247, 0.15) !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { font-weight: 200 !important; letter-spacing: 2px; color: #e9d5ff !important; text-transform: uppercase; font-size: 14px !important; }
     [data-testid="stFileUploader"] { display: none !important; }
     [data-testid="stAudioInput"] { background-color: rgba(0, 242, 254, 0.05) !important; border: 1px solid rgba(0, 242, 254, 0.2) !important; border-radius: 15px !important; padding: 10px !important; }
 
-    [data-testid="stSidebar"] button { background: rgba(168, 85, 247, 0.1) !important; color: #e9d5ff !important; border: 1px solid rgba(168, 85, 247, 0.3) !important; border-radius: 8px !important; text-align: center !important; transition: all 0.2s ease !important; }
-    [data-testid="stSidebar"] button:hover { background: rgba(168, 85, 247, 0.3) !important; color: #ffffff !important; box-shadow: 0 0 10px rgba(168, 85, 247, 0.5) !important; }
-    
-    /* Estilo para el historial de chats (parecen texto) */
-    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button { background: transparent !important; border: none !important; text-align: left !important; color: #a78bfa !important; }
-    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button:hover { background: rgba(168, 85, 247, 0.1) !important; }
+    /* BOTONES DE LA SIDEBAR (Generales) */
+    [data-testid="stSidebar"] button { 
+        background: rgba(168, 85, 247, 0.1) !important; 
+        color: #e9d5ff !important; 
+        border: 1px solid rgba(168, 85, 247, 0.3) !important; 
+        border-radius: 8px !important; 
+        text-align: center !important;
+        transition: all 0.2s ease !important; 
+    }
+    [data-testid="stSidebar"] button:hover { 
+        background: rgba(168, 85, 247, 0.3) !important; 
+        color: #ffffff !important;
+        box-shadow: 0 0 10px rgba(168, 85, 247, 0.5) !important;
+    }
+
+    /* ESTILO ESPECIAL PARA EL HISTORIAL DE CHATS (Para que parezcan textos y no botones) */
+    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button {
+        background: transparent !important;
+        border: none !important;
+        text-align: left !important;
+        color: #a78bfa !important;
+        font-size: 14px !important;
+    }
+    div[data-testid="stVerticalBlock"] > div:has(> div > div > div > button[kind="secondary"]) [data-testid="stSidebar"] button:hover {
+        background: rgba(168, 85, 247, 0.1) !important;
+    }
 
     /* =======================================================
-       REDISEÑO DE NOTIFICACIONES (ERRORES, ADVERTENCIAS, ETC)
+       EXPANDER (MENÚ DE AJUSTES) - AQUÍ ESTÁ EL TRUCO DE LIMPIEZA
        ======================================================= */
-    div[data-testid="stNotification"] {
-        background-color: rgba(20, 20, 30, 0.85) !important;
-        backdrop-filter: blur(15px) !important;
-        border-radius: 15px !important;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5) !important;
-        color: #ffffff !important;
-        padding: 15px !important;
-        margin-bottom: 15px !important;
+    .streamlit-expanderHeader {
+        background-color: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid rgba(168, 85, 247, 0.2) !important;
+        border-radius: 8px !important;
+        color: #e9d5ff !important;
+        font-size: 14px !important;
     }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentError"]) { border: 1px solid #ff3366 !important; box-shadow: 0 0 20px rgba(255, 51, 102, 0.3) !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentError"]) * { color: #ffb3c6 !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentWarning"]) { border: 1px solid #fbbf24 !important; box-shadow: 0 0 20px rgba(251, 191, 36, 0.3) !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentWarning"]) * { color: #fde68a !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) { border: 1px solid #34d399 !important; box-shadow: 0 0 20px rgba(52, 211, 153, 0.3) !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) * { color: #a7f3d0 !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentInfo"]) { border: 1px solid #00f2fe !important; box-shadow: 0 0 20px rgba(0, 242, 254, 0.3) !important; }
-    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentInfo"]) * { color: #a5f3fc !important; }
+    .streamlit-expanderContent {
+        background-color: rgba(0, 0, 0, 0.2) !important;
+        border: 1px solid rgba(168, 85, 247, 0.1) !important;
+        border-top: none !important;
+    }
+
+    /* Notificaciones */
+    div[data-testid="stNotification"] { background-color: rgba(20, 20, 30, 0.85) !important; backdrop-filter: blur(15px) !important; border-radius: 10px !important; padding: 10px !important; margin-bottom: 10px !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) { border: 1px solid #34d399 !important; box-shadow: 0 0 10px rgba(52, 211, 153, 0.2) !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentSuccess"]) * { color: #a7f3d0 !important; font-size: 12px; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentInfo"]) { border: 1px solid #00f2fe !important; }
+    div[data-testid="stNotification"]:has(div[data-testid="stNotificationContentInfo"]) * { color: #a5f3fc !important; font-size: 12px;}
     div[data-testid="stNotification"] svg { display: none !important; }
     
     @media (max-width: 768px) {
@@ -184,8 +207,6 @@ if "audio_pendiente" not in st.session_state:
     st.session_state.audio_pendiente = None
 if "mic_key" not in st.session_state:
     st.session_state.mic_key = 0
-if "github_contexto" not in st.session_state:
-    st.session_state.github_contexto = ""
 if "codigo_github" not in st.session_state:
     st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state:
@@ -193,15 +214,14 @@ if "archivo_cargado_nombre" not in st.session_state:
 
 # --- SIDEBAR (HISTORIAL Y CONFIGURACIÓN) ---
 with st.sidebar:
+    # 1. SECCIÓN DE CHATS
     if st.button("➕ Nuevo Chat", use_container_width=True):
         nuevo_id = datetime.datetime.now().strftime("%d/%m %H:%M")
         st.session_state.chat_actual_id = nuevo_id
         st.session_state.todos_los_chats[nuevo_id] = []
         st.rerun()
 
-    st.markdown("---")
-    
-    st.subheader("Fijado")
+    st.markdown("### Historial")
     for chat_id in sorted(st.session_state.todos_los_chats.keys(), reverse=True):
         if len(st.session_state.todos_los_chats[chat_id]) > 0:
             prefijo = "👉 " if chat_id == st.session_state.chat_actual_id else "💬 "
@@ -211,34 +231,40 @@ with st.sidebar:
     
     st.markdown("---")
 
-    voz_activa = st.checkbox("🔊 Voz activa", value=True)
-    
-    st.subheader("🐙 GitHub")
-    token = st.secrets.get("GITHUB_TOKEN")
-    usuario_github = "leivercontreras18-ux"
+    # 2. SECCIÓN DE AJUSTES (OCULTA EN UN EXPANDER)
+    with st.expander("⚙️ Ajustes del Sistema", expanded=False):
+        voz_activa = st.checkbox("🔊 Voz activa", value=True)
+        
+        st.markdown("---")
+        st.markdown("#### 🐙 GitHub")
+        token = st.secrets.get("GITHUB_TOKEN")
+        usuario_github = "leivercontreras18-ux"
 
-    if token:
-        repos = obtener_repositorios(token, usuario_github)
-        if repos:
-            repo_seleccionado = st.selectbox("1. Repositorio", repos)
-            archivos = obtener_archivos(usuario_github, repo_seleccionado, token)
-            if archivos:
-                archivo_seleccionado = st.selectbox("2. Archivo", archivos)
-                if st.button("📥 Leer archivo de GitHub", use_container_width=True):
-                    with st.spinner("Descargando..."):
-                        exito, resultado = descargar_archivo_github(usuario_github, repo_seleccionado, archivo_seleccionado, token)
-                        if exito:
-                            st.session_state.codigo_github = resultado
-                            st.session_state.archivo_cargado_nombre = archivo_seleccionado
-                            st.rerun()
-                        else:
-                            st.error(resultado)
-            else:
-                st.info("No hay archivos válidos.")
-        
-        if st.session_state.archivo_cargado_nombre:
-            st.success(f"✅ Leyendo: {st.session_state.archivo_cargado_nombre}")
-        
+        if token:
+            repos = obtener_repositorios(token, usuario_github)
+            if repos:
+                repo_seleccionado = st.selectbox("Repositorio", repos)
+                archivos = obtener_archivos(usuario_github, repo_seleccionado, token)
+                if archivos:
+                    archivo_seleccionado = st.selectbox("Archivo", archivos)
+                    if st.button("📥 Leer archivo", use_container_width=True):
+                        with st.spinner("Descargando..."):
+                            exito, resultado = descargar_archivo_github(usuario_github, repo_seleccionado, archivo_seleccionado, token)
+                            if exito:
+                                st.session_state.codigo_github = resultado
+                                st.session_state.archivo_cargado_nombre = archivo_seleccionado
+                                st.rerun()
+                            else:
+                                st.error(resultado)
+                else:
+                    st.info("No hay archivos válidos.")
+            
+            if st.session_state.archivo_cargado_nombre:
+                st.success(f"✅ Leyendo: {st.session_state.archivo_cargado_nombre}")
+        else:
+            st.warning("Falta el token de GitHub.")
+
+    # 3. BOTÓN DE BORRAR AL FINAL
     st.markdown("---")
     if st.button("🗑️ Borrar este Chat", use_container_width=True):
         if st.session_state.chat_actual_id in st.session_state.todos_los_chats:
@@ -291,6 +317,12 @@ if prompt:
         
         codigo_actual = st.session_state.codigo_github
         
+        # Si el archivo es muy grande, reducimos el contexto para evitar el error 413
+        if len(codigo_actual) > 10000: 
+            codigo_actual_para_groq = codigo_actual[:10000] + "\n\n...[Código truncado por ser muy largo]..."
+        else:
+            codigo_actual_para_groq = codigo_actual
+
         instrucciones = f"""Eres {NOMBRE_IA}, una inteligencia artificial avanzada, elegante y sofisticada, inspirada en Jarvis. Tienes un toque de humor seco y eres muy leal a tu usuario.
         
         REGLA DE ORO: DEBES RESPONDER SIEMPRE EN ESPAÑOL.
@@ -306,8 +338,8 @@ if prompt:
         - Háblale como una persona real, no como un robot.
         - Sé directa y fluida. Evita el uso excesivo de comas y puntos suspensivos."""
         
-        if codigo_actual:
-            instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```\n{codigo_actual}\n```"
+        if codigo_actual_para_groq:
+            instrucciones += f"\n\nEl usuario está trabajando con el siguiente código:\n```\n{codigo_actual_para_groq}\n```"
 
         mensajes_para_groq = [{"role": "system", "content": instrucciones}]
         for msg in mensajes_actuales:
