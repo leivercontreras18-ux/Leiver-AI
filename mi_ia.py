@@ -21,11 +21,18 @@ st.markdown("""
     .stApp { background-color: #1a1a1a !important; color: #ececec !important; }
     [data-testid="stSidebar"] { background-color: #121212 !important; border-right: 1px solid #333 !important; }
     .block-container { max-width: 800px !important; padding-top: 2rem !important; padding-bottom: 100px !important; }
+    
+    /* ESTILO DE LOS MENSAJES (CHAT) */
     div[data-testid="stChatMessage"] { background-color: transparent !important; border: none !important; padding: 0 !important; display: flex !important; margin-bottom: 15px !important; }
+    
+    /* Mensajes del Usuario (Derecha) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) { flex-direction: row-reverse !important; justify-content: flex-start !important; margin-left: auto !important; width: fit-content !important; max-width: 80% !important; }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] { background-color: #2f2f2f !important; border-radius: 15px 15px 0 15px !important; padding: 10px 15px !important; text-align: right !important; color: white !important; }
+    
+    /* Mensajes de Nova (Izquierda) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) { flex-direction: row !important; justify-content: flex-start !important; margin-right: auto !important; width: fit-content !important; max-width: 80% !important; }
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] { background-color: transparent !important; padding: 10px 15px !important; text-align: left !important; }
+    
     [data-testid="stBottomBlockContainer"] { background-color: #1a1a1a !important; padding-bottom: 1.5rem !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -56,12 +63,16 @@ with st.sidebar:
     st.title(f"🤖 {NOMBRE_IA}")
     st.caption("Powered by Groq ⚡")
     st.divider()
+    
     st.subheader("⚙️ Configuración")
     activar_voz = st.checkbox("🔊 Hablar respuestas en voz alta", value=True)
-    voz_seleccionada = st.selectbox("🎙️ Selecciona la voz", options=["es-MX-DaliaNeural", "es-ES-ElviraNeural", "en-GB-SoniaNeural"], index=0)
-    st.divider()
-    st.subheader("🎤 Hablar con Nova")
-    audio_grabado = st.audio_input("Graba tu mensaje", label_visibility="collapsed")
+    
+    voz_seleccionada = st.selectbox(
+        "🎙️ Selecciona la voz", 
+        options=["es-MX-DaliaNeural", "es-ES-ElviraNeural", "en-GB-SoniaNeural"], 
+        index=0
+    )
+    
     st.divider()
     st.subheader("📂 Sube tu código")
     archivo_subido = st.file_uploader("Archivo (ej. app.py)", type=["py", "txt", "html", "css", "js"])
@@ -69,6 +80,7 @@ with st.sidebar:
     if archivo_subido is not None:
         codigo_actual = archivo_subido.read().decode("utf-8")
         st.success(f"✅ {archivo_subido.name} ({len(codigo_actual.splitlines())} líneas)")
+    
     st.divider()
     if st.button("🗑️ Nuevo Chat", use_container_width=True):
         st.session_state.messages = []
@@ -93,28 +105,13 @@ try:
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
-    # --- ZONA DE ENTRADA ---
-    prompt = st.chat_input(f"Habla con {NOMBRE_IA}...")
+    # --- ZONA DE ENTRADA (Solo texto, sin micrófono) ---
+    prompt = st.chat_input(f"Escribe tu mensaje para {NOMBRE_IA}...")
 
     # --- LÓGICA DE PROCESAMIENTO ---
-    if audio_grabado or prompt:
-        texto_usuario = ""
-        if prompt:
-            texto_usuario = prompt
-        else:
-            # Si es voz, usamos Whisper de Groq para transcribir
-            audio_bytes = audio_grabado.read()
-            try:
-                transcripcion = cliente.audio.transcriptions.create(
-                    file=("audio.wav", audio_bytes),
-                    model="whisper-large-v3",
-                    language="es"
-                )
-                texto_usuario = transcripcion.text
-            except Exception as e:
-                st.error(f"Error al procesar el audio: {e}")
-                texto_usuario = "(No se pudo entender el audio)"
-
+    if prompt:
+        texto_usuario = prompt
+        
         with st.chat_message("user", avatar="👤"):
             st.markdown(texto_usuario)
         
@@ -135,13 +132,14 @@ try:
                             {"role": "user", "content": contexto_ia}
                         ],
                         temperature=0.7,
-                        max_tokens=2048
+                        max_tokens=4096
                     )
                     
                     texto_respuesta = respuesta.choices[0].message.content
                     st.markdown(texto_respuesta)
                     st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
                     
+                    # Reproducir voz de Nova
                     if activar_voz and len(texto_respuesta) < 600: 
                         try:
                             audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, voz_seleccionada))
