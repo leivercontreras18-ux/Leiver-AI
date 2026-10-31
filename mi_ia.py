@@ -12,7 +12,7 @@ VOZ_FIJA = "es-MX-DaliaNeural"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS AVANZADO (CRISTAL FLOTANTE PURO) ---
+# --- CSS AVANZADO ---
 st.markdown("""
 <style>
     /* 1. FONDO Y GLOWS */
@@ -103,19 +103,29 @@ st.markdown("""
     }
 
     /* =======================================================
-       4. CAJA DEL CHAT (Borde Invisible)
+       4. CAJA DEL CHAT (MUERTE AL BORDE GRIS)
        ======================================================= */
+    /* Atacamos al contenedor y a TODOS sus hijos directos e indirectos */
+    div[data-testid="stVerticalBlockBorderWrapper"],
+    div[data-testid="stVerticalBlockBorderWrapper"] > div,
+    div[data-testid="stVerticalBlockBorderWrapper"] > div > div {
+        border: none !important;
+        border-width: 0 !important;
+        border-style: none !important;
+        border-color: transparent !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Le damos nuestro propio estilo de cristal al contenedor principal */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background: rgba(255, 255, 255, 0.02) !important; 
-        border: none !important; /* ¡Aquí quitamos el borde gris! */
         backdrop-filter: blur(30px) !important; 
         border-radius: 30px !important; 
-        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.4) !important; /* Sombra suave para que flote */
+        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.4) !important;
         padding: 20px !important;
         overflow: hidden !important;
     }
-    
-    div[data-testid="stVerticalBlockBorderWrapper"] > div { background: transparent !important; }
 
     /* Ocultar Avatares y botones */
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
