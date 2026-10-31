@@ -9,6 +9,7 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Nova"
 VOZ_FIJA = "es-MX-DaliaNeural"
+VERSION = "v10.0"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
@@ -281,7 +282,12 @@ if "mic_key" not in st.session_state:
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.title("⚙️ System")
+    # Aquí cambiamos "System" por el nombre y la versión
+    st.title(f"🤖 {NOMBRE_IA} System")
+    st.caption(f"{VERSION} - Powered by Groq ⚡")
+    
+    st.markdown("---")
+    
     voz_activa = st.checkbox("🔊 Voz activa", value=True)
     
     st.subheader("🎤 Hablar")
