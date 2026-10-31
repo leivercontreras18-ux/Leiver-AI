@@ -12,80 +12,107 @@ VOZ_FIJA = "es-MX-DaliaNeural"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
 
-# --- CSS AVANZADO (ESTILO CYBERPUNK / HOLOGRÁFICO) ---
+# --- CSS AVANZADO (ESTILO CYBERPUNK / NEBULOSA) ---
 st.markdown("""
 <style>
-    /* Fondo espacial profundo */
+    /* Fondo de Nebulosa con Capa Oscura */
     .stApp {
-        background: radial-gradient(circle at 50% 50%, #050510 0%, #000000 100%);
+        background-image: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2048&auto=format&fit=crop');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
         color: #e0e0e0;
     }
+    
+    /* Capa oscura para que el texto resalte */
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(5, 5, 15, 0.85); /* Tinte azul/negro oscuro */
+        z-index: -1;
+    }
+
+    /* Líneas de Escaneo (Scanlines) */
+    .stApp::after {
+        content: "";
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background: repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.15),
+            rgba(0, 0, 0, 0.15) 1px,
+            transparent 1px,
+            transparent 2px
+        );
+        pointer-events: none;
+        z-index: 9999;
+    }
+
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header { background: transparent !important; }
     .block-container { padding-top: 1rem !important; max-width: 95% !important; }
 
     /* -----------------------------------------
-       EL ORBE HOLOGRÁFICO (Usando un GIF animado)
+       EL ORBE HOLOGRÁFICO (Más Grande)
        ----------------------------------------- */
     .orb-container {
         display: flex;
         flex-direction: column;
-        justify-content: flex-start;
+        justify-content: center;
         align-items: center;
-        height: 50vh;
+        height: 65vh;
         position: relative;
-        margin-top: 20px;
     }
     
     .orb-gif {
-        width: 320px;
-        height: 320px;
+        width: 420px;  /* Aumentado de 320px a 420px */
+        height: 420px;
         border-radius: 50%;
-        /* Aquí usamos una imagen animada de plasma en lugar de un div CSS */
         background-image: url('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Z5Z3R6cXZ4Z3R6cXZ4Z3R6cXZ4Z3R6cXZ4Z3R6cXZ4Z3R6cXZ4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKr3nzbCg4rO5u8/giphy.gif');
         background-size: cover;
         background-position: center;
-        box-shadow: 0 0 50px rgba(0, 242, 254, 0.5), 0 0 100px rgba(255, 0, 128, 0.3);
+        box-shadow: 0 0 60px rgba(0, 242, 254, 0.6), 0 0 150px rgba(255, 0, 128, 0.4);
         animation: pulse 2s infinite alternate ease-in-out;
+        margin-top: 20px;
     }
 
     @keyframes pulse {
         0% { transform: scale(0.95); filter: brightness(0.8); }
-        100% { transform: scale(1.05); filter: brightness(1.2); }
+        100% { transform: scale(1.05); filter: brightness(1.3); }
     }
 
     /* -----------------------------------------
        LOS PANELES DE CHAT (ESTILO HOLOGRAMA)
        ----------------------------------------- */
-    /* Estilo general de las burbujas */
     div[data-testid="stChatMessage"] {
-        background: rgba(0, 0, 0, 0.6) !important;
+        background: rgba(10, 15, 30, 0.7) !important;
         backdrop-filter: blur(12px) !important;
         border-radius: 10px !important;
         padding: 15px !important;
         margin-bottom: 15px !important;
     }
 
-    /* Panel del Usuario (Borde Magenta) */
+    /* Panel del Usuario (Borde Magenta Neón) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         border: 1px solid #ff00ff !important;
         box-shadow: 0 0 15px rgba(255, 0, 255, 0.4), inset 0 0 10px rgba(255, 0, 255, 0.2) !important;
     }
 
-    /* Panel de Nova (Borde Cian) */
+    /* Panel de Nova (Borde Cian Neón) */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
         border: 1px solid #00f2fe !important;
         box-shadow: 0 0 15px rgba(0, 242, 254, 0.4), inset 0 0 10px rgba(0, 242, 254, 0.2) !important;
     }
 
-    /* Barra de texto estilo consola futurista */
+    /* Barra de texto */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
-        padding-bottom: 0rem !important;
+        padding-bottom: 1rem !important;
     }
     .stChatInput {
-        background: rgba(10, 15, 30, 0.8) !important;
+        background: rgba(10, 15, 30, 0.9) !important;
         backdrop-filter: blur(15px) !important;
         border: 1px solid #00f2fe !important;
         border-radius: 10px !important;
@@ -141,7 +168,7 @@ try:
     instrucciones = f"Eres {NOMBRE_IA}, un asistente experto. Responde de forma directa, elegante y concisa."
 
     # --- LAYOUT PRINCIPAL ---
-    col_izq, col_der = st.columns([1.1, 1])
+    col_izq, col_der = st.columns([1.2, 1])
 
     with col_izq:
         st.markdown("""
@@ -149,7 +176,7 @@ try:
                 <div class="orb-gif"></div>
                 <div style="text-align: center; margin-top: 20px; z-index: 10;">
                     <h2 style="color: #00f2fe; letter-spacing: 8px; text-shadow: 0 0 15px #00f2fe; margin-bottom: 0;">NOVA</h2>
-                    <p style="color: #888; font-size: 12px; letter-spacing: 2px;">STATUS: ONLINE</p>
+                    <p style="color: #aaa; font-size: 12px; letter-spacing: 2px;">STATUS: ONLINE</p>
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -157,7 +184,7 @@ try:
     with col_der:
         st.markdown("<h3 style='color: #00f2fe; margin-bottom: 10px; margin-top: 0; text-shadow: 0 0 5px #00f2fe;'>REGISTRO DE MISIÓN</h3>", unsafe_allow_html=True)
         
-        chat_container = st.container(height=450)
+        chat_container = st.container(height=500)
         with chat_container:
             for message in st.session_state.messages:
                 avatar = "👤" if message["role"] == "user" else "🤖"
