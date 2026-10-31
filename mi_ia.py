@@ -53,11 +53,17 @@ async def generar_audio_edge(texto, voz):
 # --- BARRA LATERAL ---
 with st.sidebar:
     st.title(f"🤖 {NOMBRE_IA}")
-    st.caption("v3.7 - Powered by Groq ⚡") # Versión devuelta
+    st.caption("v3.8 - Powered by Groq ⚡")
     st.divider()
     
     st.subheader("⚙️ Configuración")
     activar_voz = st.checkbox("🔊 Hablar respuestas en voz alta", value=True)
+    
+    st.divider()
+    st.subheader("🎤 Hablar con Nova")
+    st.write("*(Haz clic para grabar, clic de nuevo para detener)*")
+    # El micrófono manual: no se activa solo, requiere clic
+    audio_grabado = st.audio_input("Graba tu mensaje", label_visibility="collapsed")
     
     st.divider()
     st.subheader("📂 Sube tu código")
@@ -91,53 +97,75 @@ try:
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
-    # --- ZONA DE ENTRADA ---
+    # --- ZONA DE ENTRADA DE TEXTO ---
     prompt = st.chat_input(f"Escribe tu mensaje para {NOMBRE_IA}...")
 
     # --- LÓGICA DE PROCESAMIENTO ---
-    if prompt:
-        texto_usuario = prompt
+    if audio_grabado or prompt:
+        texto_usuario = ""
         
-        with st.chat_message("user", avatar="👤"):
-            st.markdown(texto_usuario)
-        
-        st.session_state.messages.append({"role": "user", "content": texto_usuario})
-
-        contexto_ia = texto_usuario
-        if codigo_actual:
-            contexto_ia = f"Te adjunto el código actual del archivo:\n\n```python\n{codigo_actual}\n```\n\nMi petición es: {texto_usuario}\n\nPor favor, devuélveme el código completo modificado dentro de un bloque de código."
-
-        with st.chat_message("assistant", avatar="🤖"):
-            with st.spinner("Pensando..."):
+        # 1. Si hay audio, lo transcribimos con Whisper de Groq
+        if audio_grabado and not prompt:
+            with st.spinner("Escuchando..."):
                 try:
-                    respuesta = cliente.chat.completions.create(
-                        model="openai/gpt-oss-120b",
-                        messages=[
-                            {"role": "system", "content": instrucciones},
-                            {"role": "user", "content": contexto_ia}
-                        ],
-                        temperature=0.7,
-                        max_tokens=4096
+                    audio_bytes = audio_grabado.read()
+                    transcripcion = cliente.audio.transcriptions.create(
+                        file=("audio.wav", audio_bytes),
+                        model="whisper-large-v3",
+                        language="es"
                     )
-                    
-                    texto_respuesta = respuesta.choices[0].message.content
-                    st.markdown(texto_respuesta)
-                    st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
-                    
-                    # Reproducir voz de Nova usando el reproductor nativo oculto
-                    if activar_voz: 
-                        try:
-                            audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
-                            # autoplay=True obliga al navegador a reproducirlo
-                            st.audio(audio_buffer, format="audio/mp3", autoplay=True)
-                        except Exception as e:
-                            st.warning(f"No se pudo generar la voz: {e}")
-                    
+                    texto_usuario = transcripcion.text
                 except Exception as e:
-                    st.error(f"Error de Groq: {e}")
+                    st.error(f"Error al procesar el audio: {e}")
+                    texto_usuario = "(No se pudo entender el audio)"
         
-        if prompt:
-            st.rerun()
+        # 2. Si hay texto (o si falló el audio), usamos el texto
+        elif prompt:
+            texto_usuario = prompt
+            
+        if texto_usuario:
+            # Mostrar el mensaje del usuario
+            with st.chat_message("user", avatar="👤"):
+                st.markdown(texto_usuario)
+            
+            st.session_state.messages.append({"role": "user", "content": texto_usuario})
+
+            contexto_ia = texto_usuario
+            if codigo_actual:
+                contexto_ia = f"Te adjunto el código actual del archivo:\n\n```python\n{codigo_actual}\n```\n\nMi petición es: {texto_usuario}\n\nPor favor, devuélveme el código completo modificado dentro de un bloque de código."
+
+            # Generar respuesta de Groq
+            with st.chat_message("assistant", avatar="🤖"):
+                with st.spinner("Pensando..."):
+                    try:
+                        respuesta = cliente.chat.completions.create(
+                            model="openai/gpt-oss-120b",
+                            messages=[
+                                {"role": "system", "content": instrucciones},
+                                {"role": "user", "content": contexto_ia}
+                            ],
+                            temperature=0.7,
+                            max_tokens=4096
+                        )
+                        
+                        texto_respuesta = respuesta.choices[0].message.content
+                        st.markdown(texto_respuesta)
+                        st.session_state.messages.append({"role": "assistant", "content": texto_respuesta})
+                        
+                        # Reproducir voz de Nova
+                        if activar_voz: 
+                            try:
+                                audio_buffer = asyncio.run(generar_audio_edge(texto_respuesta, VOZ_FIJA))
+                                # autoplay=True y lo ocultamos con CSS
+                                st.audio(audio_buffer, format="audio/mp3", autoplay=True)
+                            except Exception as e:
+                                st.warning(f"No se pudo generar la voz: {e}")
+                        
+                    except Exception as e:
+                        st.error(f"Error de Groq: {e}")
+            
+            if prompt:
+                st.rerun()
 
 except KeyError:
     st.warning("⚠️ Falta la API Key de Groq. Configúrala en los Secrets de Streamlit.")
