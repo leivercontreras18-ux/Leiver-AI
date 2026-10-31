@@ -34,7 +34,7 @@ st.markdown("""
         padding-bottom: 0 !important;
         max-width: 95% !important; 
         height: 100vh !important; 
-        overflow: hidden !important; /* Bloquea el scroll de la página */
+        overflow: hidden !important; 
     }
 
     /* 3. EL ORBE */
@@ -103,7 +103,6 @@ st.markdown("""
     }
 
     /* 4. CAJA DEL CHAT (Estilo Cristal) */
-    /* Streamlit le pone un fondo gris por defecto al contenedor con borde, lo hacemos transparente */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background: rgba(255, 255, 255, 0.02) !important;
         border: 1px solid rgba(255, 255, 255, 0.05) !important;
@@ -113,17 +112,12 @@ st.markdown("""
         padding: 10px !important;
     }
     
-    /* Quitar fondos internos de Streamlit */
-    div[data-testid="stVerticalBlockBorderWrapper"] > div {
-        background: transparent !important;
-    }
+    div[data-testid="stVerticalBlockBorderWrapper"] > div { background: transparent !important; }
 
-    /* Avatares y botones ocultos */
-    div[data-testid="stChatMessageAvatarUser"],
-    div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
+    div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
     div[data-testid="stChatMessage"] button { display: none !important; }
 
-    /* Burbuja del Usuario */
+    /* Burbujas */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
         background: rgba(147, 51, 234, 0.1) !important;
         border: 1px solid rgba(168, 85, 247, 0.2) !important;
@@ -136,7 +130,6 @@ st.markdown("""
         margin-bottom: 15px !important;
     }
 
-    /* Burbuja de Nova */
     div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
         background: rgba(255, 255, 255, 0.04) !important;
         border: 1px solid rgba(255, 255, 255, 0.05) !important;
@@ -149,20 +142,40 @@ st.markdown("""
         margin-bottom: 15px !important;
     }
 
-    /* 5. BARRA DE TEXTO */
+    /* =======================================================
+       5. ELIMINAR LA FRANJA NEGRA Y ARREGLAR LA BARRA DE TEXTO
+       ======================================================= */
+    
+    /* Quitar el fondo negro al contenedor inferior de Streamlit */
+    [data-testid="stBottom"], [data-testid="stBottom"] > div {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    /* Centrar y limitar el ancho de la barra de texto */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important;
-        padding-bottom: 1.5rem !important;
+        padding-bottom: 2rem !important;
         max-width: 800px !important; 
         margin: 0 auto !important; 
     }
     
+    /* Diseño de la barra (Efecto Cristal puro) */
     .stChatInput {
-        background: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(168, 85, 247, 0.3) !important;
+        background: rgba(20, 20, 30, 0.5) !important; /* Fondo semi-transparente */
+        border: 1px solid rgba(168, 85, 247, 0.4) !important;
         border-radius: 30px !important;
-        backdrop-filter: blur(24px) !important;
-        box-shadow: 0 0 20px rgba(168, 85, 247, 0.1) !important;
+        backdrop-filter: blur(20px) !important; /* Desenfoque de cristal */
+        box-shadow: 0 0 20px rgba(168, 85, 247, 0.2) !important;
+    }
+
+    /* Asegurar que el campo de texto interno no tenga fondo sólido */
+    div[data-testid="stChatInput"] > div {
+        background-color: transparent !important;
+    }
+    .stChatInput textarea {
+        background-color: transparent !important;
+        color: white !important;
     }
 
     /* Ocultar audio nativo */
@@ -248,7 +261,6 @@ with col_izq:
 
 # Columna Derecha: El Chat
 with col_der:
-    # ¡AQUÍ ESTABA EL ERROR! Le damos una altura de 550px para que se vea grande.
     with st.container(border=True, height=550):
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
