@@ -15,10 +15,10 @@ from groq import Groq
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v20.0 - Anime Minimalist"
+VERSION = "v21.0 - Red Anime & Bubbles"
 ARCHIVO_CHATS = "chats_lili.json"
 
-st.set_page_config(page_title=NOMBRE_IA, page_icon="🌌", layout="wide")
+st.set_page_config(page_title=NOMBRE_IA, page_icon="🌸", layout="wide")
 
 # --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
 def cargar_todos_los_chats():
@@ -78,86 +78,121 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- CSS ESTILO MINIMALISTA CON FONDO ANIME ---
+# --- CSS ESTILO ANIME ROJO (BURBUJAS Y ALINEACIÓN) ---
 st.markdown("""
 <style>
-    /* 1. FONDO DE ANIME OSCURO (Islas flotantes / Estilo Ghibli / One Piece) */
+    /* 1. FONDO ROJO OSCURO CON DEGRADADO */
     .stApp {
-        /* Imagen de fondo de un cielo nocturno de anime */
-        background-image: url('https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=2000&auto=format&fit=crop'); 
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-    }
-    /* Capa oscura para que el texto se lea perfectamente sin importar la imagen */
-    .stApp::before {
-        content: "";
-        position: fixed; inset: 0;
-        background: rgba(10, 10, 15, 0.75); /* Ajusta el 0.75 si quieres el fondo más o menos oscuro */
-        z-index: -1;
+        background: radial-gradient(circle at center, #4a0404 0%, #0a0000 100%) !important;
+        color: #ffffff !important;
     }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
-    .block-container { padding-top: 3rem !important; max-width: 900px !important; }
+    .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
 
     /* =========================================
-       BARRA LATERAL (MENÚ DE CRISTAL OSCURO)
+       BARRA LATERAL
        ========================================= */
     [data-testid="stSidebar"] {
-        background: rgba(15, 15, 20, 0.6) !important;
-        backdrop-filter: blur(15px) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background-color: rgba(10, 0, 0, 0.8) !important;
+        border-right: 1px solid #8b0000 !important;
+        backdrop-filter: blur(10px) !important;
     }
     
-    /* Título del menú */
     [data-testid="stSidebar"] h2 {
-        color: #ffffff !important;
-        font-weight: 300 !important;
-        letter-spacing: 2px !important;
+        color: #ff4d4d !important;
         text-align: center;
-        margin-bottom: 30px !important;
+        font-weight: 300;
     }
     
-    /* Botones del menú (Estilo minimalista de la foto) */
+    /* Botones del sidebar */
     [data-testid="stSidebar"] button {
         background: transparent !important; 
-        color: #a1a1aa !important; 
-        border: none !important;
+        color: #d4d4d4 !important; 
+        border: 1px solid transparent !important;
         text-align: left !important; 
-        padding: 12px 15px !important;
-        font-size: 15px !important; 
-        font-weight: 400 !important; 
+        padding: 10px 15px !important;
         transition: all 0.2s ease !important;
     }
     [data-testid="stSidebar"] button:hover {
         color: #ffffff !important; 
-        background: rgba(255,255,255,0.05) !important;
+        border-left: 3px solid #ff4d4d !important;
+        background: rgba(255, 77, 77, 0.1) !important;
+    }
+    
+    /* Botón Nuevo Chat */
+    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] > div:first-child button {
+        background: rgba(255, 77, 77, 0.2) !important;
+        border: 1px solid #ff4d4d !important;
+        text-align: center !important;
         border-radius: 8px !important;
+        margin-bottom: 15px !important;
     }
 
     /* =========================================
-       CHAT (TEXTO LIMPIO)
+       CHAT (BURBUJAS Y ALINEACIÓN)
        ========================================= */
+    /* Contenedor general del mensaje */
     div[data-testid="stChatMessage"] {
         background-color: transparent !important;
         border: none !important;
-        padding: 10px 0 !important;
+        padding: 0 !important;
         margin-bottom: 15px !important;
+        display: flex !important;
     }
+
+    /* Ocultar avatares para que se vea más limpio */
     div[data-testid="stChatMessageAvatarUser"], div[data-testid="stChatMessageAvatarAssistant"] { 
         display: none !important; 
     }
+
+    /* TUS MENSAJES (A LA DERECHA) */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
+        flex-direction: row-reverse !important;
+        justify-content: flex-start !important;
+        margin-left: auto !important;
+        width: fit-content !important;
+        max-width: 80% !important;
+    }
     
-    /* El texto del chat */
-    div[data-testid="stChatMessage"] p {
-        font-size: 16px !important;
-        line-height: 1.6 !important;
+    /* La burbuja de tus mensajes */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) div[data-testid="stChatMessageContent"] {
+        background: rgba(255, 77, 77, 0.2) !important; /* Rojo translúcido */
+        border: 1px solid rgba(255, 77, 77, 0.4) !important;
         color: #ffffff !important;
-        text-shadow: 1px 1px 3px rgba(0,0,0,0.9); /* Sombra para leer sobre el fondo */
+        border-radius: 20px 20px 0 20px !important; /* Borde inferior derecho recto */
+        padding: 12px 18px !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+    }
+
+    /* MENSAJES DE LILI (A LA IZQUIERDA) */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
+        flex-direction: row !important;
+        justify-content: flex-start !important;
+        margin-right: auto !important;
+        width: fit-content !important;
+        max-width: 80% !important;
+    }
+    
+    /* La burbuja de Lili */
+    div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) div[data-testid="stChatMessageContent"] {
+        background: rgba(255, 255, 255, 0.08) !important; /* Blanco translúcido */
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        color: #e5e5e5 !important;
+        border-radius: 20px 20px 20px 0 !important; /* Borde inferior izquierdo recto */
+        padding: 12px 18px !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+    }
+    
+    /* Texto dentro de las burbujas */
+    div[data-testid="stChatMessage"] p {
+        font-size: 15px !important;
+        line-height: 1.5 !important;
+        margin: 0 !important;
     }
 
     /* =========================================
-       CAJA DE TEXTO (PÍLDORA ELEGANTE)
+       CAJA DE TEXTO (ESTILO FOTO)
        ========================================= */
     [data-testid="stBottomBlockContainer"] {
         background: transparent !important; 
@@ -167,14 +202,14 @@ st.markdown("""
     }
     
     .stChatInput {
-        background: rgba(20, 20, 25, 0.8) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 30px !important;
-        backdrop-filter: blur(10px) !important;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+        background: rgba(20, 20, 25, 0.9) !important;
+        border: 1px solid #ff4d4d !important; /* Borde rojo */
+        border-radius: 15px !important;
+        box-shadow: 0 0 15px rgba(255, 77, 77, 0.3) !important;
     }
     .stChatInput:focus-within { 
-        border: 1px solid rgba(255, 255, 255, 0.5) !important; 
+        border: 1px solid #ff8080 !important; 
+        box-shadow: 0 0 25px rgba(255, 77, 77, 0.5) !important;
     }
     [data-testid="stChatInput"] textarea { 
         color: #ffffff !important; font-size: 16px !important; padding: 12px 20px !important; 
@@ -204,20 +239,29 @@ if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
 
-# --- SIDEBAR (MENÚ MINIMALISTA) ---
+# --- SIDEBAR (HISTORIAL CORREGIDO) ---
 with st.sidebar:
-    st.markdown("<h2>L I L I</h2>", unsafe_allow_html=True)
+    st.markdown("<h2>🌸 Lili AI</h2>", unsafe_allow_html=True)
     
     if st.button("➕ Nuevo Chat", use_container_width=True):
-        nuevo_id = datetime.datetime.now().strftime("%d/%m %H:%M")
+        nuevo_id = datetime.datetime.now().strftime("%H:%M:%S") # Usamos segundos para que no se repita
         st.session_state.chat_actual_id = nuevo_id
         st.session_state.todos_los_chats[nuevo_id] = []
+        guardar_todos_los_chats(st.session_state.todos_los_chats)
         st.rerun()
 
-    st.button("Home", use_container_width=True)
-    st.button("History", use_container_width=True)
-    st.button("Profile", use_container_width=True)
+    st.markdown("---")
+    st.markdown("### Historial")
     
+    # AQUÍ ESTÁ LA CORRECCIÓN PARA QUE SE VEAN TODOS LOS CHATS
+    for chat_id in sorted(st.session_state.todos_los_chats.keys(), reverse=True):
+        # Mostramos el chat si tiene mensajes (o si es el actual)
+        if len(st.session_state.todos_los_chats[chat_id]) > 0:
+            icono = "🟢" if chat_id == st.session_state.chat_actual_id else "⚪"
+            if st.button(f"{icono} Chat {chat_id}", key=f"btn_{chat_id}", use_container_width=True):
+                st.session_state.chat_actual_id = chat_id
+                st.rerun()
+
     st.markdown("---")
     with st.expander("⚙️ Ajustes"):
         voz_activa = st.checkbox("🔊 Voz activa", value=True)
@@ -255,7 +299,8 @@ for message in mensajes_actuales:
 if len(mensajes_actuales) == 0:
     st.markdown("""
         <div style="text-align: center; margin-top: 20vh; color: #ffffff;">
-            <h1 style="font-size: 32px; font-weight: 300; letter-spacing: 1px;">¿Qué vamos a crear hoy, Leiver?</h1>
+            <h1 style="font-size: 30px; font-weight: 300; letter-spacing: 1px;">Hey</h1>
+            <p style="font-size: 18px; color: #ff4d4d;">¡Hola Leiver! ¿En qué puedo ayudarte hoy?</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -285,7 +330,6 @@ if audio_grabado or prompt:
         
         codigo_actual = st.session_state.codigo_github
         
-        # PERSONALIDAD NORMAL DE LILI (Sin piratas)
         instrucciones = f"""Eres {NOMBRE_IA}, una IA avanzada, cercana y carismática.
         REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
         CONTEXTO: Te habla Leiver, de Venezuela. Eres su asistente personal y de programación.
