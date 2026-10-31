@@ -6,43 +6,64 @@ import io
 from gtts import gTTS
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
-st.set_page_config(page_title="Leiver AI 2.0", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="Leiver AI", page_icon="🤖", layout="wide")
 
-# --- CSS PERSONALIZADO PARA DISEÑO PREMIUM ---
+# --- CSS PERSONALIZADO (DISEÑO PREMIUM) ---
 st.markdown("""
 <style>
-    /* Ocultar menús */
+    /* Ocultar menús de Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Fondo general más limpio */
+    /* Fondo con degradado espacial */
     .stApp {
-        background-color: #0e1117;
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        color: #e0e0e0;
     }
 
-    /* Estilo de las burbujas de chat */
-    .stChatMessage {
-        background-color: #1e2530;
-        border-radius: 15px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border: 1px solid #2e3a4e;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-
-    /* Barra lateral más elegante */
+    /* Barra lateral con efecto cristal */
     [data-testid="stSidebar"] {
-        background-color: #161b22;
-        border-right: 1px solid #2e3a4e;
+        background: rgba(15, 12, 41, 0.7);
+        backdrop-filter: blur(12px);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Burbujas de chat estilo cristal */
+    .stChatMessage {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 1.2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        color: #ffffff;
+    }
+
+    /* Botones elegantes */
+    .stButton>button {
+        background: linear-gradient(90deg, #4b33a8 0%, #1d4ed8 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        transition: transform 0.2s;
+    }
+    .stButton>button:hover {
+        transform: scale(1.05);
+    }
+
+    /* Cuadro de texto */
+    .stChatInput {
+        border-radius: 15px;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # --- BARRA LATERAL ---
 with st.sidebar:
-    st.title("🤖 Leiver AI 2.0")
-    st.caption("Tu asistente personal de élite")
+    st.title("🤖 Leiver AI")
+    st.caption("v2.5 - Premium Edition")
     st.divider()
     
     st.subheader("⚙️ Configuración")
@@ -66,7 +87,8 @@ try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
     
-    instrucciones = "Eres Leiver AI, un asistente experto, elegante, amable y directo (estilo Jarvis). Siempre respondes en español de forma clara y breve si es una charla."
+    instrucciones = "Eres Leiver AI, un asistente experto, elegante, amable y directo (estilo Jarvis). Siempre respondes en español de forma clara."
+    # Usamos 3.5-flash que está activo y es más estable
     modelo = genai.GenerativeModel('gemini-3.5-flash', system_instruction=instrucciones)
 
     if "messages" not in st.session_state:
