@@ -17,7 +17,7 @@ import threading
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v41.0 - Cloud Memory & Core Fixes"
+VERSION = "v41.1 - Modelo Groq Actualizado"
 ARCHIVO_CHATS = "chats_lili.json"
 
 # --- DATOS DE GITHUB PARA LA MEMORIA ---
@@ -56,21 +56,17 @@ def descargar_archivo_github(usuario, repo, archivo, token):
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
 
-# --- NUEVO: FUNCIÓN PARA GUARDAR EN GITHUB ---
 def guardar_archivo_github(usuario, repo, archivo, contenido_str, token):
     headers = {"Authorization": f"token {token}"}
     url = f"https://api.github.com/repos/{usuario}/{repo}/contents/{archivo}"
     
-    # 1. Obtener el SHA del archivo si ya existe
     sha = None
     res_get = requests.get(url, headers=headers)
     if res_get.status_code == 200:
         sha = res_get.json().get("sha")
         
-    # 2. Codificar el contenido en Base64
     contenido_b64 = base64.b64encode(contenido_str.encode('utf-8')).decode('utf-8')
     
-    # 3. Preparar los datos
     data = {
         "message": "Actualización automática de memoria de Lili",
         "content": contenido_b64
@@ -78,15 +74,13 @@ def guardar_archivo_github(usuario, repo, archivo, contenido_str, token):
     if sha:
         data["sha"] = sha
         
-    # 4. Subir el archivo
     response = requests.put(url, headers=headers, json=data)
     return response.status_code in (200, 201)
 
-# --- FUNCIONES DE MEMORIA (AHORA CONECTADAS A GITHUB) ---
+# --- FUNCIONES DE MEMORIA (CONECTADAS A GITHUB) ---
 def cargar_todos_los_chats():
     token = st.secrets.get("GITHUB_TOKEN")
     
-    # Intentamos cargar desde GitHub primero
     if token:
         exito, contenido = descargar_archivo_github(USUARIO_GITHUB, REPO_IA, ARCHIVO_CHATS, token)
         if exito:
@@ -95,18 +89,15 @@ def cargar_todos_los_chats():
             except:
                 pass
                 
-    # Si falla GitHub o no hay token, cargamos local
     if os.path.exists(ARCHIVO_CHATS):
         with open(ARCHIVO_CHATS, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
 
 def guardar_todos_los_chats(chats):
-    # 1. Guardar localmente (por si acaso)
     with open(ARCHIVO_CHATS, "w", encoding="utf-8") as f:
         json.dump(chats, f, ensure_ascii=False, indent=4)
         
-    # 2. Guardar en GitHub en la nube
     token = st.secrets.get("GITHUB_TOKEN")
     if token:
         contenido_str = json.dumps(chats, ensure_ascii=False, indent=4)
@@ -442,8 +433,8 @@ if audio_grabado or prompt:
                 st.error(f"Error de audio: {e}")
                 
     if texto_usuario:
-        # --- MODELO DE GROQ ACTUALIZADO ---
-        modelo_a_usar = "llama-3.3-70b-versatile"
+        # --- MODELO DE GROQ ACTUALIZADO A GPT-OSS-120B ---
+        modelo_a_usar = "openai/gpt-oss-120b"
         mensaje_para_groq_content = texto_usuario
         
         if imagen_subida:
@@ -473,7 +464,6 @@ if audio_grabado or prompt:
             Si te pide cambios, NUNCA devuelvas el archivo completo. Dile: "Borra desde la línea X hasta la Y" y dale el bloque de código exacto. Sé precisa y técnica."""
             
             if codigo_actual:
-                # --- LÍMITE AUMENTADO A 50,000 CARACTERES ---
                 instrucciones += f"\n\nAquí está el código actual del proyecto:\n```\n{codigo_actual[:50000]}\n```"
             else:
                 instrucciones += "\n\nNOTA: Aún no tienes ningún archivo cargado. Pídele al usuario que cargue uno desde la barra lateral."
