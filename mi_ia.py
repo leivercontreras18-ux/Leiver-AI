@@ -13,10 +13,14 @@ from datetime import timezone, timedelta
 from groq import Groq
 from PIL import Image
 
+# --- ARREGLO 3: PREVENIR QUE LA APP SE CAIGA AL HABLAR ---
+import nest_asyncio
+nest_asyncio.apply()
+
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v39.0 - Chat Image Upload"
+VERSION = "v40.0 - Bugfixes & Stable"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
@@ -220,7 +224,6 @@ st.markdown("""
     /* =========================================
        SUBIDA DE IMAGEN EN EL CHAT
        ========================================= */
-    /* Ocultar el texto de "Drag and drop" por defecto y hacerlo minimalista */
     [data-testid="stFileUploader"] {
         background-color: transparent !important;
         border: 1px dashed rgba(0, 229, 255, 0.2) !important;
@@ -334,6 +337,9 @@ if "audio_pendiente" not in st.session_state: st.session_state.audio_pendiente =
 if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
 if "archivo_cargado_nombre" not in st.session_state: st.session_state.archivo_cargado_nombre = ""
+
+# --- ARREGLO 2: LLAVE PARA LIMPIAR LA IMAGEN ---
+if "uploader_key" not in st.session_state: st.session_state.uploader_key = 0
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -488,8 +494,14 @@ if len(mensajes_actuales) == 0:
         </div>
     """, unsafe_allow_html=True)
 
-# --- CAJA DE SUBIDA DE IMAGEN (JUSTO ENCIMA DEL CHAT) ---
-imagen_subida = st.file_uploader("Adjuntar imagen para análisis visual", type=["png", "jpg", "jpeg"], label_visibility="visible")
+# --- CAJA DE SUBIDA DE IMAGEN (CON LLAVE PARA QUE SE LIMPIE) ---
+imagen_subida = st.file_uploader(
+    "Adjuntar imagen para análisis visual", 
+    type=["png", "jpg", "jpeg"], 
+    label_visibility="visible",
+    key=f"uploader_{st.session_state.uploader_key}"
+)
+
 if imagen_subida:
     st.image(imagen_subida, caption="Imagen adjunta lista", use_container_width=True)
 
@@ -556,11 +568,15 @@ if audio_grabado or prompt:
         else:
             instrucciones = """Eres Lili, una IA avanzada y carismática. REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL."""
 
+        # --- ARREGLO 1: EVITAR DUPLICADOS EN EL HISTORIAL ---
         mensajes_para_groq = [{"role": "system", "content": instrucciones}]
-        for msg in mensajes_actuales:
+        
+        # Enviamos TODO el historial anterior (menos el último mensaje que acabamos de guardar)
+        for msg in mensajes_actuales[:-1]:
             contenido_historial = msg["content"].replace(" [Imagen Adjunta]", "")
             mensajes_para_groq.append({"role": msg["role"], "content": contenido_historial})
             
+        # Ahora enviamos el último mensaje UNA SOLA VEZ con su formato correcto (texto o imagen+texto)
         mensajes_para_groq.append({"role": "user", "content": mensaje_para_groq_content})
 
         try:
@@ -580,7 +596,6 @@ if audio_grabado or prompt:
                         texto_para_hablar = limpiar_texto_para_voz(texto_respuesta)
                         comunicar = edge_tts.Communicate(texto_para_hablar, VOZ_FIJA, rate="+8%")
                         audio_buffer = io.BytesIO()
-                        import asyncio
                         async def gen_audio():
                             async for chunk in comunicar.stream():
                                 if chunk["type"] == "audio": audio_buffer.write(chunk["data"])
@@ -590,6 +605,7 @@ if audio_grabado or prompt:
                     except Exception: pass
                 
                 st.session_state.mic_key += 1
+                st.session_state.uploader_key += 1 # <--- ARREGLO 2: Esto limpia la imagen
                 st.rerun()
         except Exception as e:
             st.error(f"Error de Groq: {e}")
