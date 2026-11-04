@@ -27,6 +27,10 @@
         {
             "role": "user",
             "content": "¿Como estas? "
+        },
+        {
+            "role": "assistant",
+            "content": "¡Muy bien, gracias! 😊 ¿Y tú, cómo te encuentras?"
         }
     ],
     "Programación|23:38:32": [],
