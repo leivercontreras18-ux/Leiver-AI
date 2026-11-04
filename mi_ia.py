@@ -12,70 +12,19 @@ import datetime
 from datetime import timezone, timedelta
 from groq import Groq
 from PIL import Image
-import threading # <--- NUEVA LLAVE PARA EL AUDIO
+import threading
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v40.2 - Stable Audio Thread"
+VERSION = "v41.0 - Cloud Memory & Core Fixes"
 ARCHIVO_CHATS = "chats_lili.json"
 
+# --- DATOS DE GITHUB PARA LA MEMORIA ---
+USUARIO_GITHUB = "leivercontreras18-ux"
+REPO_IA = "leiver-ai"
+
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
-
-# --- FUNCIÓN DEFINITIVA PARA EL AUDIO ---
-def generar_audio_seguro(texto, voz):
-    """Genera el audio en un hilo separado para no chocar con Streamlit"""
-    audio_buffer = io.BytesIO()
-    
-    def tarea_audio():
-        try:
-            async def generar():
-                comunicar = edge_tts.Communicate(texto, voz, rate="+8%")
-                async for chunk in comunicar.stream():
-                    if chunk["type"] == "audio":
-                        audio_buffer.write(chunk["data"])
-            asyncio.run(generar())
-        except Exception as e:
-            print(f"Error en hilo de audio: {e}")
-
-    hilo = threading.Thread(target=tarea_audio)
-    hilo.start()
-    hilo.join() # Esperamos a que termine de generar
-    audio_buffer.seek(0)
-    return audio_buffer
-
-# --- SISTEMA DE NOTIFICACIONES FLOTANTES ---
-if "toast_msg" not in st.session_state:
-    st.session_state.toast_msg = None
-if st.session_state.toast_msg:
-    st.toast(st.session_state.toast_msg[0], icon=st.session_state.toast_msg[1])
-    st.session_state.toast_msg = None
-
-# --- FUNCIONES PARA LA MEMORIA MULTI-CHAT ---
-def cargar_todos_los_chats():
-    if os.path.exists(ARCHIVO_CHATS):
-        with open(ARCHIVO_CHATS, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def guardar_todos_los_chats(chats):
-    with open(ARCHIVO_CHATS, "w", encoding="utf-8") as f:
-        json.dump(chats, f, ensure_ascii=False, indent=4)
-
-# --- FUNCIÓN PARA LIMPIAR EL TEXTO DE LA VOZ ---
-def limpiar_texto_para_voz(texto):
-    texto_limpio = re.sub(r'[*#_`]', '', texto)
-    texto_limpio = re.sub(r'^\s*-\s*', '', texto_limpio, flags=re.MULTILINE)
-    emoji_pattern = re.compile("["
-        u"\U0001F600-\U0001F64F" u"\U0001F300-\U0001F5FF"
-        u"\U0001F680-\U0001F6FF" u"\U0001F1E0-\U0001F1FF"
-        u"\U00002702-\U000027B0" u"\U000024C2-\U0001F251"
-        "]+", flags=re.UNICODE)
-    texto_limpio = emoji_pattern.sub(r'', texto_limpio)
-    texto_limpio = re.sub(r'(?<=\d),(?=\d)', '', texto_limpio) 
-    texto_limpio = texto_limpio.replace('?', ',').replace('¡', '').replace('!', ',')
-    texto_limpio = re.sub(r'\s+', ' ', texto_limpio)
-    return texto_limpio.strip()
 
 # --- FUNCIONES PARA GITHUB ---
 def obtener_repositorios(token):
@@ -106,6 +55,104 @@ def descargar_archivo_github(usuario, repo, archivo, token):
     if res.status_code == 200:
         return True, base64.b64decode(res.json()['content']).decode('utf-8')
     return False, f"Error {res.status_code}"
+
+# --- NUEVO: FUNCIÓN PARA GUARDAR EN GITHUB ---
+def guardar_archivo_github(usuario, repo, archivo, contenido_str, token):
+    headers = {"Authorization": f"token {token}"}
+    url = f"https://api.github.com/repos/{usuario}/{repo}/contents/{archivo}"
+    
+    # 1. Obtener el SHA del archivo si ya existe
+    sha = None
+    res_get = requests.get(url, headers=headers)
+    if res_get.status_code == 200:
+        sha = res_get.json().get("sha")
+        
+    # 2. Codificar el contenido en Base64
+    contenido_b64 = base64.b64encode(contenido_str.encode('utf-8')).decode('utf-8')
+    
+    # 3. Preparar los datos
+    data = {
+        "message": "Actualización automática de memoria de Lili",
+        "content": contenido_b64
+    }
+    if sha:
+        data["sha"] = sha
+        
+    # 4. Subir el archivo
+    response = requests.put(url, headers=headers, json=data)
+    return response.status_code in (200, 201)
+
+# --- FUNCIONES DE MEMORIA (AHORA CONECTADAS A GITHUB) ---
+def cargar_todos_los_chats():
+    token = st.secrets.get("GITHUB_TOKEN")
+    
+    # Intentamos cargar desde GitHub primero
+    if token:
+        exito, contenido = descargar_archivo_github(USUARIO_GITHUB, REPO_IA, ARCHIVO_CHATS, token)
+        if exito:
+            try:
+                return json.loads(contenido)
+            except:
+                pass
+                
+    # Si falla GitHub o no hay token, cargamos local
+    if os.path.exists(ARCHIVO_CHATS):
+        with open(ARCHIVO_CHATS, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def guardar_todos_los_chats(chats):
+    # 1. Guardar localmente (por si acaso)
+    with open(ARCHIVO_CHATS, "w", encoding="utf-8") as f:
+        json.dump(chats, f, ensure_ascii=False, indent=4)
+        
+    # 2. Guardar en GitHub en la nube
+    token = st.secrets.get("GITHUB_TOKEN")
+    if token:
+        contenido_str = json.dumps(chats, ensure_ascii=False, indent=4)
+        exito = guardar_archivo_github(USUARIO_GITHUB, REPO_IA, ARCHIVO_CHATS, contenido_str, token)
+        if not exito:
+            print("Aviso: No se pudo guardar en GitHub (revisa los permisos del Token).")
+
+# --- FUNCIÓN DEFINITIVA PARA EL AUDIO SEGURO ---
+def generar_audio_seguro(texto, voz):
+    audio_buffer = io.BytesIO()
+    def tarea_audio():
+        try:
+            async def generar():
+                comunicar = edge_tts.Communicate(texto, voz, rate="+8%")
+                async for chunk in comunicar.stream():
+                    if chunk["type"] == "audio":
+                        audio_buffer.write(chunk["data"])
+            asyncio.run(generar())
+        except Exception as e:
+            print(f"Error en hilo de audio: {e}")
+    hilo = threading.Thread(target=tarea_audio)
+    hilo.start()
+    hilo.join()
+    audio_buffer.seek(0)
+    return audio_buffer
+
+# --- SISTEMA DE NOTIFICACIONES FLOTANTES ---
+if "toast_msg" not in st.session_state: st.session_state.toast_msg = None
+if st.session_state.toast_msg:
+    st.toast(st.session_state.toast_msg[0], icon=st.session_state.toast_msg[1])
+    st.session_state.toast_msg = None
+
+# --- FUNCIÓN PARA LIMPIAR EL TEXTO DE LA VOZ ---
+def limpiar_texto_para_voz(texto):
+    texto_limpio = re.sub(r'[*#_`]', '', texto)
+    texto_limpio = re.sub(r'^\s*-\s*', '', texto_limpio, flags=re.MULTILINE)
+    emoji_pattern = re.compile("["
+        u"\U0001F600-\U0001F64F" u"\U0001F300-\U0001F5FF"
+        u"\U0001F680-\U0001F6FF" u"\U0001F1E0-\U0001F1FF"
+        u"\U00002702-\U000027B0" u"\U000024C2-\U0001F251"
+        "]+", flags=re.UNICODE)
+    texto_limpio = emoji_pattern.sub(r'', texto_limpio)
+    texto_limpio = re.sub(r'(?<=\d),(?=\d)', '', texto_limpio) 
+    texto_limpio = texto_limpio.replace('?', ',').replace('¡', '').replace('!', ',')
+    texto_limpio = re.sub(r'\s+', ' ', texto_limpio)
+    return texto_limpio.strip()
 
 # --- CSS PREMIUM HUD ---
 st.markdown("""
@@ -273,7 +320,6 @@ with st.sidebar:
     if st.session_state.modo_actual == "Programación":
         with st.expander("GITHUB", expanded=True):
             token = st.secrets.get("GITHUB_TOKEN")
-            usuario_github = "leivercontreras18-ux"
             
             if token:
                 repos = obtener_repositorios(token)
@@ -292,7 +338,7 @@ with st.sidebar:
                     if repo_sel.lower() == "leiver-ai":
                         st.markdown("<p style='color: #00e5ff; font-size: 0.7rem; text-align: right; margin-top: -10px;'>🧠 Repositorio de la IA detectado</p>", unsafe_allow_html=True)
                     
-                    archivos = obtener_archivos(usuario_github, repo_sel, token)
+                    archivos = obtener_archivos(USUARIO_GITHUB, repo_sel, token)
                     if archivos:
                         idx_archivo = archivos.index("mi_ia.py") if "mi_ia.py" in archivos else 0
                         arch_sel = st.selectbox("Archivo", archivos, index=idx_archivo)
@@ -313,7 +359,7 @@ with st.sidebar:
                 with col2:
                     if st.button("CARGAR", use_container_width=True):
                         if repo_sel and arch_sel:
-                            exito, resultado = descargar_archivo_github(usuario_github, repo_sel, arch_sel, token)
+                            exito, resultado = descargar_archivo_github(USUARIO_GITHUB, repo_sel, arch_sel, token)
                             if exito:
                                 st.session_state.codigo_github = resultado
                                 st.session_state.archivo_cargado_nombre = arch_sel
@@ -396,7 +442,8 @@ if audio_grabado or prompt:
                 st.error(f"Error de audio: {e}")
                 
     if texto_usuario:
-        modelo_a_usar = "openai/gpt-oss-20b"
+        # --- MODELO DE GROQ ACTUALIZADO ---
+        modelo_a_usar = "llama-3.3-70b-versatile"
         mensaje_para_groq_content = texto_usuario
         
         if imagen_subida:
@@ -426,7 +473,8 @@ if audio_grabado or prompt:
             Si te pide cambios, NUNCA devuelvas el archivo completo. Dile: "Borra desde la línea X hasta la Y" y dale el bloque de código exacto. Sé precisa y técnica."""
             
             if codigo_actual:
-                instrucciones += f"\n\nAquí está el código actual del proyecto:\n```\n{codigo_actual[:10000]}\n```"
+                # --- LÍMITE AUMENTADO A 50,000 CARACTERES ---
+                instrucciones += f"\n\nAquí está el código actual del proyecto:\n```\n{codigo_actual[:50000]}\n```"
             else:
                 instrucciones += "\n\nNOTA: Aún no tienes ningún archivo cargado. Pídele al usuario que cargue uno desde la barra lateral."
                 
@@ -464,7 +512,6 @@ if audio_grabado or prompt:
                 if voz_activa: 
                     try:
                         texto_para_hablar = limpiar_texto_para_voz(texto_respuesta)
-                        # --- NUEVO SISTEMA DE AUDIO SEGURO ---
                         st.session_state.audio_pendiente = generar_audio_seguro(texto_para_hablar, VOZ_FIJA)
                     except Exception as e: 
                         print(f"Error generando audio: {e}")
