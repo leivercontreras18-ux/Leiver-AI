@@ -1,0 +1,24 @@
+{
+    "Programación|23:21:41": [],
+    "Programación|23:26:33": [],
+    "Programación|23:26:39": [
+        {
+            "role": "user",
+            "content": "Hola lili"
+        },
+        {
+            "role": "assistant",
+            "content": "¡Hola! Para poder ayudarte con tu código, por favor carga el archivo desde la barra lateral. Una vez que lo tengas cargado, podré leerlo y ofrecerte un resumen, análisis o cualquier cambio que necesites. ¡Quedo atenta!"
+        }
+    ],
+    "Chat General|23:34:19": [
+        {
+            "role": "user",
+            "content": "Hola lili"
+        },
+        {
+            "role": "assistant",
+            "content": "¡Hola! 😊 ¿En qué puedo ayudarte hoy?"
+        }
+    ]
+}
