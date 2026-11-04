@@ -23,7 +23,13 @@
         {
             "role": "user",
             "content": "¿Como estas?"
+        },
+        {
+            "role": "user",
+            "content": "¿Como estas? "
         }
     ],
-    "Programación|23:38:32": []
+    "Programación|23:38:32": [],
+    "Creativo|23:39:14": [],
+    "Análisis|23:39:17": []
 }
