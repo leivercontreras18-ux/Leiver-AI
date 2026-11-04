@@ -12,41 +12,37 @@ import datetime
 from datetime import timezone, timedelta
 from groq import Groq
 from PIL import Image
-
-# --- ARREGLO: MANEJO SEGURO DEL BUCLE DE EVENTOS ASÍNCRONO ---
-import nest_asyncio
-nest_asyncio.apply()
-
-def run_async_task(async_func, *args):
-    """
-    Función 'paraguas' para ejecutar tareas asíncronas en Streamlit
-    sin que la app se caiga por conflictos de bucles de eventos.
-    """
-    loop = None
-    try:
-        # Intentamos usar el bucle de eventos actual si existe
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # Si ya está corriendo (como en Streamlit), usamos nest_asyncio
-            return loop.run_until_complete(async_func(*args))
-    except RuntimeError:
-        # Si no hay bucle, creamos uno nuevo
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    
-    try:
-        return loop.run_until_complete(async_func(*args))
-    finally:
-        if loop is not None and not loop.is_closed():
-            pass # En Streamlit, es mejor no cerrar el bucle principal
+import threading # <--- NUEVA LLAVE PARA EL AUDIO
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v40.1 - Stable Audio"
+VERSION = "v40.2 - Stable Audio Thread"
 ARCHIVO_CHATS = "chats_lili.json"
 
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
+
+# --- FUNCIÓN DEFINITIVA PARA EL AUDIO ---
+def generar_audio_seguro(texto, voz):
+    """Genera el audio en un hilo separado para no chocar con Streamlit"""
+    audio_buffer = io.BytesIO()
+    
+    def tarea_audio():
+        try:
+            async def generar():
+                comunicar = edge_tts.Communicate(texto, voz, rate="+8%")
+                async for chunk in comunicar.stream():
+                    if chunk["type"] == "audio":
+                        audio_buffer.write(chunk["data"])
+            asyncio.run(generar())
+        except Exception as e:
+            print(f"Error en hilo de audio: {e}")
+
+    hilo = threading.Thread(target=tarea_audio)
+    hilo.start()
+    hilo.join() # Esperamos a que termine de generar
+    audio_buffer.seek(0)
+    return audio_buffer
 
 # --- SISTEMA DE NOTIFICACIONES FLOTANTES ---
 if "toast_msg" not in st.session_state:
@@ -114,221 +110,86 @@ def descargar_archivo_github(usuario, repo, archivo, token):
 # --- CSS PREMIUM HUD ---
 st.markdown("""
 <style>
-    /* Variables de Sistema */
     :root {
-        --bg-deep-space: #121620;
-        --bg-sidebar: #181d28;
-        --bg-active-tab: rgba(0, 229, 255, 0.08);
-        --cyan-neon: #00e5ff;
-        --text-pure-white: #ffffff;
-        --text-muted: #8a99ad;
-        --glass-bubble: rgba(24, 29, 40, 0.65);
-        --glass-border: rgba(0, 229, 255, 0.15);
+        --bg-deep-space: #121620; --bg-sidebar: #181d28; --bg-active-tab: rgba(0, 229, 255, 0.08);
+        --cyan-neon: #00e5ff; --text-pure-white: #ffffff; --text-muted: #8a99ad;
+        --glass-bubble: rgba(24, 29, 40, 0.65); --glass-border: rgba(0, 229, 255, 0.15);
     }
-
-    /* Fondo Principal */
     .stApp {
         background: radial-gradient(circle at 60% 50%, #1a2233 0%, var(--bg-deep-space) 100%) !important;
         color: var(--text-pure-white) !important;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
-
-    #MainMenu {visibility: hidden;} 
-    footer {visibility: hidden;} 
-    header { background: transparent !important; }
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
     .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
-
-    /* =========================================
-       BARRA LATERAL
-       ========================================= */
-    [data-testid="stSidebar"] {
-        background-color: #131822 !important;
-        min-width: 280px !important;
-        border-right: 1px solid rgba(0, 229, 255, 0.05) !important;
-    }
+    [data-testid="stSidebar"] { background-color: #131822 !important; min-width: 280px !important; border-right: 1px solid rgba(0, 229, 255, 0.05) !important; }
     [data-testid="stSidebarCollapseButton"] { display: none !important; }
-
     [data-testid="stSidebar"] button[key^="menu_"] {
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        color: var(--text-muted) !important;
-        text-align: left !important;
-        width: 100% !important;
-        padding: 14px 20px !important;
-        font-size: 0.85rem !important;
-        font-weight: 500 !important;
-        letter-spacing: 1px !important;
-        text-transform: uppercase !important;
-        border-radius: 0px !important;
-        display: flex !important;
-        justify-content: flex-start !important;
-        transition: all 0.3s ease !important;
+        background-color: transparent !important; border: none !important; box-shadow: none !important;
+        color: var(--text-muted) !important; text-align: left !important; width: 100% !important;
+        padding: 14px 20px !important; font-size: 0.85rem !important; font-weight: 500 !important;
+        letter-spacing: 1px !important; text-transform: uppercase !important; border-radius: 0px !important;
+        display: flex !important; justify-content: flex-start !important; transition: all 0.3s ease !important;
         margin-bottom: 0px !important;
     }
-    [data-testid="stSidebar"] button[key^="menu_"]:hover {
-        color: var(--text-pure-white) !important;
-        background-color: rgba(255, 255, 255, 0.02) !important;
-    }
-
+    [data-testid="stSidebar"] button[key^="menu_"]:hover { color: var(--text-pure-white) !important; background-color: rgba(255, 255, 255, 0.02) !important; }
     div[data-testid="stSidebar"] div[class*="st-key-menu_"] button {
-        color: var(--cyan-neon) !important;
-        background-color: rgba(0, 229, 255, 0.08) !important;
-        border-left: 3px solid var(--cyan-neon) !important;
-        box-shadow: inset 10px 0 15px rgba(0, 229, 255, 0.02) !important;
+        color: var(--cyan-neon) !important; background-color: rgba(0, 229, 255, 0.08) !important;
+        border-left: 3px solid var(--cyan-neon) !important; box-shadow: inset 10px 0 15px rgba(0, 229, 255, 0.02) !important;
         font-weight: 700 !important;
     }
-
-    /* =========================================
-       HISTORIAL DE CHATS LIMPIO
-       ========================================= */
     div[data-testid="stSidebar"] button[key^="btn_"] {
-        background-color: transparent !important; border: none !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-        border-radius: 0 !important; color: var(--text-muted) !important;
-        font-size: 0.8rem !important; font-family: monospace !important;
-        text-align: left !important; padding: 8px 10px !important;
-        transition: all 0.2s ease !important;
+        background-color: transparent !important; border: none !important; border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 0 !important; color: var(--text-muted) !important; font-size: 0.8rem !important; font-family: monospace !important;
+        text-align: left !important; padding: 8px 10px !important; transition: all 0.2s ease !important;
     }
-    div[data-testid="stSidebar"] button[key^="btn_"]:hover {
-        color: var(--cyan-neon) !important; background-color: rgba(0, 229, 255, 0.05) !important;
-    }
+    div[data-testid="stSidebar"] button[key^="btn_"]:hover { color: var(--cyan-neon) !important; background-color: rgba(0, 229, 255, 0.05) !important; }
     div[data-testid="stSidebar"] button[key^="del_"] {
-        background-color: transparent !important; border: none !important;
-        color: #56667a !important; font-size: 0.9rem !important; padding: 0 !important;
-        transition: all 0.2s ease !important;
+        background-color: transparent !important; border: none !important; color: #56667a !important;
+        font-size: 0.9rem !important; padding: 0 !important; transition: all 0.2s ease !important;
     }
-    div[data-testid="stSidebar"] button[key^="del_"]:hover {
-        color: #ff4d4d !important; background-color: transparent !important;
-        text-shadow: 0 0 8px rgba(255, 77, 77, 0.5) !important;
-    }
-
-    /* =========================================
-       PANEL DE GITHUB
-       ========================================= */
-    [data-testid="stExpander"] summary {
-        font-size: 0.8rem !important; font-weight: 600 !important;
-        letter-spacing: 1.5px !important; text-transform: uppercase !important;
-        color: #8a99ad !important; padding: 10px !important;
-    }
+    div[data-testid="stSidebar"] button[key^="del_"]:hover { color: #ff4d4d !important; background-color: transparent !important; text-shadow: 0 0 8px rgba(255, 77, 77, 0.5) !important; }
+    [data-testid="stExpander"] summary { font-size: 0.8rem !important; font-weight: 600 !important; letter-spacing: 1.5px !important; text-transform: uppercase !important; color: #8a99ad !important; padding: 10px !important; }
     [data-testid="stExpander"] summary:hover { color: #ffffff !important; }
     [data-testid="stExpander"] summary svg { display: none !important; }
     [data-testid="stExpander"] button {
-        background: rgba(0, 229, 255, 0.03) !important;
-        border: 1px solid rgba(0, 229, 255, 0.2) !important;
-        border-radius: 6px !important; color: #00e5ff !important;
-        font-size: 0.75rem !important; font-weight: 600 !important;
-        letter-spacing: 1px !important; text-transform: uppercase !important;
-        height: auto !important;
+        background: rgba(0, 229, 255, 0.03) !important; border: 1px solid rgba(0, 229, 255, 0.2) !important;
+        border-radius: 6px !important; color: #00e5ff !important; font-size: 0.75rem !important; font-weight: 600 !important;
+        letter-spacing: 1px !important; text-transform: uppercase !important; height: auto !important;
     }
-    [data-testid="stExpander"] button:hover {
-        border-color: #00e5ff !important; background: rgba(0, 229, 255, 0.08) !important; color: #ffffff !important;
-    }
+    [data-testid="stExpander"] button:hover { border-color: #00e5ff !important; background: rgba(0, 229, 255, 0.08) !important; color: #ffffff !important; }
     [data-testid="stExpander"] button img, [data-testid="stExpander"] button span[role="img"] { display: none !important; }
-    [data-testid="stExpander"] div[data-baseweb="select"] > div {
-        background-color: rgba(10, 14, 22, 0.6) !important;
-        border: 1px solid rgba(0, 229, 255, 0.1) !important;
-        color: #ffffff !important; border-radius: 6px !important;
-    }
-    [data-testid="stExpander"] div[data-baseweb="select"] > div:focus-within {
-        border-color: #00e5ff !important; box-shadow: 0 0 8px rgba(0, 229, 255, 0.2) !important;
-    }
+    [data-testid="stExpander"] div[data-baseweb="select"] > div { background-color: rgba(10, 14, 22, 0.6) !important; border: 1px solid rgba(0, 229, 255, 0.1) !important; color: #ffffff !important; border-radius: 6px !important; }
+    [data-testid="stExpander"] div[data-baseweb="select"] > div:focus-within { border-color: #00e5ff !important; box-shadow: 0 0 8px rgba(0, 229, 255, 0.2) !important; }
     [data-testid="stExpander"] div[data-baseweb="select"] svg { fill: #00e5ff !important; color: #00e5ff !important; }
     ul[data-baseweb="menu"] { background-color: #131822 !important; border: 1px solid rgba(0, 229, 255, 0.2) !important; border-radius: 6px !important; }
     ul[data-baseweb="menu"] li { color: #ffffff !important; font-size: 0.8rem !important; }
     ul[data-baseweb="menu"] li:hover { background-color: rgba(0, 229, 255, 0.1) !important; color: #00e5ff !important; }
     [data-testid="stExpander"] [data-testid="stHorizontalBlock"] { gap: 8px !important; }
     [data-testid="stExpander"] [data-testid="stHorizontalBlock"] button {
-        width: 100% !important; padding: 10px 4px !important;
-        font-size: 0.7rem !important; white-space: nowrap !important;
-        display: flex !important; justify-content: center !important; align-items: center !important;
+        width: 100% !important; padding: 10px 4px !important; font-size: 0.7rem !important;
+        white-space: nowrap !important; display: flex !important; justify-content: center !important; align-items: center !important;
     }
-
-    /* =========================================
-       SUBIDA DE IMAGEN EN EL CHAT
-       ========================================= */
-    [data-testid="stFileUploader"] {
-        background-color: transparent !important;
-        border: 1px dashed rgba(0, 229, 255, 0.2) !important;
-        border-radius: 12px !important;
-        padding: 10px !important;
-        margin-bottom: 10px !important;
-        width: 100% !important;
-    }
-    [data-testid="stFileUploader"] label {
-        color: #8a99ad !important;
-        font-size: 0.8rem !important;
-    }
-    [data-testid="stFileUploader"] section {
-        background-color: transparent !important;
-    }
-    [data-testid="stFileUploader"] button {
-        background: transparent !important;
-        border: 1px solid rgba(0, 229, 255, 0.3) !important;
-        color: #00e5ff !important;
-        border-radius: 8px !important;
-        font-size: 0.75rem !important;
-        font-weight: 600 !important;
-        padding: 5px 15px !important;
-    }
-    [data-testid="stFileUploader"] button:hover {
-        background: rgba(0, 229, 255, 0.1) !important;
-    }
-
-    /* =========================================
-       CHAT (GLASSMORPHISM)
-       ========================================= */
-    [data-testid="stChatMessage"] {
-        background: var(--glass-bubble) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border-radius: 12px !important;
-        padding: 16px 20px !important;
-        margin-bottom: 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
-    }
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        background: rgba(255, 255, 255, 0.04) !important;
-        margin-left: auto !important; width: fit-content !important; max-width: 80% !important;
-    }
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
-        border: 1px solid var(--glass-border) !important;
-        box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.03) !important;
-        margin-right: auto !important; width: fit-content !important; max-width: 80% !important;
-    }
+    [data-testid="stFileUploader"] { background-color: transparent !important; border: 1px dashed rgba(0, 229, 255, 0.2) !important; border-radius: 12px !important; padding: 10px !important; margin-bottom: 10px !important; width: 100% !important; }
+    [data-testid="stFileUploader"] label { color: #8a99ad !important; font-size: 0.8rem !important; }
+    [data-testid="stFileUploader"] section { background-color: transparent !important; }
+    [data-testid="stFileUploader"] button { background: transparent !important; border: 1px solid rgba(0, 229, 255, 0.3) !important; color: #00e5ff !important; border-radius: 8px !important; font-size: 0.75rem !important; font-weight: 600 !important; padding: 5px 15px !important; }
+    [data-testid="stFileUploader"] button:hover { background: rgba(0, 229, 255, 0.1) !important; }
+    [data-testid="stChatMessage"] { background: var(--glass-bubble) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border-radius: 12px !important; padding: 16px 20px !important; margin-bottom: 20px !important; border: 1px solid rgba(255, 255, 255, 0.05) !important; }
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { border: 1px solid rgba(255, 255, 255, 0.08) !important; background: rgba(255, 255, 255, 0.04) !important; margin-left: auto !important; width: fit-content !important; max-width: 80% !important; }
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) { border: 1px solid var(--glass-border) !important; box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.03) !important; margin-right: auto !important; width: fit-content !important; max-width: 80% !important; }
     [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
     [data-testid="stChatMessage"] > div { background-color: transparent !important; }
-
-    /* =========================================
-       CAJA DE TEXTO
-       ========================================= */
-    [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { 
-        background-color: transparent !important; background: transparent !important; 
-    }
+    [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { background-color: transparent !important; background: transparent !important; }
     [data-testid="stBottomBlockContainer"] { padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
-    .stChatInput { 
-        background: rgba(24, 29, 40, 0.7) !important; backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(0, 229, 255, 0.2) !important; border-radius: 30px !important; 
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important; transition: all 0.3s ease !important;
-    }
-    .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input { 
-        background-color: transparent !important; border: none !important; outline: none !important; 
-        box-shadow: none !important; color: var(--text-pure-white) !important; 
-    }
+    .stChatInput { background: rgba(24, 29, 40, 0.7) !important; backdrop-filter: blur(10px) !important; border: 1px solid rgba(0, 229, 255, 0.2) !important; border-radius: 30px !important; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important; transition: all 0.3s ease !important; }
+    .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input { background-color: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; color: var(--text-pure-white) !important; }
     .stChatInput textarea::placeholder { color: rgba(255, 255, 255, 0.5) !important; }
     .stChatInput:focus-within { border-color: var(--cyan-neon) !important; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 8px rgba(0, 229, 255, 0.3) !important; }
-    [data-testid="stChatInput"] button { 
-        background: transparent !important; border-radius: 50% !important; border: none !important; 
-        margin: 5px !important; width: 35px !important; height: 35px !important; box-shadow: none !important;
-    }
+    [data-testid="stChatInput"] button { background: transparent !important; border-radius: 50% !important; border: none !important; margin: 5px !important; width: 35px !important; height: 35px !important; box-shadow: none !important; }
     [data-testid="stChatInput"] button:hover { background: rgba(0, 229, 255, 0.1) !important; }
     [data-testid="stChatInput"] button svg { fill: var(--cyan-neon) !important; }
     audio, div[data-testid="stAudio"] { display: none !important; }
-
-    /* =========================================
-       REACTOR (ORBE)
-       ========================================= */
     .center-display { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10vh; margin-bottom: 30px; position: relative; padding: 40px 0; }
     .reactor { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
     .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0, 229, 255, 0.1); border-top: 2px solid var(--cyan-neon); border-bottom: 2px solid var(--cyan-neon); animation: spin 3s linear infinite; opacity: 0.3; }
@@ -350,12 +211,8 @@ if "todos_los_chats" not in st.session_state:
             st.session_state.todos_los_chats[new_key] = st.session_state.todos_los_chats.pop(key)
     guardar_todos_los_chats(st.session_state.todos_los_chats)
 
-if "modo_actual" not in st.session_state: 
-    st.session_state.modo_actual = "Programación"
-    
-if "chat_actual_id" not in st.session_state: 
-    st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
-
+if "modo_actual" not in st.session_state: st.session_state.modo_actual = "Programación"
+if "chat_actual_id" not in st.session_state: st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
 if "audio_pendiente" not in st.session_state: st.session_state.audio_pendiente = None
 if "mic_key" not in st.session_state: st.session_state.mic_key = 0
 if "codigo_github" not in st.session_state: st.session_state.codigo_github = ""
@@ -607,19 +464,8 @@ if audio_grabado or prompt:
                 if voz_activa: 
                     try:
                         texto_para_hablar = limpiar_texto_para_voz(texto_respuesta)
-                        comunicar = edge_tts.Communicate(texto_para_hablar, VOZ_FIJA, rate="+8%")
-                        audio_buffer = io.BytesIO()
-                        
-                        async def gen_audio():
-                            async for chunk in comunicar.stream():
-                                if chunk["type"] == "audio": audio_buffer.write(chunk["data"])
-                        
-                        # --- AQUÍ ESTÁ EL CAMBIO CLAVE ---
-                        # Usamos nuestra función segura en lugar de asyncio.run()
-                        run_async_task(gen_audio)
-                        
-                        audio_buffer.seek(0)
-                        st.session_state.audio_pendiente = audio_buffer
+                        # --- NUEVO SISTEMA DE AUDIO SEGURO ---
+                        st.session_state.audio_pendiente = generar_audio_seguro(texto_para_hablar, VOZ_FIJA)
                     except Exception as e: 
                         print(f"Error generando audio: {e}")
                 
