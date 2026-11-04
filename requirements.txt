@@ -2,4 +2,3 @@ streamlit
 groq
 edge-tts
 requests
-nest-asyncio
