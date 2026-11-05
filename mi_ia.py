@@ -18,7 +18,7 @@ import chromadb
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v42.0 - RAG & Clean UI"
+VERSION = "v42.1 - Mentor Mode"
 ARCHIVO_CHATS = "chats_lili.json"
 
 # --- DATOS DE GITHUB ---
@@ -96,14 +96,12 @@ def obtener_cliente_chroma():
     return chromadb.Client()
 
 def chunk_texto(texto, tamaño=1500, solapamiento=200):
-    """Divide el texto en pedazos para que la IA pueda leerlos."""
     chunks = []
     for i in range(0, len(texto), tamaño - solapamiento):
         chunks.append(texto[i:i + tamaño])
     return chunks
 
 def indexar_repositorio(usuario, repo, token):
-    """Descarga el repo, lo trocea y lo guarda en la base de datos."""
     cliente = obtener_cliente_chroma()
     try:
         cliente.delete_collection("codigo_repo")
@@ -136,7 +134,6 @@ def indexar_repositorio(usuario, repo, token):
     return False
 
 def buscar_contexto_codigo(pregunta):
-    """Busca en la base de datos los fragmentos más relevantes para la pregunta."""
     try:
         cliente = obtener_cliente_chroma()
         coleccion = cliente.get_collection("codigo_repo")
@@ -176,7 +173,7 @@ def limpiar_texto_para_voz(texto):
     texto_limpio = re.sub(r'(?<=\d),(?=\d)', '', texto_limpio) 
     return re.sub(r'\s+', ' ', texto_limpio).strip()
 
-# --- CSS (El mismo de siempre, pero limpio) ---
+# --- CSS PREMIUM HUD ---
 st.markdown("""
 <style>
     :root { --bg-deep-space: #121620; --bg-sidebar: #181d28; --cyan-neon: #00e5ff; --text-pure-white: #ffffff; --text-muted: #8a99ad; --glass-bubble: rgba(24, 29, 40, 0.65); --glass-border: rgba(0, 229, 255, 0.15); }
@@ -219,7 +216,6 @@ st.markdown("""
     @keyframes spin { 100% { transform: rotate(360deg); } }
     @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
     @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 30px var(--cyan-neon), inset 0 0 15px #ffffff; } 50% { transform: scale(1.05); box-shadow: 0 0 60px var(--cyan-neon), inset 0 0 30px #ffffff; } 100% { transform: scale(0.95); box-shadow: 0 0 30px var(--cyan-neon), inset 0 0 15px #ffffff; } }
-    /* Estilo limpio para el selector de repo */
     .repo-selector { background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
     .repo-selector p { margin: 0; color: #8a99ad; font-size: 0.8rem; }
 </style>
@@ -285,7 +281,6 @@ with st.sidebar:
                         guardar_todos_los_chats(st.session_state.todos_los_chats)
                     st.rerun()
 
-    # --- NUEVO SELECTOR LIMPIO DE REPOSITORIO ---
     if st.session_state.modo_actual == "Programación":
         st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
         st.markdown("<div class='repo-selector'>", unsafe_allow_html=True)
@@ -293,7 +288,6 @@ with st.sidebar:
         token = st.secrets.get("GITHUB_TOKEN")
         
         if token:
-            # Usamos caché para no saturar la API de GitHub cada vez que recarga
             @st.cache_data(ttl=300)
             def repos_cache(tk): return obtener_repositorios(tk)
             
@@ -304,7 +298,7 @@ with st.sidebar:
                 
                 if repo_sel != st.session_state.repo_seleccionado:
                     st.session_state.repo_seleccionado = repo_sel
-                    st.session_state.repo_indexado = None # Forzar re-indexación
+                    st.session_state.repo_indexado = None
                     st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -376,14 +370,13 @@ if audio_grabado or prompt:
             
         guardar_todos_los_chats(st.session_state.todos_los_chats)
         
-        # --- MAGIA RAG ---
+        # --- MAGIA RAG Y NUEVO PROMPT MENTOR ---
         if st.session_state.modo_actual == "Programación":
             token = st.secrets.get("GITHUB_TOKEN")
             repo = st.session_state.repo_seleccionado
             
-            # Si el repo cambió o no está indexado, lo indexamos ahora
             if st.session_state.repo_indexado != repo:
-                with st.spinner(f"🧠 Estudiando el repositorio {repo}... (esto toma unos segundos)"):
+                with st.spinner(f"🧠 Estudiando el repositorio {repo}..."):
                     exito = indexar_repositorio(USUARIO_GITHUB, repo, token)
                     if exito:
                         st.session_state.repo_indexado = repo
@@ -393,14 +386,24 @@ if audio_grabado or prompt:
             with st.spinner("Buscando en el código..."):
                 contexto_codigo = buscar_contexto_codigo(texto_usuario)
             
-            instrucciones = f"""Eres Lili Dev, una IA experta en programación.
+            instrucciones = f"""Eres Lili Dev, una IA experta en programación, arquitectura de software y una mentora excepcional.
             REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
             CONTEXTO: Te habla Leiver, de Venezuela. Estás en MODO PROGRAMACIÓN.
-            IMPORTANTE: Estás analizando el repositorio '{repo}'. 
+            Estás analizando el repositorio '{repo}'. 
+            
             Aquí tienes los fragmentos de código más relevantes para la pregunta del usuario:
             {contexto_codigo}
             
-            Responde basándote en estos fragmentos. Si no encuentras la respuesta, dilo claramente."""
+            CÓMO DEBES REDACTAR TU RESPUESTA (Sigue este formato estricto):
+            1. Usa formato Markdown (negritas, viñetas, bloques de código).
+            2. Sé didáctica y amigable. Explica el "por qué" y el "cómo", no solo des la solución.
+            3. Estructura tu respuesta así:
+               - Un saludo corto y amigable.
+               - Un "Diagnóstico rápido": Qué está pasando o qué hace ese código.
+               - "La solución paso a paso": Explica los cambios y pon bloques de código claros.
+               - Un "Consejo Pro": Una buena práctica de programación relacionada.
+            4. NUNCA devuelvas un archivo de 6000 líneas completo. Si hay que cambiar algo, dale solo el fragmento exacto que debe borrar o pegar.
+            5. Si no encuentras la respuesta en los fragmentos, dile amablemente que no lo ves en esa parte del código."""
                 
         elif st.session_state.modo_actual == "Creativo":
             instrucciones = "Eres Lili Creative, una IA imaginativa, poética y apasionada por el arte. REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL."
@@ -416,7 +419,7 @@ if audio_grabado or prompt:
 
         try:
             with st.spinner("Redactando respuesta..."):
-                respuesta = cliente.chat.completions.create(model=modelo_a_usar, messages=mensajes_para_groq, temperature=0.7, max_tokens=1024)
+                respuesta = cliente.chat.completions.create(model=modelo_a_usar, messages=mensajes_para_groq, temperature=0.7, max_tokens=2048)
                 texto_respuesta = respuesta.choices[0].message.content
                 st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "assistant", "content": texto_respuesta})
                 guardar_todos_los_chats(st.session_state.todos_los_chats)
