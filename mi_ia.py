@@ -332,25 +332,23 @@ def render_modo_moda():
 
     with tab_foto:
         st.markdown("### 🎨 Generador de Imágenes de Moda")
-        st.markdown("Describe la foto que necesitas y Lili la creará para ti.")
+        st.markdown("Describe la foto que necesitas y Lili la creará para ti. *(Nota: La versión gratuita permite 1 foto cada 45 segundos).*")
         descripcion_foto = st.text_input("Describe la foto:", placeholder="Ej: Vestido rojo de verano, modelo en la playa, luz de atardecer")
         estilo = st.selectbox("Estilo", ["Fotografía realista", "Estilo 3D (Pixar)", "Ilustración de moda", "Fondo de estudio limpio"])
         
         if st.button("Generar Foto", key="moda_foto_btn") and descripcion_foto:
             with st.spinner("🎨 Lili está diseñando tu imagen... (esto toma unos segundos)"):
-                # 1. Lili mejora el prompt en inglés
+                # Lili ahora es una experta fotógrafa de moda
                 prompt_artistico = llamar_llm([
-                    {"role": "system", "content": "You are an expert fashion photographer and AI prompt engineer. Translate the user's idea into a highly detailed image generation prompt in English. Output ONLY the prompt, no extra text."},
-                    {"role": "user", "content": f"Product: {descripcion_foto}. Style: {estilo}. Make it look professional for a clothing brand."}
-                ], temperatura=0.5)
+                    {"role": "system", "content": "You are a world-class fashion photographer and AI prompt engineer. Translate the user's idea into a highly detailed, professional image generation prompt in English. You MUST include technical terms like '8k resolution, photorealistic, cinematic lighting, fashion editorial, shot on 35mm lens, highly detailed'. Output ONLY the prompt, no extra text."},
+                    {"role": "user", "content": f"Product: {descripcion_foto}. Style: {estilo}. Make it look incredibly professional for a high-end clothing brand."}
+                ], temperatura=0.6)
                 
-                # 2. Codificamos el prompt para la URL
                 prompt_codificado = urllib.parse.quote(prompt_artistico)
                 
-                # 3. Llamamos a la API gratuita de Pollinations
-                url_imagen = f"https://image.pollinations.ai/prompt/{prompt_codificado}?width=1024&height=1024&nologo=true&enhance=true"
+                # Añadimos el modelo flux que da mejor calidad
+                url_imagen = f"https://image.pollinations.ai/prompt/{prompt_codificado}?width=1024&height=1024&nologo=true&model=flux"
                 
-                # 4. Mostramos la imagen
                 st.image(url_imagen, caption=f"Generado por Lili para: {descripcion_foto}", use_container_width=True)
                 with st.expander("Ver Prompt Técnico usado por Lili"):
                     st.code(prompt_artistico, language="text")
