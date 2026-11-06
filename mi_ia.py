@@ -7,6 +7,7 @@ import uuid
 import threading
 import requests
 import edge_tts
+import urllib.parse
 from groq import Groq
 from supabase import create_client
 
@@ -15,15 +16,14 @@ from supabase import create_client
 # =====================================================================
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural"
-VERSION = "v44.0 - Lili OS + Supabase"
+VERSION = "v44.1 - Modo Moda con Generador de Imágenes"
 
 USUARIO_GITHUB = "leivercontreras18-ux"
 REPO_DEFECTO = "leiver-ai"
 
 MODELO_TEXTO = "openai/gpt-oss-120b"
-MODELO_VISION = "meta-llama/llama-4-scout-17b-16e-instruct"  # el 11b-vision-preview fue retirado; verifica en console.groq.com/docs/models
+MODELO_VISION = "meta-llama/llama-4-scout-17b-16e-instruct"
 
-# Límites para cuidar la RAM de Streamlit Cloud
 MAX_ARCHIVOS_RAG = 60
 MAX_BYTES_ARCHIVO = 60_000
 
@@ -33,11 +33,11 @@ MODOS_STUDIO = ["Modo Moda", "YouTube Kids"]
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
 
 # =====================================================================
-# CLIENTES (Groq y Supabase) — se crean una sola vez
+# CLIENTES (Groq y Supabase)
 # =====================================================================
 for clave in ("GROQ_API_KEY", "SUPABASE_URL", "SUPABASE_KEY"):
     if clave not in st.secrets:
-        st.error(f"Falta el secreto {clave} en Streamlit (Settings → Secrets).")
+        st.error(f"Falta el secreto {clave} en Streamlit.")
         st.stop()
 
 @st.cache_resource
@@ -52,7 +52,7 @@ cliente = get_groq()
 sb = get_supabase()
 
 # =====================================================================
-# BASE DE DATOS (Supabase) — chats y mensajes
+# BASE DE DATOS (Supabase)
 # =====================================================================
 def db_listar_chats(modo):
     try:
@@ -81,20 +81,14 @@ def db_guardar_mensaje(chat_id, role, content):
     except Exception as e:
         st.warning(f"No se pudo guardar el mensaje: {e}")
 
-def db_titular(chat_id, titulo):
-    try:
-        sb.table("chats").update({"titulo": titulo[:40]}).eq("id", chat_id).execute()
-    except Exception:
-        pass
-
 def db_borrar_chat(chat_id):
     try:
-        sb.table("chats").delete().eq("id", chat_id).execute()  # borra mensajes en cascada
+        sb.table("chats").delete().eq("id", chat_id).execute()
     except Exception as e:
         st.sidebar.error(f"No se pudo borrar: {e}")
 
 # =====================================================================
-# GITHUB (solo lectura, para el RAG)
+# GITHUB (RAG)
 # =====================================================================
 def _headers(token):
     return {"Authorization": f"token {token}"}
@@ -105,15 +99,12 @@ def obtener_repositorios(token):
 
 def obtener_archivos_codigo(usuario, repo, token):
     info = requests.get(f"https://api.github.com/repos/{usuario}/{repo}", headers=_headers(token), timeout=15)
-    if info.status_code != 200:
-        return []
+    if info.status_code != 200: return []
     rama = info.json().get("default_branch", "main")
     res = requests.get(f"https://api.github.com/repos/{usuario}/{repo}/git/trees/{rama}?recursive=1", headers=_headers(token), timeout=20)
-    if res.status_code != 200:
-        return []
+    if res.status_code != 200: return []
     ext = (".py", ".html", ".css", ".js", ".md", ".txt")
-    return [f["path"] for f in res.json().get("tree", [])
-            if f["type"] == "blob" and f["path"].endswith(ext) and f.get("size", 0) <= MAX_BYTES_ARCHIVO][:MAX_ARCHIVOS_RAG]
+    return [f["path"] for f in res.json().get("tree", []) if f["type"] == "blob" and f["path"].endswith(ext) and f.get("size", 0) <= MAX_BYTES_ARCHIVO][:MAX_ARCHIVOS_RAG]
 
 def descargar_archivo_github(usuario, repo, archivo, token):
     res = requests.get(f"https://api.github.com/repos/{usuario}/{repo}/contents/{archivo}", headers=_headers(token), timeout=15)
@@ -122,11 +113,11 @@ def descargar_archivo_github(usuario, repo, archivo, token):
     return False, ""
 
 # =====================================================================
-# MOTOR RAG (ChromaDB en memoria, con límites)
+# MOTOR RAG (ChromaDB)
 # =====================================================================
 @st.cache_resource
 def obtener_cliente_chroma():
-    import chromadb  # import tardío: solo gasta RAM si usas Programación
+    import chromadb
     return chromadb.Client()
 
 def chunk_texto(texto, tamano=1500, solapamiento=200):
@@ -134,14 +125,11 @@ def chunk_texto(texto, tamano=1500, solapamiento=200):
 
 def indexar_repositorio(usuario, repo, token):
     cli = obtener_cliente_chroma()
-    try:
-        cli.delete_collection("codigo_repo")
-    except Exception:
-        pass
+    try: cli.delete_collection("codigo_repo")
+    except Exception: pass
     coleccion = cli.create_collection("codigo_repo")
     archivos = obtener_archivos_codigo(usuario, repo, token)
-    if not archivos:
-        return False
+    if not archivos: return False
     docs, metas, ids = [], [], []
     for archivo in archivos:
         ok, contenido = descargar_archivo_github(usuario, repo, archivo, token)
@@ -150,16 +138,14 @@ def indexar_repositorio(usuario, repo, token):
                 docs.append(pedazo)
                 metas.append({"archivo": archivo})
                 ids.append(f"id_{len(ids)}")
-    if docs:
-        coleccion.add(documents=docs, metadatas=metas, ids=ids)
+    if docs: coleccion.add(documents=docs, metadatas=metas, ids=ids)
     return True
 
 def buscar_contexto_codigo(pregunta):
     try:
         res = obtener_cliente_chroma().get_collection("codigo_repo").query(query_texts=[pregunta], n_results=4)
         return "".join(f"\n\n--- Archivo: {m['archivo']} ---\n{d}" for d, m in zip(res["documents"][0], res["metadatas"][0]))
-    except Exception:
-        return "No se encontró contexto de código."
+    except Exception: return "No se encontró contexto de código."
 
 # =====================================================================
 # AUDIO
@@ -170,11 +156,9 @@ def generar_audio_seguro(texto, voz):
         try:
             async def generar():
                 async for chunk in edge_tts.Communicate(texto, voz, rate="+8%").stream():
-                    if chunk["type"] == "audio":
-                        buffer.write(chunk["data"])
+                    if chunk["type"] == "audio": buffer.write(chunk["data"])
             asyncio.run(generar())
-        except Exception:
-            pass
+        except Exception: pass
     hilo = threading.Thread(target=tarea)
     hilo.start(); hilo.join(); buffer.seek(0)
     return buffer
@@ -183,7 +167,7 @@ def limpiar_texto_para_voz(texto):
     return re.sub(r"\s+", " ", re.sub(r"[*#_`]", "", texto)).strip()
 
 # =====================================================================
-# LLM — una sola función para todos los módulos
+# LLM
 # =====================================================================
 def llamar_llm(mensajes, modelo=MODELO_TEXTO, temperatura=0.7, max_tokens=2048):
     r = cliente.chat.completions.create(model=modelo, messages=mensajes, temperature=temperatura, max_tokens=max_tokens)
@@ -196,22 +180,16 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
     :root { --bg: #0e121b; --surface: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.07); --cyan: #00e5ff; --muted: #8a99ad; --text: #e6edf7; }
-
-    /* Base */
     .stApp { background: radial-gradient(circle at 65% 0%, #1b2436 0%, var(--bg) 60%) !important; color: var(--text) !important; font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; }
     #MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"] { display: none !important; }
     header { background: transparent !important; }
     .block-container { padding-top: 1.5rem !important; padding-bottom: 7rem !important; max-width: 920px !important; }
-
-    /* Barra inferior y caja de texto */
     [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { background: transparent !important; }
     [data-testid="stChatInput"] { background: rgba(24,29,40,0.85) !important; border: 1px solid rgba(0,229,255,0.18) !important; border-radius: 28px !important; box-shadow: 0 8px 30px rgba(0,0,0,0.35) !important; backdrop-filter: blur(10px); transition: all .25s ease; }
     [data-testid="stChatInput"]:focus-within { border-color: var(--cyan) !important; box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 0 3px rgba(0,229,255,0.12) !important; }
     [data-testid="stChatInput"] > div, [data-testid="stChatInput"] [data-baseweb="textarea"], [data-testid="stChatInput"] [data-baseweb="base-input"] { background: transparent !important; border: none !important; }
     [data-testid="stChatInput"] textarea { color: var(--text) !important; background: transparent !important; }
     [data-testid="stChatInputSubmitButton"] { background: rgba(0,229,255,0.15) !important; color: var(--cyan) !important; border-radius: 50% !important; }
-
-    /* Sidebar */
     [data-testid="stSidebar"] { background: linear-gradient(180deg, #0f1420 0%, #0b0f17 100%) !important; border-right: 1px solid var(--border) !important; min-width: 290px !important; }
     [data-testid="stSidebarUserContent"] { padding: 1.4rem 0.9rem !important; }
     .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .2em; font-size: 1.05rem; color: #fff; padding-left: 6px; }
@@ -224,17 +202,11 @@ st.markdown("""
     [data-testid="stSidebar"] .stButton button:hover { background: rgba(255,255,255,0.05) !important; color: #fff !important; }
     [data-testid="stSidebar"] .stButton button[kind="primary"] { background: rgba(0,229,255,0.10) !important; border: 1px solid rgba(0,229,255,0.28) !important; color: var(--cyan) !important; }
     [data-testid="stExpander"] { border: 1px solid var(--border) !important; border-radius: 12px !important; background: var(--surface) !important; }
-
-    /* Mensajes */
     [data-testid="stChatMessage"] { background: rgba(24,29,40,0.6) !important; backdrop-filter: blur(12px); border-radius: 16px !important; padding: 14px 20px !important; margin-bottom: 14px !important; border: 1px solid var(--border) !important; width: fit-content !important; max-width: 82% !important; }
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { margin-left: auto !important; background: linear-gradient(135deg, rgba(0,229,255,0.12), rgba(0,119,255,0.10)) !important; border-color: rgba(0,229,255,0.2) !important; }
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) { margin-right: auto !important; border-left: 3px solid var(--cyan) !important; }
     [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
-
-    /* Subir imagen */
     [data-testid="stFileUploaderDropzone"] { background: rgba(24,29,40,0.5) !important; border: 1px dashed rgba(0,229,255,0.25) !important; border-radius: 12px !important; }
-
-    /* Portada */
     .center-display { display: flex; flex-direction: column; align-items: center; margin-top: 3vh; padding: 20px 0 0; }
     .reactor { position: relative; width: 170px; height: 170px; display: flex; align-items: center; justify-content: center; }
     .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0,229,255,0.1); border-top: 2px solid var(--cyan); border-bottom: 2px solid var(--cyan); animation: spin 3s linear infinite; opacity: .35; }
@@ -246,13 +218,9 @@ st.markdown("""
     @keyframes spin { 100% { transform: rotate(360deg); } }
     @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
     @keyframes pulse { 0%,100% { transform: scale(0.95); } 50% { transform: scale(1.05); } }
-
-    /* Sugerencias rápidas */
     .st-key-quick button { background: rgba(24,29,40,0.6) !important; border: 1px solid var(--border) !important; border-radius: 14px !important; color: #cfd8e6 !important; padding: 14px 16px !important; min-height: 74px; height: 100%; text-align: left !important; justify-content: flex-start !important; transition: all .2s ease; }
     .st-key-quick button p { text-align: left !important; font-size: .88rem; }
     .st-key-quick button:hover { border-color: var(--cyan) !important; background: rgba(0,229,255,0.06) !important; color: #fff !important; transform: translateY(-2px); }
-
-    /* Tarjetas de Studios */
     .dash-card { background: rgba(24,29,40,0.5); border: 1px solid var(--border); border-radius: 16px; padding: 24px; text-align: center; height: 100%; transition: .3s; }
     .dash-card:hover { border-color: var(--cyan); background: rgba(0,229,255,0.05); transform: translateY(-3px); }
     .dash-icon { font-size: 38px; margin-bottom: 14px; }
@@ -267,8 +235,8 @@ st.markdown("""
 # =====================================================================
 S = st.session_state
 S.setdefault("modo_actual", "Programación")
-S.setdefault("chat_id", None)            # None = chat nuevo (se crea al enviar el primer mensaje)
-S.setdefault("cache_mensajes", {})       # chat_id -> lista de mensajes
+S.setdefault("chat_id", None)
+S.setdefault("cache_mensajes", {})
 S.setdefault("audio_pendiente", None)
 S.setdefault("mic_key", 0)
 S.setdefault("uploader_key", 0)
@@ -303,7 +271,6 @@ with st.sidebar:
                      type="primary" if S.modo_actual == modo else "secondary"):
             cambiar_modo(modo); st.rerun()
 
-    # Historial de chats (solo para modos de chat)
     if S.modo_actual in MODOS_CHAT:
         st.markdown("<div class='side-label'>Historial</div>", unsafe_allow_html=True)
         if st.button("Nuevo chat", key="nuevo_chat", icon=":material/add:", use_container_width=True):
@@ -315,8 +282,7 @@ with st.sidebar:
                 abrir_chat(c["id"]); st.rerun()
             if col_b.button("✕", key=f"del_{c['id']}", help="Borrar chat"):
                 db_borrar_chat(c["id"])
-                if S.chat_id == c["id"]:
-                    S.chat_id = None
+                if S.chat_id == c["id"]: S.chat_id = None
                 st.rerun()
 
     if S.modo_actual == "Programación" and token_gh:
@@ -336,7 +302,7 @@ with st.sidebar:
         audio_grabado = st.audio_input("Graba", key=f"mic_{S.mic_key}", label_visibility="collapsed")
 
 # =====================================================================
-# STUDIOS (arquitectura modular: cada Studio es una función)
+# STUDIOS
 # =====================================================================
 def tarjeta(icono, titulo, desc, estado="En Desarrollo"):
     st.markdown(f"""<div class="dash-card"><div class="dash-icon">{icono}</div><div class="dash-title">{titulo}</div>
@@ -344,7 +310,7 @@ def tarjeta(icono, titulo, desc, estado="En Desarrollo"):
 
 def render_modo_moda():
     st.markdown("<h2 style='text-align:center;'>🛍️ Studio: Modo Moda</h2>", unsafe_allow_html=True)
-    tab_copy, tab_guion, tab_foto = st.tabs(["✍️ Copy para Redes", "🎬 Guiones de Video", "📸 Análisis de Fotos"])
+    tab_copy, tab_guion, tab_foto = st.tabs(["✍️ Copy para Redes", "🎬 Guiones de Video", "📸 Generador de Fotos"])
 
     with tab_copy:
         producto = st.text_input("Prenda / producto", placeholder="Vestido satinado verde esmeralda, tallas S-L", key="moda_prod")
@@ -365,7 +331,29 @@ def render_modo_moda():
                     {"role": "user", "content": f"Guion de 15 segundos para: {idea}. Tabla con: segundo, escena, texto en pantalla, voz en off."}]))
 
     with tab_foto:
-        tarjeta("📸", "Análisis de Fotos", "Subirás una foto de tu ropa y Lili la describirá y sugerirá fondos y encuadres. (Usará el modelo de visión de Groq.)")
+        st.markdown("### 🎨 Generador de Imágenes de Moda")
+        st.markdown("Describe la foto que necesitas y Lili la creará para ti.")
+        descripcion_foto = st.text_input("Describe la foto:", placeholder="Ej: Vestido rojo de verano, modelo en la playa, luz de atardecer")
+        estilo = st.selectbox("Estilo", ["Fotografía realista", "Estilo 3D (Pixar)", "Ilustración de moda", "Fondo de estudio limpio"])
+        
+        if st.button("Generar Foto", key="moda_foto_btn") and descripcion_foto:
+            with st.spinner("🎨 Lili está diseñando tu imagen... (esto toma unos segundos)"):
+                # 1. Lili mejora el prompt en inglés
+                prompt_artistico = llamar_llm([
+                    {"role": "system", "content": "You are an expert fashion photographer and AI prompt engineer. Translate the user's idea into a highly detailed image generation prompt in English. Output ONLY the prompt, no extra text."},
+                    {"role": "user", "content": f"Product: {descripcion_foto}. Style: {estilo}. Make it look professional for a clothing brand."}
+                ], temperatura=0.5)
+                
+                # 2. Codificamos el prompt para la URL
+                prompt_codificado = urllib.parse.quote(prompt_artistico)
+                
+                # 3. Llamamos a la API gratuita de Pollinations
+                url_imagen = f"https://image.pollinations.ai/prompt/{prompt_codificado}?width=1024&height=1024&nologo=true&enhance=true"
+                
+                # 4. Mostramos la imagen
+                st.image(url_imagen, caption=f"Generado por Lili para: {descripcion_foto}", use_container_width=True)
+                with st.expander("Ver Prompt Técnico usado por Lili"):
+                    st.code(prompt_artistico, language="text")
 
 def render_youtube_kids():
     st.markdown("<h2 style='text-align:center;'>🎬 Studio: YouTube Kids</h2>", unsafe_allow_html=True)
@@ -436,20 +424,17 @@ if audio_grabado or prompt:
                 st.error(f"Error de audio: {e}")
 
     if texto_usuario:
-        # 1) Crear el chat en Supabase si es nuevo
         if S.chat_id is None:
             S.chat_id = db_crear_chat(S.modo_actual, texto_usuario[:40])
             S.cache_mensajes[S.chat_id] = []
         mensajes = S.cache_mensajes[S.chat_id]
 
-        # 2) Guardar y mostrar el mensaje del usuario
         texto_guardado = f"{texto_usuario} [Imagen Adjunta]" if imagen_subida else texto_usuario
         mensajes.append({"role": "user", "content": texto_guardado})
         db_guardar_mensaje(S.chat_id, "user", texto_guardado)
         with st.chat_message("user"):
             st.markdown(texto_guardado)
 
-        # 3) Preparar contexto
         modelo = MODELO_TEXTO
         contenido_actual = texto_usuario
         if imagen_subida:
@@ -481,11 +466,10 @@ Sé didáctica."""
             instrucciones = "Eres Lili, una IA avanzada y carismática. REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL."
 
         historial = [{"role": "system", "content": instrucciones}]
-        for m in mensajes[:-1][-20:]:  # solo los últimos 20 mensajes para no gastar tokens
+        for m in mensajes[:-1][-20:]:
             historial.append({"role": m["role"], "content": m["content"].replace(" [Imagen Adjunta]", "")})
         historial.append({"role": "user", "content": contenido_actual})
 
-        # 4) Responder
         try:
             with st.chat_message("assistant"):
                 with st.spinner("Redactando respuesta..."):
