@@ -1,443 +1,452 @@
 import streamlit as st
-import time
 import io
 import asyncio
-import edge_tts
 import base64
-import json
-import os
 import re
-import requests
-import datetime
-from datetime import timezone, timedelta
-from groq import Groq
-from PIL import Image
+import uuid
 import threading
-import chromadb
+import requests
+import edge_tts
+from groq import Groq
+from supabase import create_client
 
-# --- CONFIGURACIÓN DE LA PÁGINA ---
+# =====================================================================
+# CONFIGURACIÓN
+# =====================================================================
 NOMBRE_IA = "Lili"
-VOZ_FIJA = "es-VE-PaolaNeural" 
-VERSION = "v42.1 - Mentor Mode"
-ARCHIVO_CHATS = "chats_lili.json"
+VOZ_FIJA = "es-VE-PaolaNeural"
+VERSION = "v44.0 - Lili OS + Supabase"
 
-# --- DATOS DE GITHUB ---
 USUARIO_GITHUB = "leivercontreras18-ux"
 REPO_DEFECTO = "leiver-ai"
 
+MODELO_TEXTO = "openai/gpt-oss-120b"
+MODELO_VISION = "meta-llama/llama-4-scout-17b-16e-instruct"  # el 11b-vision-preview fue retirado; verifica en console.groq.com/docs/models
+
+# Límites para cuidar la RAM de Streamlit Cloud
+MAX_ARCHIVOS_RAG = 60
+MAX_BYTES_ARCHIVO = 60_000
+
+MODOS_CHAT = ["Programación", "Chat General"]
+MODOS_STUDIO = ["Modo Moda", "YouTube Kids"]
+
 st.set_page_config(page_title=NOMBRE_IA, page_icon="✨", layout="wide")
 
-# --- FUNCIONES GITHUB ---
+# =====================================================================
+# CLIENTES (Groq y Supabase) — se crean una sola vez
+# =====================================================================
+for clave in ("GROQ_API_KEY", "SUPABASE_URL", "SUPABASE_KEY"):
+    if clave not in st.secrets:
+        st.error(f"Falta el secreto {clave} en Streamlit (Settings → Secrets).")
+        st.stop()
+
+@st.cache_resource
+def get_groq():
+    return Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+@st.cache_resource
+def get_supabase():
+    return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+
+cliente = get_groq()
+sb = get_supabase()
+
+# =====================================================================
+# BASE DE DATOS (Supabase) — chats y mensajes
+# =====================================================================
+def db_listar_chats(modo):
+    try:
+        r = sb.table("chats").select("id,titulo").eq("modo", modo).order("creado_en", desc=True).limit(30).execute()
+        return r.data or []
+    except Exception as e:
+        st.sidebar.error(f"Error leyendo chats: {e}")
+        return []
+
+def db_crear_chat(modo, titulo="Nuevo chat"):
+    chat_id = uuid.uuid4().hex
+    sb.table("chats").insert({"id": chat_id, "modo": modo, "titulo": titulo}).execute()
+    return chat_id
+
+def db_cargar_mensajes(chat_id):
+    try:
+        r = sb.table("mensajes").select("role,content").eq("chat_id", chat_id).order("creado_en").execute()
+        return r.data or []
+    except Exception as e:
+        st.error(f"Error cargando mensajes: {e}")
+        return []
+
+def db_guardar_mensaje(chat_id, role, content):
+    try:
+        sb.table("mensajes").insert({"chat_id": chat_id, "role": role, "content": content}).execute()
+    except Exception as e:
+        st.warning(f"No se pudo guardar el mensaje: {e}")
+
+def db_titular(chat_id, titulo):
+    try:
+        sb.table("chats").update({"titulo": titulo[:40]}).eq("id", chat_id).execute()
+    except Exception:
+        pass
+
+def db_borrar_chat(chat_id):
+    try:
+        sb.table("chats").delete().eq("id", chat_id).execute()  # borra mensajes en cascada
+    except Exception as e:
+        st.sidebar.error(f"No se pudo borrar: {e}")
+
+# =====================================================================
+# GITHUB (solo lectura, para el RAG)
+# =====================================================================
+def _headers(token):
+    return {"Authorization": f"token {token}"}
+
 def obtener_repositorios(token):
-    headers = {"Authorization": f"token {token}"}
-    res = requests.get("https://api.github.com/user/repos?per_page=100&sort=updated", headers=headers)
-    if res.status_code == 200:
-        return [r['name'] for r in res.json()]
-    return []
+    res = requests.get("https://api.github.com/user/repos?per_page=100&sort=updated", headers=_headers(token), timeout=15)
+    return [r["name"] for r in res.json()] if res.status_code == 200 else []
 
 def obtener_archivos_codigo(usuario, repo, token):
-    headers = {"Authorization": f"token {token}"}
-    repo_info = requests.get(f"https://api.github.com/repos/{usuario}/{repo}", headers=headers)
-    if repo_info.status_code != 200:
+    info = requests.get(f"https://api.github.com/repos/{usuario}/{repo}", headers=_headers(token), timeout=15)
+    if info.status_code != 200:
         return []
-    default_branch = repo_info.json().get("default_branch", "main")
-    tree_url = f"https://api.github.com/repos/{usuario}/{repo}/git/trees/{default_branch}?recursive=1"
-    res = requests.get(tree_url, headers=headers)
-    if res.status_code == 200:
-        tree = res.json().get("tree", [])
-        extensiones_validas = ('.py', '.html', '.css', '.js', '.json', '.txt', '.md')
-        return [f['path'] for f in tree if f['type'] == 'blob' and f['path'].endswith(extensiones_validas)]
-    return []
+    rama = info.json().get("default_branch", "main")
+    res = requests.get(f"https://api.github.com/repos/{usuario}/{repo}/git/trees/{rama}?recursive=1", headers=_headers(token), timeout=20)
+    if res.status_code != 200:
+        return []
+    ext = (".py", ".html", ".css", ".js", ".md", ".txt")
+    return [f["path"] for f in res.json().get("tree", [])
+            if f["type"] == "blob" and f["path"].endswith(ext) and f.get("size", 0) <= MAX_BYTES_ARCHIVO][:MAX_ARCHIVOS_RAG]
 
 def descargar_archivo_github(usuario, repo, archivo, token):
-    headers = {"Authorization": f"token {token}"}
-    url = f"https://api.github.com/repos/{usuario}/{repo}/contents/{archivo}"
-    res = requests.get(url, headers=headers)
+    res = requests.get(f"https://api.github.com/repos/{usuario}/{repo}/contents/{archivo}", headers=_headers(token), timeout=15)
     if res.status_code == 200:
-        return True, base64.b64decode(res.json()['content']).decode('utf-8', errors='ignore')
+        return True, base64.b64decode(res.json()["content"]).decode("utf-8", errors="ignore")
     return False, ""
 
-def guardar_archivo_github(usuario, repo, archivo, contenido_str, token):
-    headers = {"Authorization": f"token {token}"}
-    url = f"https://api.github.com/repos/{usuario}/{repo}/contents/{archivo}"
-    sha = None
-    res_get = requests.get(url, headers=headers)
-    if res_get.status_code == 200:
-        sha = res_get.json().get("sha")
-    contenido_b64 = base64.b64encode(contenido_str.encode('utf-8')).decode('utf-8')
-    data = {"message": "Actualización automática de memoria", "content": contenido_b64}
-    if sha: data["sha"] = sha
-    response = requests.put(url, headers=headers, json=data)
-    return response.status_code in (200, 201)
-
-# --- FUNCIONES DE MEMORIA DE CHATS ---
-def cargar_todos_los_chats():
-    token = st.secrets.get("GITHUB_TOKEN")
-    if token:
-        exito, contenido = descargar_archivo_github(USUARIO_GITHUB, REPO_DEFECTO, ARCHIVO_CHATS, token)
-        if exito:
-            try: return json.loads(contenido)
-            except: pass
-    if os.path.exists(ARCHIVO_CHATS):
-        with open(ARCHIVO_CHATS, "r", encoding="utf-8") as f: return json.load(f)
-    return {}
-
-def guardar_todos_los_chats(chats):
-    with open(ARCHIVO_CHATS, "w", encoding="utf-8") as f:
-        json.dump(chats, f, ensure_ascii=False, indent=4)
-    token = st.secrets.get("GITHUB_TOKEN")
-    if token:
-        contenido_str = json.dumps(chats, ensure_ascii=False, indent=4)
-        guardar_archivo_github(USUARIO_GITHUB, REPO_DEFECTO, ARCHIVO_CHATS, contenido_str, token)
-
-# --- MOTOR RAG (CHROMADB) ---
+# =====================================================================
+# MOTOR RAG (ChromaDB en memoria, con límites)
+# =====================================================================
 @st.cache_resource
 def obtener_cliente_chroma():
+    import chromadb  # import tardío: solo gasta RAM si usas Programación
     return chromadb.Client()
 
-def chunk_texto(texto, tamaño=1500, solapamiento=200):
-    chunks = []
-    for i in range(0, len(texto), tamaño - solapamiento):
-        chunks.append(texto[i:i + tamaño])
-    return chunks
+def chunk_texto(texto, tamano=1500, solapamiento=200):
+    return [texto[i:i + tamano] for i in range(0, len(texto), tamano - solapamiento)]
 
 def indexar_repositorio(usuario, repo, token):
-    cliente = obtener_cliente_chroma()
+    cli = obtener_cliente_chroma()
     try:
-        cliente.delete_collection("codigo_repo")
-    except:
+        cli.delete_collection("codigo_repo")
+    except Exception:
         pass
-    coleccion = cliente.create_collection("codigo_repo")
-    
+    coleccion = cli.create_collection("codigo_repo")
     archivos = obtener_archivos_codigo(usuario, repo, token)
     if not archivos:
         return False
-        
-    documentos = []
-    metadatos = []
-    ids = []
-    contador = 0
-    
+    docs, metas, ids = [], [], []
     for archivo in archivos:
-        exito, contenido = descargar_archivo_github(usuario, repo, archivo, token)
-        if exito and contenido:
-            pedazos = chunk_texto(contenido)
-            for pedazo in pedazos:
-                documentos.append(pedazo)
-                metadatos.append({"archivo": archivo})
-                ids.append(f"id_{contador}")
-                contador += 1
-                
-    if documentos:
-        coleccion.add(documents=documentos, metadatas=metadatos, ids=ids)
-        return True
-    return False
+        ok, contenido = descargar_archivo_github(usuario, repo, archivo, token)
+        if ok and contenido:
+            for pedazo in chunk_texto(contenido):
+                docs.append(pedazo)
+                metas.append({"archivo": archivo})
+                ids.append(f"id_{len(ids)}")
+    if docs:
+        coleccion.add(documents=docs, metadatas=metas, ids=ids)
+    return True
 
 def buscar_contexto_codigo(pregunta):
     try:
-        cliente = obtener_cliente_chroma()
-        coleccion = cliente.get_collection("codigo_repo")
-        resultados = coleccion.query(query_texts=[pregunta], n_results=4)
-        
-        contexto = ""
-        for i in range(len(resultados['documents'][0])):
-            archivo = resultados['metadatas'][0][i]['archivo']
-            texto = resultados['documents'][0][i]
-            contexto += f"\n\n--- Archivo: {archivo} ---\n{texto}"
-        return contexto
-    except:
+        res = obtener_cliente_chroma().get_collection("codigo_repo").query(query_texts=[pregunta], n_results=4)
+        return "".join(f"\n\n--- Archivo: {m['archivo']} ---\n{d}" for d, m in zip(res["documents"][0], res["metadatas"][0]))
+    except Exception:
         return "No se encontró contexto de código."
 
-# --- AUDIO Y VOZ ---
+# =====================================================================
+# AUDIO
+# =====================================================================
 def generar_audio_seguro(texto, voz):
-    audio_buffer = io.BytesIO()
-    def tarea_audio():
+    buffer = io.BytesIO()
+    def tarea():
         try:
             async def generar():
-                comunicar = edge_tts.Communicate(texto, voz, rate="+8%")
-                async for chunk in comunicar.stream():
-                    if chunk["type"] == "audio": audio_buffer.write(chunk["data"])
+                async for chunk in edge_tts.Communicate(texto, voz, rate="+8%").stream():
+                    if chunk["type"] == "audio":
+                        buffer.write(chunk["data"])
             asyncio.run(generar())
-        except: pass
-    hilo = threading.Thread(target=tarea_audio)
-    hilo.start()
-    hilo.join()
-    audio_buffer.seek(0)
-    return audio_buffer
+        except Exception:
+            pass
+    hilo = threading.Thread(target=tarea)
+    hilo.start(); hilo.join(); buffer.seek(0)
+    return buffer
 
 def limpiar_texto_para_voz(texto):
-    texto_limpio = re.sub(r'[*#_`]', '', texto)
-    texto_limpio = re.sub(r'^\s*-\s*', '', texto_limpio, flags=re.MULTILINE)
-    emoji_pattern = re.compile("[" u"\U0001F600-\U0001F64F" u"\U0001F300-\U0001F5FF" u"\U0001F680-\U0001F6FF" u"\U00002702-\U000027B0" "]+", flags=re.UNICODE)
-    texto_limpio = emoji_pattern.sub(r'', texto_limpio)
-    texto_limpio = re.sub(r'(?<=\d),(?=\d)', '', texto_limpio) 
-    return re.sub(r'\s+', ' ', texto_limpio).strip()
+    return re.sub(r"\s+", " ", re.sub(r"[*#_`]", "", texto)).strip()
 
-# --- CSS PREMIUM HUD ---
+# =====================================================================
+# LLM — una sola función para todos los módulos
+# =====================================================================
+def llamar_llm(mensajes, modelo=MODELO_TEXTO, temperatura=0.7, max_tokens=2048):
+    r = cliente.chat.completions.create(model=modelo, messages=mensajes, temperature=temperatura, max_tokens=max_tokens)
+    return r.choices[0].message.content
+
+# =====================================================================
+# CSS
+# =====================================================================
 st.markdown("""
 <style>
-    :root { --bg-deep-space: #121620; --bg-sidebar: #181d28; --cyan-neon: #00e5ff; --text-pure-white: #ffffff; --text-muted: #8a99ad; --glass-bubble: rgba(24, 29, 40, 0.65); --glass-border: rgba(0, 229, 255, 0.15); }
-    .stApp { background: radial-gradient(circle at 60% 50%, #1a2233 0%, var(--bg-deep-space) 100%) !important; color: var(--text-pure-white) !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    :root { --bg-deep-space: #121620; --cyan-neon: #00e5ff; --text-muted: #8a99ad; --glass-bubble: rgba(24,29,40,0.65); --glass-border: rgba(0,229,255,0.15); }
+    .stApp { background: radial-gradient(circle at 60% 50%, #1a2233 0%, var(--bg-deep-space) 100%) !important; color: #fff !important; }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
-    .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 900px !important; }
-    [data-testid="stSidebar"] { background-color: #131822 !important; min-width: 280px !important; border-right: 1px solid rgba(0, 229, 255, 0.05) !important; }
-    [data-testid="stSidebarCollapseButton"] { display: none !important; }
-    [data-testid="stSidebar"] button[key^="menu_"] { background-color: transparent !important; border: none !important; box-shadow: none !important; color: var(--text-muted) !important; text-align: left !important; width: 100% !important; padding: 14px 20px !important; font-size: 0.85rem !important; font-weight: 500 !important; letter-spacing: 1px !important; text-transform: uppercase !important; border-radius: 0px !important; display: flex !important; justify-content: flex-start !important; transition: all 0.3s ease !important; margin-bottom: 0px !important; }
-    [data-testid="stSidebar"] button[key^="menu_"]:hover { color: var(--text-pure-white) !important; background-color: rgba(255, 255, 255, 0.02) !important; }
-    div[data-testid="stSidebar"] div[class*="st-key-menu_"] button { color: var(--cyan-neon) !important; background-color: rgba(0, 229, 255, 0.08) !important; border-left: 3px solid var(--cyan-neon) !important; box-shadow: inset 10px 0 15px rgba(0, 229, 255, 0.02) !important; font-weight: 700 !important; }
-    div[data-testid="stSidebar"] button[key^="btn_"] { background-color: transparent !important; border: none !important; border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important; border-radius: 0 !important; color: var(--text-muted) !important; font-size: 0.8rem !important; font-family: monospace !important; text-align: left !important; padding: 8px 10px !important; transition: all 0.2s ease !important; }
-    div[data-testid="stSidebar"] button[key^="btn_"]:hover { color: var(--cyan-neon) !important; background-color: rgba(0, 229, 255, 0.05) !important; }
-    div[data-testid="stSidebar"] button[key^="del_"] { background-color: transparent !important; border: none !important; color: #56667a !important; font-size: 0.9rem !important; padding: 0 !important; transition: all 0.2s ease !important; }
-    div[data-testid="stSidebar"] button[key^="del_"]:hover { color: #ff4d4d !important; background-color: transparent !important; text-shadow: 0 0 8px rgba(255, 77, 77, 0.5) !important; }
-    [data-testid="stFileUploader"] { background-color: transparent !important; border: 1px dashed rgba(0, 229, 255, 0.2) !important; border-radius: 12px !important; padding: 10px !important; margin-bottom: 10px !important; width: 100% !important; }
-    [data-testid="stFileUploader"] label { color: #8a99ad !important; font-size: 0.8rem !important; }
-    [data-testid="stFileUploader"] button { background: transparent !important; border: 1px solid rgba(0, 229, 255, 0.3) !important; color: #00e5ff !important; border-radius: 8px !important; font-size: 0.75rem !important; font-weight: 600 !important; padding: 5px 15px !important; }
-    [data-testid="stChatMessage"] { background: var(--glass-bubble) !important; backdrop-filter: blur(12px) !important; border-radius: 12px !important; padding: 16px 20px !important; margin-bottom: 20px !important; border: 1px solid rgba(255, 255, 255, 0.05) !important; }
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { border: 1px solid rgba(255, 255, 255, 0.08) !important; background: rgba(255, 255, 255, 0.04) !important; margin-left: auto !important; width: fit-content !important; max-width: 80% !important; }
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) { border: 1px solid var(--glass-border) !important; box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.03) !important; margin-right: auto !important; width: fit-content !important; max-width: 80% !important; }
+    .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 1000px !important; }
+    [data-testid="stSidebar"] { background-color: #131822 !important; min-width: 280px !important; border-right: 1px solid rgba(0,229,255,0.05) !important; }
+    [data-testid="stSidebar"] .stButton button { background: transparent !important; border: none !important; color: var(--text-muted) !important; text-align: left !important; justify-content: flex-start !important; border-radius: 0 !important; padding: 10px 20px !important; }
+    [data-testid="stSidebar"] .stButton button:hover { color: #fff !important; background: rgba(255,255,255,0.03) !important; }
+    [data-testid="stSidebar"] .stButton button[kind="primary"] { color: var(--cyan-neon) !important; background: rgba(0,229,255,0.08) !important; border-left: 3px solid var(--cyan-neon) !important; font-weight: 700 !important; }
+    [data-testid="stChatMessage"] { background: var(--glass-bubble) !important; backdrop-filter: blur(12px) !important; border-radius: 12px !important; padding: 16px 20px !important; margin-bottom: 20px !important; border: 1px solid rgba(255,255,255,0.05) !important; width: fit-content !important; max-width: 80% !important; }
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { margin-left: auto !important; background: rgba(255,255,255,0.04) !important; }
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) { border: 1px solid var(--glass-border) !important; margin-right: auto !important; }
     [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
-    [data-testid="stChatMessage"] > div { background-color: transparent !important; }
-    [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { background-color: transparent !important; background: transparent !important; }
-    [data-testid="stBottomBlockContainer"] { padding-bottom: 2rem !important; max-width: 800px !important; margin: 0 auto !important; }
-    .stChatInput { background: rgba(24, 29, 40, 0.7) !important; backdrop-filter: blur(10px) !important; border: 1px solid rgba(0, 229, 255, 0.2) !important; border-radius: 30px !important; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important; transition: all 0.3s ease !important; }
-    .stChatInput > div, .stChatInput div, .stChatInput textarea, .stChatInput input { background-color: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; color: var(--text-pure-white) !important; }
-    .stChatInput textarea::placeholder { color: rgba(255, 255, 255, 0.5) !important; }
-    .stChatInput:focus-within { border-color: var(--cyan-neon) !important; box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 8px rgba(0, 229, 255, 0.3) !important; }
-    [data-testid="stChatInput"] button { background: transparent !important; border-radius: 50% !important; border: none !important; margin: 5px !important; width: 35px !important; height: 35px !important; box-shadow: none !important; }
-    [data-testid="stChatInput"] button:hover { background: rgba(0, 229, 255, 0.1) !important; }
-    [data-testid="stChatInput"] button svg { fill: var(--cyan-neon) !important; }
-    audio, div[data-testid="stAudio"] { display: none !important; }
-    .center-display { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 10vh; margin-bottom: 30px; position: relative; padding: 40px 0; }
+    .stChatInput { background: rgba(24,29,40,0.7) !important; border: 1px solid rgba(0,229,255,0.2) !important; border-radius: 30px !important; }
+    .center-display { display: flex; flex-direction: column; align-items: center; margin-top: 10vh; margin-bottom: 30px; padding: 40px 0; }
     .reactor { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
-    .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0, 229, 255, 0.1); border-top: 2px solid var(--cyan-neon); border-bottom: 2px solid var(--cyan-neon); animation: spin 3s linear infinite; opacity: 0.3; }
-    .reactor-ring-mid { position: absolute; inset: 20px; border-radius: 50%; border: 1px dashed rgba(0, 229, 255, 0.2); animation: spin-reverse 8s linear infinite; opacity: 0.3; }
-    .reactor-core { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #ffffff 0%, var(--cyan-neon) 40%, #0077ff 100%); box-shadow: 0 0 50px var(--cyan-neon), inset 0 0 20px #ffffff; animation: pulse 2s ease-in-out infinite; z-index: 10; }
-    .display-text { margin-top: 30px; font-size: 12px; letter-spacing: 4px; color: var(--cyan-neon); text-transform: uppercase; font-weight: 600; font-family: monospace; background: rgba(24, 29, 40, 0.8); padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(0, 229, 255, 0.3); box-shadow: 0 0 10px rgba(0, 229, 255, 0.1); z-index: 10; }
+    .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0,229,255,0.1); border-top: 2px solid var(--cyan-neon); border-bottom: 2px solid var(--cyan-neon); animation: spin 3s linear infinite; opacity: 0.3; }
+    .reactor-ring-mid { position: absolute; inset: 20px; border-radius: 50%; border: 1px dashed rgba(0,229,255,0.2); animation: spin-reverse 8s linear infinite; opacity: 0.3; }
+    .reactor-core { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, #fff 0%, var(--cyan-neon) 40%, #0077ff 100%); box-shadow: 0 0 50px var(--cyan-neon), inset 0 0 20px #fff; animation: pulse 2s ease-in-out infinite; z-index: 10; }
+    .display-text { margin-top: 30px; font-size: 12px; letter-spacing: 4px; color: var(--cyan-neon); text-transform: uppercase; font-weight: 600; font-family: monospace; background: rgba(24,29,40,0.8); padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(0,229,255,0.3); }
     @keyframes spin { 100% { transform: rotate(360deg); } }
     @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
-    @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 30px var(--cyan-neon), inset 0 0 15px #ffffff; } 50% { transform: scale(1.05); box-shadow: 0 0 60px var(--cyan-neon), inset 0 0 30px #ffffff; } 100% { transform: scale(0.95); box-shadow: 0 0 30px var(--cyan-neon), inset 0 0 15px #ffffff; } }
-    .repo-selector { background: rgba(0, 229, 255, 0.05); border: 1px solid rgba(0, 229, 255, 0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-    .repo-selector p { margin: 0; color: #8a99ad; font-size: 0.8rem; }
+    @keyframes pulse { 0%,100% { transform: scale(0.95); } 50% { transform: scale(1.05); } }
+    .dash-card { background: rgba(24,29,40,0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 24px; text-align: center; height: 100%; transition: 0.3s; }
+    .dash-card:hover { border-color: var(--cyan-neon); background: rgba(0,229,255,0.05); }
+    .dash-icon { font-size: 40px; margin-bottom: 15px; }
+    .dash-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+    .dash-desc { font-size: 13px; color: #8a99ad; line-height: 1.5; }
+    .badge-soon { background: rgba(255,165,0,0.2); color: #ffa500; border: 1px solid #ffa500; border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: bold; display: inline-block; margin-top: 15px; text-transform: uppercase; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- ESTADO INICIAL ---
-if "todos_los_chats" not in st.session_state: 
-    st.session_state.todos_los_chats = cargar_todos_los_chats()
-if "modo_actual" not in st.session_state: st.session_state.modo_actual = "Programación"
-if "chat_actual_id" not in st.session_state: st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
-if "audio_pendiente" not in st.session_state: st.session_state.audio_pendiente = None
-if "mic_key" not in st.session_state: st.session_state.mic_key = 0
-if "uploader_key" not in st.session_state: st.session_state.uploader_key = 0
-if "repo_seleccionado" not in st.session_state: st.session_state.repo_seleccionado = REPO_DEFECTO
-if "repo_indexado" not in st.session_state: st.session_state.repo_indexado = None
+# =====================================================================
+# ESTADO
+# =====================================================================
+S = st.session_state
+S.setdefault("modo_actual", "Programación")
+S.setdefault("chat_id", None)            # None = chat nuevo (se crea al enviar el primer mensaje)
+S.setdefault("cache_mensajes", {})       # chat_id -> lista de mensajes
+S.setdefault("audio_pendiente", None)
+S.setdefault("mic_key", 0)
+S.setdefault("uploader_key", 0)
+S.setdefault("repo_seleccionado", REPO_DEFECTO)
+S.setdefault("repo_indexado", None)
 
-# --- SIDEBAR ---
+def cambiar_modo(modo):
+    S.modo_actual = modo
+    S.chat_id = None
+
+def abrir_chat(chat_id):
+    S.chat_id = chat_id
+    S.cache_mensajes[chat_id] = db_cargar_mensajes(chat_id)
+
+# =====================================================================
+# SIDEBAR
+# =====================================================================
+token_gh = st.secrets.get("GITHUB_TOKEN")
+
 with st.sidebar:
-    st.markdown("<h3 style='padding-left: 20px; font-weight: 700; letter-spacing: 1.5px;'>LILI AI</h3>", unsafe_allow_html=True)
-    st.caption(f"<p style='padding-left: 20px; color: #8a99ad; font-size: 0.75rem; margin-top: -10px;'>{VERSION}</p>", unsafe_allow_html=True)
-    
-    modos = ["Programación", "Chat General", "Creativo", "Análisis"]
-    for m in modos:
-        key_name = f"menu_{m.lower().replace(' ', '_')}"
-        if st.button(m, key=key_name, use_container_width=True):
-            st.session_state.modo_actual = m
-            chats_del_modo = [k for k in st.session_state.todos_los_chats.keys() if k.startswith(f"{st.session_state.modo_actual}|")]
-            if chats_del_modo:
-                st.session_state.chat_actual_id = sorted(chats_del_modo)[-1]
-            else:
-                st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
-                st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
-            st.rerun()
+    st.markdown("<h3 style='padding-left:20px;letter-spacing:1.5px;color:#fff;'>LILI OS</h3>", unsafe_allow_html=True)
+    st.caption(VERSION)
 
-    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
-    
-    if st.button("+ Nuevo Chat", use_container_width=True):
-        nuevo_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
-        st.session_state.chat_actual_id = nuevo_id
-        st.session_state.todos_los_chats[nuevo_id] = []
-        guardar_todos_los_chats(st.session_state.todos_los_chats)
-        st.rerun()
+    st.markdown("<p style='color:#00e5ff;font-size:0.7rem;font-weight:700;padding-left:20px;margin-bottom:5px;'>CORE CHATS</p>", unsafe_allow_html=True)
+    for modo, icono in (("Programación", "💻"), ("Chat General", "💬")):
+        if st.button(f"{icono} {modo}", key=f"menu_{modo}", use_container_width=True,
+                     type="primary" if S.modo_actual == modo else "secondary"):
+            cambiar_modo(modo); st.rerun()
 
-    st.markdown("<p style='color: #8a99ad; font-size: 0.8rem; margin-top: 20px; margin-bottom: 10px; padding-left: 20px;'>HISTORIAL</p>", unsafe_allow_html=True)
-    
-    for chat_id in sorted(list(st.session_state.todos_los_chats.keys()), reverse=True):
-        if chat_id.startswith(f"{st.session_state.modo_actual}|") and len(st.session_state.todos_los_chats[chat_id]) > 0:
-            col1, col2 = st.columns([0.8, 0.2], vertical_alignment="center")
-            with col1:
-                icono = "▸" if chat_id == st.session_state.chat_actual_id else "▫"
-                hora_chat = chat_id.split("|")[1]
-                if st.button(f"{icono} {hora_chat}", key=f"btn_{chat_id}", use_container_width=True):
-                    st.session_state.chat_actual_id = chat_id
-                    st.rerun()
-            with col2:
-                if st.button("✕", key=f"del_{chat_id}", use_container_width=True):
-                    del st.session_state.todos_los_chats[chat_id]
-                    guardar_todos_los_chats(st.session_state.todos_los_chats)
-                    if chat_id == st.session_state.chat_actual_id:
-                        nuevo_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
-                        st.session_state.chat_actual_id = nuevo_id
-                        st.session_state.todos_los_chats[nuevo_id] = []
-                        guardar_todos_los_chats(st.session_state.todos_los_chats)
-                    st.rerun()
+    st.markdown("<p style='color:#ffa500;font-size:0.7rem;font-weight:700;padding-left:20px;margin:15px 0 5px;'>STUDIOS</p>", unsafe_allow_html=True)
+    for modo, icono in (("Modo Moda", "🛍️"), ("YouTube Kids", "🎬")):
+        if st.button(f"{icono} {modo}", key=f"menu_{modo}", use_container_width=True,
+                     type="primary" if S.modo_actual == modo else "secondary"):
+            cambiar_modo(modo); st.rerun()
 
-    if st.session_state.modo_actual == "Programación":
-        st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
-        st.markdown("<div class='repo-selector'>", unsafe_allow_html=True)
-        st.markdown("<p>🧠 Repositorio a analizar:</p>", unsafe_allow_html=True)
-        token = st.secrets.get("GITHUB_TOKEN")
-        
-        if token:
-            @st.cache_data(ttl=300)
-            def repos_cache(tk): return obtener_repositorios(tk)
-            
-            repos = repos_cache(token)
-            if repos:
-                idx = repos.index(st.session_state.repo_seleccionado) if st.session_state.repo_seleccionado in repos else 0
-                repo_sel = st.selectbox("Repositorio", repos, index=idx, label_visibility="collapsed")
-                
-                if repo_sel != st.session_state.repo_seleccionado:
-                    st.session_state.repo_seleccionado = repo_sel
-                    st.session_state.repo_indexado = None
-                    st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+    # Historial de chats (solo para modos de chat)
+    if S.modo_actual in MODOS_CHAT:
+        st.markdown("<p style='color:#8a99ad;font-size:0.7rem;font-weight:700;padding-left:20px;margin:15px 0 5px;'>HISTORIAL</p>", unsafe_allow_html=True)
+        if st.button("➕ Nuevo chat", key="nuevo_chat", use_container_width=True):
+            S.chat_id = None; st.rerun()
+        for c in db_listar_chats(S.modo_actual):
+            col_a, col_b = st.columns([5, 1])
+            if col_a.button(c["titulo"] or "Chat", key=f"chat_{c['id']}", use_container_width=True,
+                            type="primary" if S.chat_id == c["id"] else "secondary"):
+                abrir_chat(c["id"]); st.rerun()
+            if col_b.button("🗑", key=f"del_{c['id']}"):
+                db_borrar_chat(c["id"])
+                if S.chat_id == c["id"]:
+                    S.chat_id = None
+                st.rerun()
 
-    with st.expander("Configuración", expanded=False):
+    if S.modo_actual == "Programación" and token_gh:
+        repos = obtener_repositorios(token_gh)
+        if repos:
+            idx = repos.index(S.repo_seleccionado) if S.repo_seleccionado in repos else 0
+            st.markdown("<p style='color:#8a99ad;font-size:0.8rem;padding-left:20px;margin:15px 0 0;'>🧠 Repositorio</p>", unsafe_allow_html=True)
+            repo_sel = st.selectbox("Repo", repos, index=idx, label_visibility="collapsed")
+            if repo_sel != S.repo_seleccionado:
+                S.repo_seleccionado = repo_sel
+                S.repo_indexado = None
+                st.rerun()
+
+    with st.expander("⚙️ Configuración"):
         voz_activa = st.checkbox("Voz activa", value=True)
-        audio_grabado = st.audio_input("Graba", key=f"mic_{st.session_state.mic_key}", label_visibility="collapsed")
+        audio_grabado = st.audio_input("Graba", key=f"mic_{S.mic_key}", label_visibility="collapsed")
 
-# --- CONEXIÓN CON GROQ ---
-if "GROQ_API_KEY" not in st.secrets:
-    st.error("Falta la API Key.")
+# =====================================================================
+# STUDIOS (arquitectura modular: cada Studio es una función)
+# =====================================================================
+def tarjeta(icono, titulo, desc, estado="En Desarrollo"):
+    st.markdown(f"""<div class="dash-card"><div class="dash-icon">{icono}</div><div class="dash-title">{titulo}</div>
+    <div class="dash-desc">{desc}</div><div class="badge-soon">{estado}</div></div>""", unsafe_allow_html=True)
+
+def render_modo_moda():
+    st.markdown("<h2 style='text-align:center;'>🛍️ Studio: Modo Moda</h2>", unsafe_allow_html=True)
+    tab_copy, tab_guion, tab_foto = st.tabs(["✍️ Copy para Redes", "🎬 Guiones de Video", "📸 Análisis de Fotos"])
+
+    with tab_copy:
+        producto = st.text_input("Prenda / producto", placeholder="Vestido satinado verde esmeralda, tallas S-L", key="moda_prod")
+        precio = st.text_input("Precio (opcional)", key="moda_precio")
+        tono = st.selectbox("Tono", ["Elegante", "Cercano y divertido", "Urgente (oferta)"], key="moda_tono")
+        if st.button("Generar copy", key="moda_copy_btn") and producto:
+            with st.spinner("Escribiendo..."):
+                st.markdown(llamar_llm([
+                    {"role": "system", "content": "Eres copywriter de moda para Lewin Boutique, boutique 100% online en Venezuela. Responde en español."},
+                    {"role": "user", "content": f"Crea un caption de Instagram con emojis, 8 hashtags y un llamado a la acción por WhatsApp. Producto: {producto}. Precio: {precio or 'no indicar'}. Tono: {tono}."}]))
+
+    with tab_guion:
+        idea = st.text_input("Prenda o idea del video", key="moda_idea")
+        if st.button("Generar guion de 15 s", key="moda_guion_btn") and idea:
+            with st.spinner("Escribiendo..."):
+                st.markdown(llamar_llm([
+                    {"role": "system", "content": "Eres guionista de Reels/TikTok de moda. Responde en español."},
+                    {"role": "user", "content": f"Guion de 15 segundos para: {idea}. Tabla con: segundo, escena, texto en pantalla, voz en off."}]))
+
+    with tab_foto:
+        tarjeta("📸", "Análisis de Fotos", "Subirás una foto de tu ropa y Lili la describirá y sugerirá fondos y encuadres. (Usará el modelo de visión de Groq.)")
+
+def render_youtube_kids():
+    st.markdown("<h2 style='text-align:center;'>🎬 Studio: YouTube Kids</h2>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns(3)
+    with c1: tarjeta("📝", "Guiones Mágicos", "Cuentos infantiles con moraleja, rimas y personajes consistentes.")
+    with c2: tarjeta("🗣️", "Voces de Personajes", "Audio del cuento con voces tiernas o narradores de película.")
+    with c3: tarjeta("🎨", "Director de Arte 3D", "Imágenes escena por escena para montar en CapCut o Canva.")
+
+STUDIOS = {"Modo Moda": render_modo_moda, "YouTube Kids": render_youtube_kids}
+
+if S.modo_actual in STUDIOS:
+    STUDIOS[S.modo_actual]()
     st.stop()
-cliente = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# --- LAYOUT PRINCIPAL ---
-if st.session_state.chat_actual_id not in st.session_state.todos_los_chats:
-    st.session_state.chat_actual_id = f"{st.session_state.modo_actual}|{datetime.datetime.now().strftime('%H:%M:%S')}"
-    st.session_state.todos_los_chats[st.session_state.chat_actual_id] = []
-    guardar_todos_los_chats(st.session_state.todos_los_chats)
+# =====================================================================
+# CHAT (Programación / Chat General)
+# =====================================================================
+mensajes = S.cache_mensajes.get(S.chat_id, []) if S.chat_id else []
 
-mensajes_actuales = st.session_state.todos_los_chats[st.session_state.chat_actual_id]
+for m in mensajes:
+    with st.chat_message(m["role"]):
+        st.markdown(m["content"])
 
-for message in mensajes_actuales:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-if len(mensajes_actuales) == 0:
-    texto_reactor = "DEV ENVIRONMENT" if st.session_state.modo_actual == "Programación" else "SYSTEM ONLINE"
-    mensaje_bienvenida = "Entorno de Desarrollo listo. Hazme cualquier pregunta sobre tu código." if st.session_state.modo_actual == "Programación" else "Hola Leiver. ¿Qué hacemos hoy?"
+if not mensajes:
+    es_prog = S.modo_actual == "Programación"
     st.markdown(f"""
         <div class="center-display">
-            <div class="reactor">
-                <div class="reactor-ring-outer"></div>
-                <div class="reactor-ring-mid"></div>
-                <div class="reactor-core"></div>
-            </div>
-            <div class="display-text">{texto_reactor}</div>
+            <div class="reactor"><div class="reactor-ring-outer"></div><div class="reactor-ring-mid"></div><div class="reactor-core"></div></div>
+            <div class="display-text">{"DEV ENVIRONMENT" if es_prog else "SYSTEM ONLINE"}</div>
         </div>
-        <div style="text-align: center; margin-top: 20px;"><p style="font-size: 16px; color: #8a99ad;">{mensaje_bienvenida}</p></div>
+        <div style="text-align:center;margin-top:20px;"><p style="font-size:16px;color:#8a99ad;">
+        {"Entorno de Desarrollo listo. Hazme cualquier pregunta sobre tu código." if es_prog else "Hola Leiver. ¿Qué hacemos hoy?"}</p></div>
     """, unsafe_allow_html=True)
 
-imagen_subida = st.file_uploader("Adjuntar imagen para análisis visual", type=["png", "jpg", "jpeg"], label_visibility="visible", key=f"uploader_{st.session_state.uploader_key}")
+imagen_subida = st.file_uploader("Adjuntar imagen", type=["png", "jpg", "jpeg"], label_visibility="collapsed", key=f"uploader_{S.uploader_key}")
 if imagen_subida:
-    st.image(imagen_subida, caption="Imagen adjunta lista", use_container_width=True)
+    st.image(imagen_subida, caption="Imagen adjunta", use_container_width=True)
 
-placeholder_texto = "Pregúntame sobre el código..." if st.session_state.modo_actual == "Programación" else "Escribe tu mensaje..."
-prompt = st.chat_input(placeholder_texto)
+prompt = st.chat_input("Pregúntame sobre el código..." if S.modo_actual == "Programación" else "Escribe tu mensaje...")
 
 if audio_grabado or prompt:
-    texto_usuario = prompt if prompt else ""
-    
+    texto_usuario = prompt or ""
     if audio_grabado and not prompt:
         with st.spinner("Escuchando..."):
             try:
-                transcripcion = cliente.audio.transcriptions.create(file=("audio.wav", audio_grabado.read()), model="whisper-large-v3", language="es")
-                texto_usuario = transcripcion.text
-            except Exception as e: st.error(f"Error de audio: {e}")
-                
+                texto_usuario = cliente.audio.transcriptions.create(
+                    file=("audio.wav", audio_grabado.read()), model="whisper-large-v3", language="es").text
+            except Exception as e:
+                st.error(f"Error de audio: {e}")
+
     if texto_usuario:
-        modelo_a_usar = "openai/gpt-oss-120b"
-        mensaje_para_groq_content = texto_usuario
-        
+        # 1) Crear el chat en Supabase si es nuevo
+        if S.chat_id is None:
+            S.chat_id = db_crear_chat(S.modo_actual, texto_usuario[:40])
+            S.cache_mensajes[S.chat_id] = []
+        mensajes = S.cache_mensajes[S.chat_id]
+
+        # 2) Guardar y mostrar el mensaje del usuario
+        texto_guardado = f"{texto_usuario} [Imagen Adjunta]" if imagen_subida else texto_usuario
+        mensajes.append({"role": "user", "content": texto_guardado})
+        db_guardar_mensaje(S.chat_id, "user", texto_guardado)
+        with st.chat_message("user"):
+            st.markdown(texto_guardado)
+
+        # 3) Preparar contexto
+        modelo = MODELO_TEXTO
+        contenido_actual = texto_usuario
         if imagen_subida:
-            imagen_b64 = base64.b64encode(imagen_subida.getvalue()).decode('utf-8')
-            mensaje_para_groq_content = [{"type": "text", "text": texto_usuario}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{imagen_b64}"}}]
-            modelo_a_usar = "llama-3.2-11b-vision-preview" 
-            st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "user", "content": f"{texto_usuario} [Imagen Adjunta]"})
-        else:
-            st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "user", "content": texto_usuario})
-            
-        guardar_todos_los_chats(st.session_state.todos_los_chats)
-        
-        # --- MAGIA RAG Y NUEVO PROMPT MENTOR ---
-        if st.session_state.modo_actual == "Programación":
-            token = st.secrets.get("GITHUB_TOKEN")
-            repo = st.session_state.repo_seleccionado
-            
-            if st.session_state.repo_indexado != repo:
-                with st.spinner(f"🧠 Estudiando el repositorio {repo}..."):
-                    exito = indexar_repositorio(USUARIO_GITHUB, repo, token)
-                    if exito:
-                        st.session_state.repo_indexado = repo
-                    else:
-                        st.error("No se pudieron leer los archivos del repositorio.")
-            
-            with st.spinner("Buscando en el código..."):
-                contexto_codigo = buscar_contexto_codigo(texto_usuario)
-            
-            instrucciones = f"""Eres Lili Dev, una IA experta en programación, arquitectura de software y una mentora excepcional.
-            REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL.
-            CONTEXTO: Te habla Leiver, de Venezuela. Estás en MODO PROGRAMACIÓN.
-            Estás analizando el repositorio '{repo}'. 
-            
-            Aquí tienes los fragmentos de código más relevantes para la pregunta del usuario:
-            {contexto_codigo}
-            
-            CÓMO DEBES REDACTAR TU RESPUESTA (Sigue este formato estricto):
-            1. Usa formato Markdown (negritas, viñetas, bloques de código).
-            2. Sé didáctica y amigable. Explica el "por qué" y el "cómo", no solo des la solución.
-            3. Estructura tu respuesta así:
-               - Un saludo corto y amigable.
-               - Un "Diagnóstico rápido": Qué está pasando o qué hace ese código.
-               - "La solución paso a paso": Explica los cambios y pon bloques de código claros.
-               - Un "Consejo Pro": Una buena práctica de programación relacionada.
-            4. NUNCA devuelvas un archivo de 6000 líneas completo. Si hay que cambiar algo, dale solo el fragmento exacto que debe borrar o pegar.
-            5. Si no encuentras la respuesta en los fragmentos, dile amablemente que no lo ves en esa parte del código."""
-                
-        elif st.session_state.modo_actual == "Creativo":
-            instrucciones = "Eres Lili Creative, una IA imaginativa, poética y apasionada por el arte. REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL."
-        elif st.session_state.modo_actual == "Análisis":
-            instrucciones = "Eres Lili Analyst, una IA lógica y estructurada. REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL."
+            b64 = base64.b64encode(imagen_subida.getvalue()).decode("utf-8")
+            contenido_actual = [{"type": "text", "text": texto_usuario},
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}]
+            modelo = MODELO_VISION
+
+        if S.modo_actual == "Programación":
+            repo = S.repo_seleccionado
+            if token_gh and S.repo_indexado != repo:
+                with st.spinner(f"🧠 Estudiando {repo}..."):
+                    if indexar_repositorio(USUARIO_GITHUB, repo, token_gh):
+                        S.repo_indexado = repo
+            contexto = buscar_contexto_codigo(texto_usuario)
+            instrucciones = f"""Eres Lili Dev, mentora experta en programación.
+REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL. CONTEXTO: Leiver de Venezuela.
+Analizando el repositorio '{repo}'.
+Contexto del código:
+{contexto}
+
+FORMATO DE RESPUESTA OBLIGATORIO:
+1. Saludo amigable.
+2. "Diagnóstico rápido".
+3. "La solución paso a paso" (con bloques de código).
+4. "Consejo Pro".
+Sé didáctica."""
         else:
             instrucciones = "Eres Lili, una IA avanzada y carismática. REGLA DE ORO: RESPONDE SIEMPRE EN ESPAÑOL."
 
-        mensajes_para_groq = [{"role": "system", "content": instrucciones}]
-        for msg in mensajes_actuales[:-1]:
-            mensajes_para_groq.append({"role": msg["role"], "content": msg["content"].replace(" [Imagen Adjunta]", "")})
-        mensajes_para_groq.append({"role": "user", "content": mensaje_para_groq_content})
+        historial = [{"role": "system", "content": instrucciones}]
+        for m in mensajes[:-1][-20:]:  # solo los últimos 20 mensajes para no gastar tokens
+            historial.append({"role": m["role"], "content": m["content"].replace(" [Imagen Adjunta]", "")})
+        historial.append({"role": "user", "content": contenido_actual})
 
+        # 4) Responder
         try:
-            with st.spinner("Redactando respuesta..."):
-                respuesta = cliente.chat.completions.create(model=modelo_a_usar, messages=mensajes_para_groq, temperature=0.7, max_tokens=2048)
-                texto_respuesta = respuesta.choices[0].message.content
-                st.session_state.todos_los_chats[st.session_state.chat_actual_id].append({"role": "assistant", "content": texto_respuesta})
-                guardar_todos_los_chats(st.session_state.todos_los_chats)
-                
-                if voz_activa: 
-                    try:
-                        texto_para_hablar = limpiar_texto_para_voz(texto_respuesta)
-                        st.session_state.audio_pendiente = generar_audio_seguro(texto_para_hablar, VOZ_FIJA)
-                    except Exception as e: print(f"Error audio: {e}")
-                
-                st.session_state.mic_key += 1
-                st.session_state.uploader_key += 1
-                st.rerun()
+            with st.chat_message("assistant"):
+                with st.spinner("Redactando respuesta..."):
+                    respuesta = llamar_llm(historial, modelo=modelo)
+                st.markdown(respuesta)
+            mensajes.append({"role": "assistant", "content": respuesta})
+            db_guardar_mensaje(S.chat_id, "assistant", respuesta)
+
+            if voz_activa:
+                S.audio_pendiente = generar_audio_seguro(limpiar_texto_para_voz(respuesta), VOZ_FIJA)
+            S.mic_key += 1
+            S.uploader_key += 1
+            st.rerun()
         except Exception as e:
             st.error(f"Error de Groq: {e}")
 
-if st.session_state.audio_pendiente:
-    audio_bytes = st.session_state.audio_pendiente.read()
-    b64 = base64.b64encode(audio_bytes).decode()
+if S.audio_pendiente:
+    b64 = base64.b64encode(S.audio_pendiente.read()).decode()
     st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}"></audio>', unsafe_allow_html=True)
-    st.session_state.audio_pendiente = None
+    S.audio_pendiente = None
