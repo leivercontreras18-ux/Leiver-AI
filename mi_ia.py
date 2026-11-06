@@ -16,7 +16,7 @@ from supabase import create_client
 # =====================================================================
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural"
-VERSION = "v44.1 - Modo Moda con Generador de Imágenes"
+VERSION = "v44.2 - Copys Mejorados y Estables"
 
 USUARIO_GITHUB = "leivercontreras18-ux"
 REPO_DEFECTO = "leiver-ai"
@@ -308,6 +308,10 @@ def tarjeta(icono, titulo, desc, estado="En Desarrollo"):
     st.markdown(f"""<div class="dash-card"><div class="dash-icon">{icono}</div><div class="dash-title">{titulo}</div>
     <div class="dash-desc">{desc}</div><div class="badge-soon">{estado}</div></div>""", unsafe_allow_html=True)
 
+def render_modo_moda():
+    st.markdown("<h2 style='text-align:center;'>🛍️ Studio: Modo Moda</h2>", unsafe_allow_html=True)
+    tab_copy, tab_guion, tab_foto = st.tabs(["✍️ Copy para Redes", "🎬 Guiones de Video", "📸 Generador de Fotos"])
+
     with tab_copy:
         st.markdown("### ✍️ Generador de Copys para Redes")
         col1, col2 = st.columns(2)
@@ -348,6 +352,14 @@ def tarjeta(icono, titulo, desc, estado="En Desarrollo"):
                 ])
                 st.markdown(resultado)
 
+    with tab_guion:
+        idea = st.text_input("Prenda o idea del video", key="moda_idea")
+        if st.button("Generar guion de 15 s", key="moda_guion_btn") and idea:
+            with st.spinner("Escribiendo..."):
+                st.markdown(llamar_llm([
+                    {"role": "system", "content": "Eres guionista de Reels/TikTok de moda. Responde en español."},
+                    {"role": "user", "content": f"Guion de 15 segundos para: {idea}. Tabla con: segundo, escena, texto en pantalla, voz en off."}]))
+
     with tab_foto:
         st.markdown("### 🎨 Generador de Imágenes de Moda")
         st.markdown("Describe la foto que necesitas y Lili la creará para ti. *(Nota: La versión gratuita permite 1 foto cada 45 segundos).*")
@@ -356,7 +368,6 @@ def tarjeta(icono, titulo, desc, estado="En Desarrollo"):
         
         if st.button("Generar Foto", key="moda_foto_btn") and descripcion_foto:
             with st.spinner("🎨 Lili está diseñando tu imagen... (esto toma unos segundos)"):
-                # Lili ahora es una experta fotógrafa de moda
                 prompt_artistico = llamar_llm([
                     {"role": "system", "content": "You are a world-class fashion photographer and AI prompt engineer. Translate the user's idea into a highly detailed, professional image generation prompt in English. You MUST include technical terms like '8k resolution, photorealistic, cinematic lighting, fashion editorial, shot on 35mm lens, highly detailed'. Output ONLY the prompt, no extra text."},
                     {"role": "user", "content": f"Product: {descripcion_foto}. Style: {estilo}. Make it look incredibly professional for a high-end clothing brand."}
@@ -364,7 +375,6 @@ def tarjeta(icono, titulo, desc, estado="En Desarrollo"):
                 
                 prompt_codificado = urllib.parse.quote(prompt_artistico)
                 
-                # Añadimos el modelo flux que da mejor calidad
                 url_imagen = f"https://image.pollinations.ai/prompt/{prompt_codificado}?width=1024&height=1024&nologo=true&model=flux"
                 
                 st.image(url_imagen, caption=f"Generado por Lili para: {descripcion_foto}", use_container_width=True)
