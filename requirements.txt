@@ -1,5 +1,7 @@
 streamlit
 groq
 edge-tts
-requests
 chromadb
+supabase
+requests
+Pillow
