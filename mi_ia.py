@@ -194,34 +194,71 @@ def llamar_llm(mensajes, modelo=MODELO_TEXTO, temperatura=0.7, max_tokens=2048):
 # =====================================================================
 st.markdown("""
 <style>
-    :root { --bg-deep-space: #121620; --cyan-neon: #00e5ff; --text-muted: #8a99ad; --glass-bubble: rgba(24,29,40,0.65); --glass-border: rgba(0,229,255,0.15); }
-    .stApp { background: radial-gradient(circle at 60% 50%, #1a2233 0%, var(--bg-deep-space) 100%) !important; color: #fff !important; }
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header { background: transparent !important; }
-    .block-container { padding-top: 2rem !important; padding-bottom: 6rem !important; max-width: 1000px !important; }
-    [data-testid="stSidebar"] { background-color: #131822 !important; min-width: 280px !important; border-right: 1px solid rgba(0,229,255,0.05) !important; }
-    [data-testid="stSidebar"] .stButton button { background: transparent !important; border: none !important; color: var(--text-muted) !important; text-align: left !important; justify-content: flex-start !important; border-radius: 0 !important; padding: 10px 20px !important; }
-    [data-testid="stSidebar"] .stButton button:hover { color: #fff !important; background: rgba(255,255,255,0.03) !important; }
-    [data-testid="stSidebar"] .stButton button[kind="primary"] { color: var(--cyan-neon) !important; background: rgba(0,229,255,0.08) !important; border-left: 3px solid var(--cyan-neon) !important; font-weight: 700 !important; }
-    [data-testid="stChatMessage"] { background: var(--glass-bubble) !important; backdrop-filter: blur(12px) !important; border-radius: 12px !important; padding: 16px 20px !important; margin-bottom: 20px !important; border: 1px solid rgba(255,255,255,0.05) !important; width: fit-content !important; max-width: 80% !important; }
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { margin-left: auto !important; background: rgba(255,255,255,0.04) !important; }
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) { border: 1px solid var(--glass-border) !important; margin-right: auto !important; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+    :root { --bg: #0e121b; --surface: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.07); --cyan: #00e5ff; --muted: #8a99ad; --text: #e6edf7; }
+
+    /* Base */
+    .stApp { background: radial-gradient(circle at 65% 0%, #1b2436 0%, var(--bg) 60%) !important; color: var(--text) !important; font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; }
+    #MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"] { display: none !important; }
+    header { background: transparent !important; }
+    .block-container { padding-top: 1.5rem !important; padding-bottom: 7rem !important; max-width: 920px !important; }
+
+    /* Barra inferior y caja de texto */
+    [data-testid="stBottom"], [data-testid="stBottom"] > div, [data-testid="stBottomBlockContainer"] { background: transparent !important; }
+    [data-testid="stChatInput"] { background: rgba(24,29,40,0.85) !important; border: 1px solid rgba(0,229,255,0.18) !important; border-radius: 28px !important; box-shadow: 0 8px 30px rgba(0,0,0,0.35) !important; backdrop-filter: blur(10px); transition: all .25s ease; }
+    [data-testid="stChatInput"]:focus-within { border-color: var(--cyan) !important; box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 0 3px rgba(0,229,255,0.12) !important; }
+    [data-testid="stChatInput"] > div, [data-testid="stChatInput"] [data-baseweb="textarea"], [data-testid="stChatInput"] [data-baseweb="base-input"] { background: transparent !important; border: none !important; }
+    [data-testid="stChatInput"] textarea { color: var(--text) !important; background: transparent !important; }
+    [data-testid="stChatInputSubmitButton"] { background: rgba(0,229,255,0.15) !important; color: var(--cyan) !important; border-radius: 50% !important; }
+
+    /* Sidebar */
+    [data-testid="stSidebar"] { background: linear-gradient(180deg, #0f1420 0%, #0b0f17 100%) !important; border-right: 1px solid var(--border) !important; min-width: 290px !important; }
+    [data-testid="stSidebarUserContent"] { padding: 1.4rem 0.9rem !important; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .2em; font-size: 1.05rem; color: #fff; padding-left: 6px; }
+    .brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 14px var(--cyan); }
+    .brand-ver { color: #5d6b80; font-size: .7rem; margin: 4px 0 0 26px; }
+    .side-label { font-size: .66rem; letter-spacing: .16em; font-weight: 600; color: #5d6b80; margin: 22px 0 6px 8px; text-transform: uppercase; }
+    [data-testid="stSidebar"] .stButton button { width: 100%; justify-content: flex-start !important; gap: 10px; background: transparent !important; border: 1px solid transparent !important; color: var(--muted) !important; border-radius: 10px !important; padding: 8px 14px !important; font-weight: 500 !important; font-size: .92rem !important; transition: all .2s ease; }
+    [data-testid="stSidebar"] .stButton button > div { justify-content: flex-start !important; width: 100%; }
+    [data-testid="stSidebar"] .stButton button p { text-align: left !important; margin: 0 !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    [data-testid="stSidebar"] .stButton button:hover { background: rgba(255,255,255,0.05) !important; color: #fff !important; }
+    [data-testid="stSidebar"] .stButton button[kind="primary"] { background: rgba(0,229,255,0.10) !important; border: 1px solid rgba(0,229,255,0.28) !important; color: var(--cyan) !important; }
+    [data-testid="stExpander"] { border: 1px solid var(--border) !important; border-radius: 12px !important; background: var(--surface) !important; }
+
+    /* Mensajes */
+    [data-testid="stChatMessage"] { background: rgba(24,29,40,0.6) !important; backdrop-filter: blur(12px); border-radius: 16px !important; padding: 14px 20px !important; margin-bottom: 14px !important; border: 1px solid var(--border) !important; width: fit-content !important; max-width: 82% !important; }
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { margin-left: auto !important; background: linear-gradient(135deg, rgba(0,229,255,0.12), rgba(0,119,255,0.10)) !important; border-color: rgba(0,229,255,0.2) !important; }
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) { margin-right: auto !important; border-left: 3px solid var(--cyan) !important; }
     [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { display: none !important; }
-    .stChatInput { background: rgba(24,29,40,0.7) !important; border: 1px solid rgba(0,229,255,0.2) !important; border-radius: 30px !important; }
-    .center-display { display: flex; flex-direction: column; align-items: center; margin-top: 10vh; margin-bottom: 30px; padding: 40px 0; }
-    .reactor { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
-    .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0,229,255,0.1); border-top: 2px solid var(--cyan-neon); border-bottom: 2px solid var(--cyan-neon); animation: spin 3s linear infinite; opacity: 0.3; }
-    .reactor-ring-mid { position: absolute; inset: 20px; border-radius: 50%; border: 1px dashed rgba(0,229,255,0.2); animation: spin-reverse 8s linear infinite; opacity: 0.3; }
-    .reactor-core { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, #fff 0%, var(--cyan-neon) 40%, #0077ff 100%); box-shadow: 0 0 50px var(--cyan-neon), inset 0 0 20px #fff; animation: pulse 2s ease-in-out infinite; z-index: 10; }
-    .display-text { margin-top: 30px; font-size: 12px; letter-spacing: 4px; color: var(--cyan-neon); text-transform: uppercase; font-weight: 600; font-family: monospace; background: rgba(24,29,40,0.8); padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(0,229,255,0.3); }
+
+    /* Subir imagen */
+    [data-testid="stFileUploaderDropzone"] { background: rgba(24,29,40,0.5) !important; border: 1px dashed rgba(0,229,255,0.25) !important; border-radius: 12px !important; }
+
+    /* Portada */
+    .center-display { display: flex; flex-direction: column; align-items: center; margin-top: 3vh; padding: 20px 0 0; }
+    .reactor { position: relative; width: 170px; height: 170px; display: flex; align-items: center; justify-content: center; }
+    .reactor-ring-outer { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0,229,255,0.1); border-top: 2px solid var(--cyan); border-bottom: 2px solid var(--cyan); animation: spin 3s linear infinite; opacity: .35; }
+    .reactor-ring-mid { position: absolute; inset: 18px; border-radius: 50%; border: 1px dashed rgba(0,229,255,0.25); animation: spin-reverse 8s linear infinite; opacity: .35; }
+    .reactor-core { width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle, #fff 0%, var(--cyan) 40%, #0077ff 100%); box-shadow: 0 0 45px var(--cyan), inset 0 0 18px #fff; animation: pulse 2s ease-in-out infinite; z-index: 10; }
+    .display-text { margin-top: 22px; font-size: 11px; letter-spacing: 4px; color: var(--cyan); text-transform: uppercase; font-weight: 600; font-family: 'JetBrains Mono', monospace; background: rgba(24,29,40,0.8); padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(0,229,255,0.3); }
+    .hero-title { text-align: center; font-size: 2.1rem; font-weight: 700; margin: 22px 0 4px; background: linear-gradient(90deg, #fff, #9fdcff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-sub { text-align: center; color: var(--muted); font-size: .98rem; margin-bottom: 26px; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
     @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
     @keyframes pulse { 0%,100% { transform: scale(0.95); } 50% { transform: scale(1.05); } }
-    .dash-card { background: rgba(24,29,40,0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 24px; text-align: center; height: 100%; transition: 0.3s; }
-    .dash-card:hover { border-color: var(--cyan-neon); background: rgba(0,229,255,0.05); }
-    .dash-icon { font-size: 40px; margin-bottom: 15px; }
-    .dash-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
-    .dash-desc { font-size: 13px; color: #8a99ad; line-height: 1.5; }
-    .badge-soon { background: rgba(255,165,0,0.2); color: #ffa500; border: 1px solid #ffa500; border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: bold; display: inline-block; margin-top: 15px; text-transform: uppercase; }
+
+    /* Sugerencias rápidas */
+    .st-key-quick button { background: rgba(24,29,40,0.6) !important; border: 1px solid var(--border) !important; border-radius: 14px !important; color: #cfd8e6 !important; padding: 14px 16px !important; min-height: 74px; height: 100%; text-align: left !important; justify-content: flex-start !important; transition: all .2s ease; }
+    .st-key-quick button p { text-align: left !important; font-size: .88rem; }
+    .st-key-quick button:hover { border-color: var(--cyan) !important; background: rgba(0,229,255,0.06) !important; color: #fff !important; transform: translateY(-2px); }
+
+    /* Tarjetas de Studios */
+    .dash-card { background: rgba(24,29,40,0.5); border: 1px solid var(--border); border-radius: 16px; padding: 24px; text-align: center; height: 100%; transition: .3s; }
+    .dash-card:hover { border-color: var(--cyan); background: rgba(0,229,255,0.05); transform: translateY(-3px); }
+    .dash-icon { font-size: 38px; margin-bottom: 14px; }
+    .dash-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .dash-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .badge-soon { background: rgba(255,165,0,0.15); color: #ffa500; border: 1px solid rgba(255,165,0,.5); border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 600; display: inline-block; margin-top: 14px; text-transform: uppercase; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -252,32 +289,31 @@ def abrir_chat(chat_id):
 token_gh = st.secrets.get("GITHUB_TOKEN")
 
 with st.sidebar:
-    st.markdown("<h3 style='padding-left:20px;letter-spacing:1.5px;color:#fff;'>LILI OS</h3>", unsafe_allow_html=True)
-    st.caption(VERSION)
+    st.markdown(f"<div class='brand'><span class='brand-dot'></span>LILI OS</div><div class='brand-ver'>{VERSION}</div>", unsafe_allow_html=True)
 
-    st.markdown("<p style='color:#00e5ff;font-size:0.7rem;font-weight:700;padding-left:20px;margin-bottom:5px;'>CORE CHATS</p>", unsafe_allow_html=True)
-    for modo, icono in (("Programación", "💻"), ("Chat General", "💬")):
-        if st.button(f"{icono} {modo}", key=f"menu_{modo}", use_container_width=True,
+    st.markdown("<div class='side-label'>Chats</div>", unsafe_allow_html=True)
+    for modo, icono in (("Programación", ":material/terminal:"), ("Chat General", ":material/chat_bubble:")):
+        if st.button(modo, key=f"menu_{modo}", icon=icono, use_container_width=True,
                      type="primary" if S.modo_actual == modo else "secondary"):
             cambiar_modo(modo); st.rerun()
 
-    st.markdown("<p style='color:#ffa500;font-size:0.7rem;font-weight:700;padding-left:20px;margin:15px 0 5px;'>STUDIOS</p>", unsafe_allow_html=True)
-    for modo, icono in (("Modo Moda", "🛍️"), ("YouTube Kids", "🎬")):
-        if st.button(f"{icono} {modo}", key=f"menu_{modo}", use_container_width=True,
+    st.markdown("<div class='side-label'>Studios</div>", unsafe_allow_html=True)
+    for modo, icono in (("Modo Moda", ":material/checkroom:"), ("YouTube Kids", ":material/movie:")):
+        if st.button(modo, key=f"menu_{modo}", icon=icono, use_container_width=True,
                      type="primary" if S.modo_actual == modo else "secondary"):
             cambiar_modo(modo); st.rerun()
 
     # Historial de chats (solo para modos de chat)
     if S.modo_actual in MODOS_CHAT:
-        st.markdown("<p style='color:#8a99ad;font-size:0.7rem;font-weight:700;padding-left:20px;margin:15px 0 5px;'>HISTORIAL</p>", unsafe_allow_html=True)
-        if st.button("➕ Nuevo chat", key="nuevo_chat", use_container_width=True):
+        st.markdown("<div class='side-label'>Historial</div>", unsafe_allow_html=True)
+        if st.button("Nuevo chat", key="nuevo_chat", icon=":material/add:", use_container_width=True):
             S.chat_id = None; st.rerun()
         for c in db_listar_chats(S.modo_actual):
             col_a, col_b = st.columns([5, 1])
             if col_a.button(c["titulo"] or "Chat", key=f"chat_{c['id']}", use_container_width=True,
                             type="primary" if S.chat_id == c["id"] else "secondary"):
                 abrir_chat(c["id"]); st.rerun()
-            if col_b.button("🗑", key=f"del_{c['id']}"):
+            if col_b.button("✕", key=f"del_{c['id']}", help="Borrar chat"):
                 db_borrar_chat(c["id"])
                 if S.chat_id == c["id"]:
                     S.chat_id = None
@@ -287,14 +323,15 @@ with st.sidebar:
         repos = obtener_repositorios(token_gh)
         if repos:
             idx = repos.index(S.repo_seleccionado) if S.repo_seleccionado in repos else 0
-            st.markdown("<p style='color:#8a99ad;font-size:0.8rem;padding-left:20px;margin:15px 0 0;'>🧠 Repositorio</p>", unsafe_allow_html=True)
+            st.markdown("<div class='side-label'>Repositorio</div>", unsafe_allow_html=True)
             repo_sel = st.selectbox("Repo", repos, index=idx, label_visibility="collapsed")
             if repo_sel != S.repo_seleccionado:
                 S.repo_seleccionado = repo_sel
                 S.repo_indexado = None
                 st.rerun()
 
-    with st.expander("⚙️ Configuración"):
+    st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
+    with st.expander("Configuración", icon=":material/settings:"):
         voz_activa = st.checkbox("Voz activa", value=True)
         audio_grabado = st.audio_input("Graba", key=f"mic_{S.mic_key}", label_visibility="collapsed")
 
@@ -352,6 +389,18 @@ for m in mensajes:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
+SUGERENCIAS = {
+    "Programación": ["Revisa mi repositorio y dime qué puedo mejorar",
+                     "Explícame cómo funciona el código principal",
+                     "Ayúdame a encontrar y corregir un error"],
+    "Chat General": ["Dame ideas de contenido para Lewin Boutique",
+                     "Ayúdame a organizar mi semana de trabajo",
+                     "Redacta un mensaje amable para un cliente"],
+}
+
+def usar_sugerencia(texto):
+    S.prompt_rapido = texto
+
 if not mensajes:
     es_prog = S.modo_actual == "Programación"
     st.markdown(f"""
@@ -359,15 +408,22 @@ if not mensajes:
             <div class="reactor"><div class="reactor-ring-outer"></div><div class="reactor-ring-mid"></div><div class="reactor-core"></div></div>
             <div class="display-text">{"DEV ENVIRONMENT" if es_prog else "SYSTEM ONLINE"}</div>
         </div>
-        <div style="text-align:center;margin-top:20px;"><p style="font-size:16px;color:#8a99ad;">
-        {"Entorno de Desarrollo listo. Hazme cualquier pregunta sobre tu código." if es_prog else "Hola Leiver. ¿Qué hacemos hoy?"}</p></div>
+        <div class="hero-title">Hola, Leiver</div>
+        <div class="hero-sub">{"Tu entorno de desarrollo está listo. ¿Qué construimos hoy?" if es_prog else "¿Qué hacemos hoy?"}</div>
     """, unsafe_allow_html=True)
+    with st.container(key="quick"):
+        cols = st.columns(3)
+        for col, texto in zip(cols, SUGERENCIAS[S.modo_actual]):
+            col.button(texto, key=f"sug_{texto}", on_click=usar_sugerencia, args=(texto,), use_container_width=True)
 
-imagen_subida = st.file_uploader("Adjuntar imagen", type=["png", "jpg", "jpeg"], label_visibility="collapsed", key=f"uploader_{S.uploader_key}")
-if imagen_subida:
-    st.image(imagen_subida, caption="Imagen adjunta", use_container_width=True)
+with st.expander("Adjuntar imagen", icon=":material/attach_file:"):
+    imagen_subida = st.file_uploader("Adjuntar imagen", type=["png", "jpg", "jpeg"], label_visibility="collapsed", key=f"uploader_{S.uploader_key}")
+    if imagen_subida:
+        st.image(imagen_subida, caption="Imagen adjunta", use_container_width=True)
 
 prompt = st.chat_input("Pregúntame sobre el código..." if S.modo_actual == "Programación" else "Escribe tu mensaje...")
+if not prompt:
+    prompt = S.pop("prompt_rapido", None)
 
 if audio_grabado or prompt:
     texto_usuario = prompt or ""
