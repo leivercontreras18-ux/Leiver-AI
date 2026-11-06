@@ -16,7 +16,7 @@ from supabase import create_client
 # =====================================================================
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural"
-VERSION = "v44.2 - Copys Mejorados y Estables"
+VERSION = "v44.3 - Copys Comerciales"
 
 USUARIO_GITHUB = "leivercontreras18-ux"
 REPO_DEFECTO = "leiver-ai"
@@ -316,38 +316,39 @@ def render_modo_moda():
         st.markdown("### ✍️ Generador de Copys para Redes")
         col1, col2 = st.columns(2)
         with col1:
-            producto = st.text_input("Prenda / producto", placeholder="Vestido satinado verde esmeralda", key="moda_prod")
+            producto = st.text_input("Prenda / producto", placeholder="Pantalón cargo de algodón premium", key="moda_prod")
         with col2:
             plataforma = st.selectbox("Plataforma", ["Instagram (Feed)", "Instagram (Stories/Reels)", "WhatsApp", "TikTok"], key="moda_plataforma")
             
         precio = st.text_input("Precio (opcional)", key="moda_precio")
-        tono = st.selectbox("Tono", ["Elegante y exclusivo", "Cercano y amigable", "Divertido y juvenil", "Urgente (Oferta)"], key="moda_tono")
+        tono = st.selectbox("Tono", ["Vendedor y directo", "Cercano (como un amigo)", "Exclusivo y premium", "Divertido"], key="moda_tono")
         
         if st.button("Generar 3 Opciones de Copy", key="moda_copy_btn") and producto:
             with st.spinner("Escribiendo opciones de venta..."):
                 prompt_copy = f"""
-                Eres un experto copywriter de moda para 'Lewin Boutique', una tienda online en Venezuela.
+                Eres el/la Community Manager de 'Lewin Boutique', una tienda real de ropa en Venezuela. Escribes para vender, no para hacer poesía. Evita frases cliché como 'la brisa te acaricia' o 'cada costura es una obra de arte'. Sé real, fresco y directo.
+                
                 Producto: {producto}
                 Plataforma: {plataforma}
                 Precio: {precio or 'No especificado'}
                 Tono: {tono}
                 
-                Genera exactamente 3 opciones de copy diferentes, separadas por líneas:
+                Genera exactamente 3 opciones de copy:
                 
-                **Opción 1: Directa (Corta)**
-                [Texto corto, de 2 a 3 líneas. Máximo 5 emojis. Llamado a la acción claro]
+                **Opción 1: Directa / Práctica (Para Stories o WhatsApp)**
+                [Texto corto y al grano. Destaca tallas, colores o el precio. Dinos cómo comprar. Usa 2 o 3 emojis max]
                 
-                **Opción 2: Storytelling (Más larga)**
-                [Texto de 4 a 6 líneas contando una historia, resaltando la calidad o cómo hace sentir la prenda. Incluye emojis]
+                **Opción 2: Beneficio Real (Para Feed de Instagram)**
+                [Explica POR QUÉ esta prenda es buena (ej. es fresca, estiliza, no aprieta, combina con todo). Háblale al cliente de tú a tú. Usa emojis normales]
                 
-                **Opción 3: Enfoque de Venta/Urgencia**
-                [Texto enfocado en escasez, oferta o beneficio inmediato. Llamado a la acción fuerte]
+                **Opción 3: Tendencia / Urgencia**
+                [Crea urgencia real (quedan pocas, llego justo a tiempo). Invita a escribir al DM o WhatsApp]
                 
-                Al final de las 3 opciones, agrega una sección llamada **Hashtags** con 10 hashtags mezclando moda en Venezuela, ropa, y estilo.
+                Al final de las 3 opciones, agrega una sección llamada **Hashtags** con 10 hashtags (mezcla de moda en Venezuela, ropa y estilo).
                 """
                 
                 resultado = llamar_llm([
-                    {"role": "system", "content": "Eres un copywriter experto en ventas de moda. Responde en español y usa formato Markdown para organizar el texto."},
+                    {"role": "system", "content": "Eres un CM experto en ventas directas de moda en Venezuela. Responde en español y usa formato Markdown."},
                     {"role": "user", "content": prompt_copy}
                 ])
                 st.markdown(resultado)
@@ -358,7 +359,7 @@ def render_modo_moda():
             with st.spinner("Escribiendo..."):
                 st.markdown(llamar_llm([
                     {"role": "system", "content": "Eres guionista de Reels/TikTok de moda. Responde en español."},
-                    {"role": "user", "content": f"Guion de 15 segundos para: {idea}. Tabla con: segundo, escena, texto en pantalla, voz en off."}]))
+                    {"role": "user", "content": f"Guion de 15 segundos para: {idea}. Tabla con: segundo, escena, texto en pantalla, voz en off. Sé directo y vendedor."}]))
 
     with tab_foto:
         st.markdown("### 🎨 Generador de Imágenes de Moda")
@@ -374,7 +375,6 @@ def render_modo_moda():
                 ], temperatura=0.6)
                 
                 prompt_codificado = urllib.parse.quote(prompt_artistico)
-                
                 url_imagen = f"https://image.pollinations.ai/prompt/{prompt_codificado}?width=1024&height=1024&nologo=true&model=flux"
                 
                 st.image(url_imagen, caption=f"Generado por Lili para: {descripcion_foto}", use_container_width=True)
