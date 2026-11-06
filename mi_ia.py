@@ -16,7 +16,7 @@ from supabase import create_client
 # =====================================================================
 NOMBRE_IA = "Lili"
 VOZ_FIJA = "es-VE-PaolaNeural"
-VERSION = "v44.3 - Copys Comerciales"
+VERSION = "v44.4 - Copys sin Alucinaciones"
 
 USUARIO_GITHUB = "leivercontreras18-ux"
 REPO_DEFECTO = "leiver-ai"
@@ -320,31 +320,40 @@ def render_modo_moda():
         with col2:
             plataforma = st.selectbox("Plataforma", ["Instagram (Feed)", "Instagram (Stories/Reels)", "WhatsApp", "TikTok"], key="moda_plataforma")
             
-        precio = st.text_input("Precio (opcional)", key="moda_precio")
+        col3, col4 = st.columns(2)
+        with col3:
+            precio = st.text_input("Precio (opcional)", key="moda_precio")
+        with col4:
+            whatsapp = st.text_input("Tu WhatsApp (opcional)", placeholder="Ej: 0412-0000000", key="moda_whatsapp")
+            
         tono = st.selectbox("Tono", ["Vendedor y directo", "Cercano (como un amigo)", "Exclusivo y premium", "Divertido"], key="moda_tono")
         
         if st.button("Generar 3 Opciones de Copy", key="moda_copy_btn") and producto:
             with st.spinner("Escribiendo opciones de venta..."):
                 prompt_copy = f"""
-                Eres el/la Community Manager de 'Lewin Boutique', una tienda real de ropa en Venezuela. Escribes para vender, no para hacer poesía. Evita frases cliché como 'la brisa te acaricia' o 'cada costura es una obra de arte'. Sé real, fresco y directo.
+                Eres el/la Community Manager de 'Lewin Boutique', una tienda real de ropa en Venezuela. Escribes para vender, no para hacer poesía.
                 
+                REGLA ESTRICTA: NO INVENTES DATOS. Si no se te da un teléfono, talla, color o stock, NO te lo inventes. Usa corchetes como [Talla] o [Color] para que el humano los llene, o simplemente omítelos.
+                
+                Datos:
                 Producto: {producto}
                 Plataforma: {plataforma}
-                Precio: {precio or 'No especificado'}
+                Precio: {precio or 'No especificado (omite el precio)'}
+                WhatsApp de contacto: {whatsapp or 'No especificado (omite el número, solo di "escríbenos")'}
                 Tono: {tono}
                 
                 Genera exactamente 3 opciones de copy:
                 
                 **Opción 1: Directa / Práctica (Para Stories o WhatsApp)**
-                [Texto corto y al grano. Destaca tallas, colores o el precio. Dinos cómo comprar. Usa 2 o 3 emojis max]
+                [Texto corto y al grano. Usa 2 o 3 emojis max]
                 
                 **Opción 2: Beneficio Real (Para Feed de Instagram)**
-                [Explica POR QUÉ esta prenda es buena (ej. es fresca, estiliza, no aprieta, combina con todo). Háblale al cliente de tú a tú. Usa emojis normales]
+                [Explica POR QUÉ esta prenda es buena (ej. es fresca, estiliza, no aprieta). Háblale al cliente de tú a tú.]
                 
                 **Opción 3: Tendencia / Urgencia**
-                [Crea urgencia real (quedan pocas, llego justo a tiempo). Invita a escribir al DM o WhatsApp]
+                [Crea urgencia (invita a escribir rápido, sin inventar números de stock falsos)]
                 
-                Al final de las 3 opciones, agrega una sección llamada **Hashtags** con 10 hashtags (mezcla de moda en Venezuela, ropa y estilo).
+                Al final, agrega una sección llamada **Hashtags** con 10 hashtags (mezcla de moda en Venezuela, ropa y estilo).
                 """
                 
                 resultado = llamar_llm([
