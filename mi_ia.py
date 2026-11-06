@@ -308,27 +308,45 @@ def tarjeta(icono, titulo, desc, estado="En Desarrollo"):
     st.markdown(f"""<div class="dash-card"><div class="dash-icon">{icono}</div><div class="dash-title">{titulo}</div>
     <div class="dash-desc">{desc}</div><div class="badge-soon">{estado}</div></div>""", unsafe_allow_html=True)
 
-def render_modo_moda():
-    st.markdown("<h2 style='text-align:center;'>🛍️ Studio: Modo Moda</h2>", unsafe_allow_html=True)
-    tab_copy, tab_guion, tab_foto = st.tabs(["✍️ Copy para Redes", "🎬 Guiones de Video", "📸 Generador de Fotos"])
-
     with tab_copy:
-        producto = st.text_input("Prenda / producto", placeholder="Vestido satinado verde esmeralda, tallas S-L", key="moda_prod")
+        st.markdown("### ✍️ Generador de Copys para Redes")
+        col1, col2 = st.columns(2)
+        with col1:
+            producto = st.text_input("Prenda / producto", placeholder="Vestido satinado verde esmeralda", key="moda_prod")
+        with col2:
+            plataforma = st.selectbox("Plataforma", ["Instagram (Feed)", "Instagram (Stories/Reels)", "WhatsApp", "TikTok"], key="moda_plataforma")
+            
         precio = st.text_input("Precio (opcional)", key="moda_precio")
-        tono = st.selectbox("Tono", ["Elegante", "Cercano y divertido", "Urgente (oferta)"], key="moda_tono")
-        if st.button("Generar copy", key="moda_copy_btn") and producto:
-            with st.spinner("Escribiendo..."):
-                st.markdown(llamar_llm([
-                    {"role": "system", "content": "Eres copywriter de moda para Lewin Boutique, boutique 100% online en Venezuela. Responde en español."},
-                    {"role": "user", "content": f"Crea un caption de Instagram con emojis, 8 hashtags y un llamado a la acción por WhatsApp. Producto: {producto}. Precio: {precio or 'no indicar'}. Tono: {tono}."}]))
-
-    with tab_guion:
-        idea = st.text_input("Prenda o idea del video", key="moda_idea")
-        if st.button("Generar guion de 15 s", key="moda_guion_btn") and idea:
-            with st.spinner("Escribiendo..."):
-                st.markdown(llamar_llm([
-                    {"role": "system", "content": "Eres guionista de Reels/TikTok de moda. Responde en español."},
-                    {"role": "user", "content": f"Guion de 15 segundos para: {idea}. Tabla con: segundo, escena, texto en pantalla, voz en off."}]))
+        tono = st.selectbox("Tono", ["Elegante y exclusivo", "Cercano y amigable", "Divertido y juvenil", "Urgente (Oferta)"], key="moda_tono")
+        
+        if st.button("Generar 3 Opciones de Copy", key="moda_copy_btn") and producto:
+            with st.spinner("Escribiendo opciones de venta..."):
+                prompt_copy = f"""
+                Eres un experto copywriter de moda para 'Lewin Boutique', una tienda online en Venezuela.
+                Producto: {producto}
+                Plataforma: {plataforma}
+                Precio: {precio or 'No especificado'}
+                Tono: {tono}
+                
+                Genera exactamente 3 opciones de copy diferentes, separadas por líneas:
+                
+                **Opción 1: Directa (Corta)**
+                [Texto corto, de 2 a 3 líneas. Máximo 5 emojis. Llamado a la acción claro]
+                
+                **Opción 2: Storytelling (Más larga)**
+                [Texto de 4 a 6 líneas contando una historia, resaltando la calidad o cómo hace sentir la prenda. Incluye emojis]
+                
+                **Opción 3: Enfoque de Venta/Urgencia**
+                [Texto enfocado en escasez, oferta o beneficio inmediato. Llamado a la acción fuerte]
+                
+                Al final de las 3 opciones, agrega una sección llamada **Hashtags** con 10 hashtags mezclando moda en Venezuela, ropa, y estilo.
+                """
+                
+                resultado = llamar_llm([
+                    {"role": "system", "content": "Eres un copywriter experto en ventas de moda. Responde en español y usa formato Markdown para organizar el texto."},
+                    {"role": "user", "content": prompt_copy}
+                ])
+                st.markdown(resultado)
 
     with tab_foto:
         st.markdown("### 🎨 Generador de Imágenes de Moda")
