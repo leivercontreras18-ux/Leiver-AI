@@ -1,10 +1,15 @@
 """
-Mis Finanzas · app de finanzas personales
+Mis Finanzas · finanzas personales con perfiles separados
 Stack: Streamlit + Pandas + SQLite local (sin internet, sin APIs).
+Cada perfil (con su PIN) tiene sus propios movimientos, presupuestos y metas.
 """
+import calendar
 import datetime
+import hashlib
+import hmac
 import html
 import math
+import secrets
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
@@ -23,7 +28,11 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-NOMBRE = "Leiver"
+# Perfiles: nombre -> color del avatar. Agrega o cambia nombres aquí.
+# El PRIMERO hereda los datos que ya tenías guardados antes de usar perfiles.
+PERFILES = {"Leiver": "#00e5ff", "Winderly": "#f472b6"}
+PERFIL_ORIGINAL = next(iter(PERFILES))
+
 MONEDA = "$"
 DB_PATH = Path(__file__).with_name("finanzas_leiver.db")  # siempre junto a este archivo
 
@@ -39,6 +48,7 @@ MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio",
 TODO = "Todo el historial"
 
 CIAN, ROSA, MUTED = "#00e5ff", "#fb7185", "#8b98ab"
+PALETA = ["#00e5ff", "#7c5cff", "#34d399", "#fbbf24", "#fb7185", "#60a5fa", "#f472b6", "#a3e635"]
 
 # ─────────────────────────────────────────────────────────────
 # ESTILOS
@@ -58,11 +68,10 @@ CSS = """
   color:var(--text) !important;
 }
 
-/* Quitar elementos de Streamlit, pero conservar el botón del sidebar (importante en móvil) */
+/* Quitar elementos de Streamlit, pero conservar el botón del sidebar */
 #MainMenu, footer, [data-testid="stDecoration"], [data-testid="stMainMenu"],
 [data-testid="stAppDeployButton"], .stDeployButton, [data-testid="stToolbarActions"]{display:none !important;}
 header[data-testid="stHeader"], [data-testid="stToolbar"]{background:transparent !important;}
-/* Botones para abrir/cerrar la barra lateral: siempre visibles */
 [data-testid="stExpandSidebarButton"], [data-testid="collapsedControl"],
 [data-testid="stSidebarCollapseButton"], [data-testid="stSidebarCollapsedControl"]{
   visibility:visible !important; opacity:1 !important; color:var(--cyan) !important;
@@ -91,6 +100,17 @@ header[data-testid="stHeader"], [data-testid="stToolbar"]{background:transparent
 .chip.pos{background:rgba(52,211,153,.12); color:var(--green);}
 .chip.neg{background:rgba(251,113,133,.12); color:var(--rose);}
 .chip.neutral{background:rgba(255,255,255,.06); color:var(--muted);}
+
+/* Desglose por categoría */
+.cat-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:20px 20px 10px;}
+.stack{display:flex; gap:3px; height:12px; border-radius:999px; overflow:hidden; margin-bottom:16px;}
+.stack > div{height:100%;}
+.cat-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--line); font-size:.92rem;}
+.cat-row:first-of-type{border-top:none;}
+.dot{width:10px; height:10px; border-radius:50%; flex:none;}
+.cat-name{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.cat-pct{color:var(--muted); font-size:.8rem; width:38px; text-align:right;}
+.cat-amt{font-weight:600; font-variant-numeric:tabular-nums; min-width:80px; text-align:right;}
 
 /* Lista de movimientos estilo app bancaria */
 .tx-wrap{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:6px 18px;}
@@ -125,7 +145,31 @@ header[data-testid="stHeader"], [data-testid="stToolbar"]{background:transparent
 /* Sidebar */
 [data-testid="stSidebar"]{background:#0c111c !important; border-right:1px solid var(--line) !important;}
 [data-testid="stSidebar"] [data-testid="stForm"]{border:none !important; padding:0 !important;}
-.side-brand{font-size:1.15rem; font-weight:700; margin:4px 0 18px;}
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p{
+  color:var(--muted); font-size:.72rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+}
+.who{display:flex; align-items:center; gap:12px; padding:14px; margin:2px 0 22px;
+     background:var(--surface); border:1px solid var(--line); border-radius:16px;}
+.avatar{width:42px; height:42px; border-radius:14px; display:grid; place-items:center;
+        font-weight:800; font-size:1.1rem; color:#04121a; flex:none;}
+.who-name{font-weight:700; font-size:1rem; line-height:1.2;}
+.who-sub{color:var(--muted); font-size:.78rem;}
+[data-testid="stNumberInput"] input{font-size:1.35rem !important; font-weight:700 !important;}
+button[data-testid="stBaseButton-pills"], button[data-testid="stBaseButton-segmented_control"]{
+  border-radius:999px !important; border:1px solid var(--line) !important; background:var(--surface-2) !important;
+}
+button[data-testid="stBaseButton-pillsActive"], button[data-testid="stBaseButton-segmented_controlActive"]{
+  border-radius:999px !important; border:1px solid var(--cyan) !important; background:rgba(0,229,255,.14) !important;
+  color:var(--cyan) !important;
+}
+
+/* Pantalla de acceso */
+.login-logo{font-size:3rem; text-align:center; margin-bottom:6px;}
+.login-card{background:var(--surface); border:1px solid var(--line); border-radius:20px;
+            padding:24px 12px 14px; text-align:center; margin-bottom:10px;}
+.avatar-lg{width:64px; height:64px; border-radius:20px; display:grid; place-items:center; margin:0 auto 10px;
+           font-weight:800; font-size:1.7rem; color:#04121a;}
+.login-name{font-weight:700; font-size:1.05rem;}
 
 /* Inputs */
 [data-baseweb="input"], [data-baseweb="base-input"], [data-baseweb="select"] > div, textarea{
@@ -145,6 +189,10 @@ header[data-testid="stHeader"], [data-testid="stToolbar"]{background:transparent
   transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,229,255,.25);
 }
 .stButton > button:disabled{opacity:.35;}
+.st-key-logout button, .st-key-volver button{
+  background:transparent !important; color:var(--muted) !important; border:1px solid var(--line) !important;
+}
+.st-key-logout button p, .st-key-volver button p{color:var(--muted) !important;}
 .stDownloadButton > button{
   background:transparent !important; color:var(--cyan) !important; font-weight:600 !important;
   border:1px solid rgba(0,229,255,.35) !important; border-radius:12px !important; width:100%;
@@ -173,54 +221,117 @@ def get_conn():
         conn.close()
 
 
+def _columnas(conn, tabla):
+    return [fila[1] for fila in conn.execute(f"PRAGMA table_info({tabla})")]
+
+
+def _existe(conn, tabla):
+    return conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (tabla,)
+    ).fetchone() is not None
+
+
 @st.cache_resource
 def init_db():
-    """Crea las tablas una sola vez por sesión del servidor."""
+    """Crea tablas y migra datos viejos (sin perfil) al perfil original."""
     with get_conn() as conn:
-        conn.executescript(
-            """
-            PRAGMA journal_mode=WAL;
-            CREATE TABLE IF NOT EXISTS transacciones (
+        conn.execute("PRAGMA journal_mode=WAL")
+
+        # Movimientos
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS transacciones (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                tipo TEXT,
-                categoria TEXT,
-                monto REAL,
-                descripcion TEXT,
-                fecha TEXT
-            );
-            CREATE INDEX IF NOT EXISTS idx_transacciones_fecha ON transacciones(fecha);
-            CREATE TABLE IF NOT EXISTS presupuestos (
-                categoria TEXT PRIMARY KEY,
-                limite REAL NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS ajustes (
-                clave TEXT PRIMARY KEY,
-                valor TEXT
-            );
-            """
+                tipo TEXT, categoria TEXT, monto REAL, descripcion TEXT, fecha TEXT,
+                perfil TEXT
+            )"""
+        )
+        if "perfil" not in _columnas(conn, "transacciones"):
+            conn.execute("ALTER TABLE transacciones ADD COLUMN perfil TEXT")
+        conn.execute("UPDATE transacciones SET perfil = ? WHERE perfil IS NULL OR perfil = ''",
+                     (PERFIL_ORIGINAL,))
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_tx_perfil_fecha ON transacciones(perfil, fecha)")
+
+        # Presupuestos (clave: perfil + categoría)
+        if _existe(conn, "presupuestos") and "perfil" not in _columnas(conn, "presupuestos"):
+            conn.execute("ALTER TABLE presupuestos RENAME TO presupuestos_old")
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS presupuestos (
+                perfil TEXT NOT NULL, categoria TEXT NOT NULL, limite REAL NOT NULL,
+                PRIMARY KEY (perfil, categoria)
+            )"""
+        )
+        if _existe(conn, "presupuestos_old"):
+            conn.execute(
+                "INSERT OR IGNORE INTO presupuestos (perfil, categoria, limite) "
+                "SELECT ?, categoria, limite FROM presupuestos_old", (PERFIL_ORIGINAL,))
+            conn.execute("DROP TABLE presupuestos_old")
+
+        # Ajustes (clave: perfil + clave)
+        if _existe(conn, "ajustes") and "perfil" not in _columnas(conn, "ajustes"):
+            conn.execute("ALTER TABLE ajustes RENAME TO ajustes_old")
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS ajustes (
+                perfil TEXT NOT NULL, clave TEXT NOT NULL, valor TEXT,
+                PRIMARY KEY (perfil, clave)
+            )"""
+        )
+        if _existe(conn, "ajustes_old"):
+            conn.execute(
+                "INSERT OR IGNORE INTO ajustes (perfil, clave, valor) "
+                "SELECT ?, clave, valor FROM ajustes_old", (PERFIL_ORIGINAL,))
+            conn.execute("DROP TABLE ajustes_old")
+
+        # PIN de cada perfil (guardado con hash, nunca en texto plano)
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS perfiles (nombre TEXT PRIMARY KEY, pin_hash TEXT, sal TEXT)"
         )
     return True
 
 
-def agregar_transaccion(tipo, categoria, monto, descripcion, fecha):
+# ── PIN ──
+def _hash_pin(pin, sal_hex):
+    return hashlib.pbkdf2_hmac("sha256", pin.encode(), bytes.fromhex(sal_hex), 120_000).hex()
+
+
+def perfil_tiene_pin(nombre):
+    with get_conn() as conn:
+        return conn.execute("SELECT 1 FROM perfiles WHERE nombre = ?", (nombre,)).fetchone() is not None
+
+
+def crear_pin(nombre, pin):
+    sal = secrets.token_hex(16)
+    with get_conn() as conn:
+        conn.execute("INSERT OR REPLACE INTO perfiles (nombre, pin_hash, sal) VALUES (?, ?, ?)",
+                     (nombre, _hash_pin(pin, sal), sal))
+
+
+def verificar_pin(nombre, pin):
+    with get_conn() as conn:
+        fila = conn.execute("SELECT pin_hash, sal FROM perfiles WHERE nombre = ?", (nombre,)).fetchone()
+    return bool(fila) and hmac.compare_digest(fila[0], _hash_pin(pin, fila[1]))
+
+
+# ── Datos del perfil activo ──
+def agregar_transaccion(perfil, tipo, categoria, monto, descripcion, fecha):
     with get_conn() as conn:
         conn.execute(
-            "INSERT INTO transacciones (tipo, categoria, monto, descripcion, fecha) VALUES (?, ?, ?, ?, ?)",
-            (tipo, categoria, float(monto), descripcion, str(fecha)),
+            "INSERT INTO transacciones (tipo, categoria, monto, descripcion, fecha, perfil) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (tipo, categoria, float(monto), descripcion, str(fecha), perfil),
         )
 
 
-def eliminar_transaccion(id_):
+def eliminar_transaccion(perfil, id_):
     with get_conn() as conn:
-        conn.execute("DELETE FROM transacciones WHERE id = ?", (int(id_),))
+        conn.execute("DELETE FROM transacciones WHERE id = ? AND perfil = ?", (int(id_), perfil))
 
 
-def obtener_datos():
+def obtener_datos(perfil):
     with get_conn() as conn:
         df = pd.read_sql_query(
             "SELECT id, tipo, categoria, monto, descripcion, fecha FROM transacciones "
-            "ORDER BY fecha DESC, id DESC",
-            conn,
+            "WHERE perfil = ? ORDER BY fecha DESC, id DESC",
+            conn, params=(perfil,),
         )
     df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
     df = df.dropna(subset=["fecha"]).copy()
@@ -229,36 +340,38 @@ def obtener_datos():
     return df
 
 
-def obtener_presupuestos():
+def obtener_presupuestos(perfil):
     with get_conn() as conn:
-        filas = conn.execute("SELECT categoria, limite FROM presupuestos").fetchall()
+        filas = conn.execute("SELECT categoria, limite FROM presupuestos WHERE perfil = ?",
+                             (perfil,)).fetchall()
     return {c: l for c, l in filas}
 
 
-def guardar_presupuesto(categoria, limite):
+def guardar_presupuesto(perfil, categoria, limite):
     with get_conn() as conn:
         if limite <= 0:
-            conn.execute("DELETE FROM presupuestos WHERE categoria = ?", (categoria,))
+            conn.execute("DELETE FROM presupuestos WHERE perfil = ? AND categoria = ?", (perfil, categoria))
         else:
             conn.execute(
-                "INSERT INTO presupuestos (categoria, limite) VALUES (?, ?) "
-                "ON CONFLICT(categoria) DO UPDATE SET limite = excluded.limite",
-                (categoria, float(limite)),
+                "INSERT INTO presupuestos (perfil, categoria, limite) VALUES (?, ?, ?) "
+                "ON CONFLICT(perfil, categoria) DO UPDATE SET limite = excluded.limite",
+                (perfil, categoria, float(limite)),
             )
 
 
-def get_ajuste(clave, default=""):
+def get_ajuste(perfil, clave, default=""):
     with get_conn() as conn:
-        fila = conn.execute("SELECT valor FROM ajustes WHERE clave = ?", (clave,)).fetchone()
+        fila = conn.execute("SELECT valor FROM ajustes WHERE perfil = ? AND clave = ?",
+                            (perfil, clave)).fetchone()
     return fila[0] if fila else default
 
 
-def set_ajuste(clave, valor):
+def set_ajuste(perfil, clave, valor):
     with get_conn() as conn:
         conn.execute(
-            "INSERT INTO ajustes (clave, valor) VALUES (?, ?) "
-            "ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor",
-            (clave, str(valor)),
+            "INSERT INTO ajustes (perfil, clave, valor) VALUES (?, ?, ?) "
+            "ON CONFLICT(perfil, clave) DO UPDATE SET valor = excluded.valor",
+            (perfil, clave, str(valor)),
         )
 
 
@@ -308,6 +421,12 @@ def icono(tipo, categoria):
     return CATEGORIAS.get(tipo, {}).get(categoria, "💳")
 
 
+def avatar(nombre, grande=False):
+    color = PERFILES.get(nombre, CIAN)
+    clase = "avatar-lg" if grande else "avatar"
+    return f'<div class="{clase}" style="background:{color}">{html.escape(nombre[:1].upper())}</div>'
+
+
 def tarjeta(titulo, valor, ico, delta=None, sube_es_bueno=True, hero=False,
             nota=None, negativo=False):
     if delta is not None:
@@ -330,6 +449,21 @@ def barra(pct):
     return f'<div class="bar {estado}"><div style="width:{min(pct, 100):.1f}%"></div></div>'
 
 
+def desglose_categorias(gc):
+    total = gc["monto"].sum()
+    segmentos, filas = [], []
+    for i, r in enumerate(gc.itertuples()):
+        color = PALETA[i % len(PALETA)]
+        pct = r.monto / total * 100
+        segmentos.append(f'<div style="width:{pct:.2f}%;background:{color}"></div>')
+        filas.append(
+            f'<div class="cat-row"><span class="dot" style="background:{color}"></span>'
+            f'<span class="cat-name">{icono("Gasto", r.categoria)} {html.escape(r.categoria)}</span>'
+            f'<span class="cat-pct">{pct:.0f}%</span><span class="cat-amt">{dinero(r.monto)}</span></div>'
+        )
+    return f'<div class="cat-card"><div class="stack">{"".join(segmentos)}</div>{"".join(filas)}</div>'
+
+
 def lista_movimientos(df_):
     filas = []
     for r in df_.itertuples():
@@ -346,43 +480,137 @@ def lista_movimientos(df_):
 
 
 # ─────────────────────────────────────────────────────────────
-# DATOS Y ESTADO
+# PANTALLA DE ACCESO (elegir perfil + PIN)
+# ─────────────────────────────────────────────────────────────
+def pantalla_acceso():
+    st.markdown("<div style='height:5vh'></div>", unsafe_allow_html=True)
+    _, centro, _ = st.columns([1, 1.6, 1])
+    with centro:
+        st.markdown(
+            '<div class="login-logo">💰</div>'
+            '<div class="app-title" style="text-align:center">Mis Finanzas</div>'
+            '<div class="app-sub" style="text-align:center;margin-bottom:26px">¿Quién va a entrar?</div>',
+            unsafe_allow_html=True,
+        )
+        elegido = st.session_state.get("perfil_elegido")
+
+        if elegido not in PERFILES:
+            columnas = st.columns(len(PERFILES))
+            for col, nombre in zip(columnas, PERFILES):
+                with col:
+                    st.markdown(
+                        f'<div class="login-card">{avatar(nombre, True)}'
+                        f'<div class="login-name">{html.escape(nombre)}</div></div>',
+                        unsafe_allow_html=True,
+                    )
+                    if st.button("Entrar", key=f"sel_{nombre}"):
+                        st.session_state["perfil_elegido"] = nombre
+                        st.rerun()
+            return
+
+        tiene_pin = perfil_tiene_pin(elegido)
+        st.markdown(
+            f'<div class="login-card">{avatar(elegido, True)}'
+            f'<div class="login-name">Hola, {html.escape(elegido)}</div></div>',
+            unsafe_allow_html=True,
+        )
+        with st.form("form_pin"):
+            if tiene_pin:
+                pin = st.text_input("PIN", type="password", max_chars=6)
+                pin2 = None
+            else:
+                st.caption("Primera vez: crea un PIN de 4 a 6 dígitos para proteger tus finanzas.")
+                pin = st.text_input("Crea tu PIN", type="password", max_chars=6)
+                pin2 = st.text_input("Repite tu PIN", type="password", max_chars=6)
+            continuar = st.form_submit_button("Continuar")
+
+        if continuar:
+            if tiene_pin:
+                if verificar_pin(elegido, pin):
+                    st.session_state["perfil"] = elegido
+                    st.session_state.pop("perfil_elegido", None)
+                    st.rerun()
+                else:
+                    st.error("PIN incorrecto.")
+            elif not (pin.isdigit() and 4 <= len(pin) <= 6):
+                st.error("El PIN debe tener entre 4 y 6 números.")
+            elif pin != pin2:
+                st.error("Los PIN no coinciden.")
+            else:
+                crear_pin(elegido, pin)
+                st.session_state["perfil"] = elegido
+                st.session_state.pop("perfil_elegido", None)
+                st.rerun()
+
+        if st.button("← Cambiar de perfil", key="volver"):
+            st.session_state.pop("perfil_elegido", None)
+            st.rerun()
+
+
+# ─────────────────────────────────────────────────────────────
+# ARRANQUE: acceso por perfil
 # ─────────────────────────────────────────────────────────────
 init_db()
-df = obtener_datos()
+
+perfil = st.session_state.get("perfil")
+if perfil not in PERFILES:
+    pantalla_acceso()
+    st.stop()
+
+df = obtener_datos(perfil)
 hoy = datetime.date.today()
 mes_actual = hoy.strftime("%Y-%m")
 
 if "flash" in st.session_state:
     st.toast(st.session_state.pop("flash"), icon="✅")
 
+
+def elegir_tipo():
+    fmt = {"Gasto": "💸 Gasto", "Ingreso": "💵 Ingreso"}.get
+    if hasattr(st, "segmented_control"):
+        return st.segmented_control("Tipo", ["Gasto", "Ingreso"], default="Gasto", format_func=fmt,
+                                    key="tipo_mov", label_visibility="collapsed") or "Gasto"
+    return st.radio("Tipo", ["Gasto", "Ingreso"], horizontal=True, format_func=fmt,
+                    key="tipo_mov", label_visibility="collapsed")
+
+
+def elegir_categoria(tipo_):
+    opciones = list(CATEGORIAS[tipo_])
+    fmt = lambda c: f"{CATEGORIAS[tipo_][c]} {c}"
+    if hasattr(st, "pills"):
+        return st.pills("Categoría", opciones, selection_mode="single", default=opciones[0],
+                        format_func=fmt, key=f"cat_{tipo_}")
+    return st.selectbox("Categoría", opciones, format_func=fmt)
+
+
 # ─────────────────────────────────────────────────────────────
-# BARRA LATERAL: registrar movimiento
+# BARRA LATERAL
 # ─────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown('<div class="side-brand">💰 Mis Finanzas</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="who">{avatar(perfil)}<div><div class="who-name">{html.escape(perfil)}</div>'
+        f'<div class="who-sub">Mis finanzas</div></div></div>',
+        unsafe_allow_html=True,
+    )
     st.markdown('<div class="sec">Nuevo movimiento</div>', unsafe_allow_html=True)
 
     # El tipo va FUERA del formulario para que las categorías cambien al instante
-    tipo = st.radio("Tipo", ["Gasto", "Ingreso"], horizontal=True,
-                    label_visibility="collapsed", key="tipo_mov")
+    tipo = elegir_tipo()
 
     with st.form("form_transaccion", clear_on_submit=True):
-        categoria = st.selectbox(
-            "Categoría",
-            list(CATEGORIAS[tipo]),
-            format_func=lambda c: f"{CATEGORIAS[tipo][c]}  {c}",
-        )
+        categoria = elegir_categoria(tipo)
         monto = st.number_input(f"Monto ({MONEDA})", min_value=0.0, value=0.0, step=1.0, format="%.2f")
-        descripcion = st.text_input("Descripción (opcional)", max_chars=80)
-        fecha = st.date_input("Fecha", hoy)
+        descripcion = st.text_input("Descripción", placeholder="Opcional", max_chars=80)
+        fecha = st.date_input("Fecha", hoy, format="DD/MM/YYYY")
         guardar = st.form_submit_button("Guardar movimiento")
 
     if guardar:
-        if monto <= 0:
+        if categoria is None:
+            st.error("Elige una categoría.")
+        elif monto <= 0:
             st.error("El monto debe ser mayor a 0.")
         else:
-            agregar_transaccion(tipo, categoria, round(monto, 2), descripcion.strip(), fecha)
+            agregar_transaccion(perfil, tipo, categoria, round(monto, 2), descripcion.strip(), fecha)
             st.session_state["flash"] = f"{tipo} de {dinero(monto)} guardado"
             st.session_state["periodo"] = fecha.strftime("%Y-%m")  # saltar al mes del movimiento
             st.rerun()
@@ -395,11 +623,14 @@ with st.sidebar:
             .to_csv(index=False)
             .encode("utf-8-sig")
         )
-        st.download_button("⬇️ Respaldo completo (CSV)", respaldo,
-                           file_name="finanzas_respaldo.csv", mime="text/csv")
+        st.download_button("⬇️ Respaldo (CSV)", respaldo,
+                           file_name=f"finanzas_{perfil.lower()}_respaldo.csv", mime="text/csv")
+    if st.button("Cambiar de perfil", key="logout"):
+        st.session_state.clear()
+        st.rerun()
     st.markdown(
         "<p style='color:#8b98ab; font-size:.78rem; text-align:center; margin-top:12px;'>"
-        "🔒 Tus datos viven en una base SQLite local.</p>",
+        "🔒 Datos locales · cada perfil tiene su PIN.</p>",
         unsafe_allow_html=True,
     )
 
@@ -414,7 +645,7 @@ if st.session_state.get("periodo") not in opciones_periodo:
 col_t, col_f = st.columns([3, 1.3], vertical_alignment="center")
 with col_t:
     st.markdown(
-        f'<div class="app-title">Hola, {html.escape(NOMBRE)} 👋</div>'
+        f'<div class="app-title">Hola, {html.escape(perfil)} 👋</div>'
         '<div class="app-sub">Así van tus finanzas.</div>',
         unsafe_allow_html=True,
     )
@@ -466,7 +697,7 @@ with tab_res:
     g1, g2 = st.columns(2)
 
     with g1:
-        st.markdown('<div class="sec">Gastos por categoría</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sec">En qué se va tu dinero</div>', unsafe_allow_html=True)
         gc = (
             df_p[df_p["tipo"] == "Gasto"]
             .groupby("categoria", as_index=False)["monto"].sum()
@@ -475,59 +706,53 @@ with tab_res:
         if gc.empty:
             st.info("Aún no hay gastos en este periodo.")
         else:
-            chart = (
-                alt.Chart(gc)
-                .mark_bar(cornerRadiusEnd=6, color=CIAN, size=18)
+            st.markdown(desglose_categorias(gc), unsafe_allow_html=True)
+
+    with g2:
+        gastos_p = df_p[df_p["tipo"] == "Gasto"]
+        if periodo == TODO:
+            st.markdown('<div class="sec">Gastos por mes</div>', unsafe_allow_html=True)
+            base = (df[df["tipo"] == "Gasto"].groupby("mes", as_index=False)["monto"].sum()
+                    .sort_values("mes").tail(12))
+            base["etiqueta"] = base["mes"].map(etiqueta_corta)
+            eje_x = alt.X("etiqueta:N", sort=base["etiqueta"].tolist(), title=None,
+                          axis=alt.Axis(labelAngle=0, labelColor=MUTED, ticks=False, domain=False))
+            titulo_x, pie_chart = "Mes", None
+        else:
+            st.markdown('<div class="sec">Gasto diario</div>', unsafe_allow_html=True)
+            anio, mes_n = map(int, periodo.split("-"))
+            n_dias = calendar.monthrange(anio, mes_n)[1]
+            por_dia = gastos_p.groupby(gastos_p["fecha"].dt.day)["monto"].sum()
+            base = pd.DataFrame({"etiqueta": list(range(1, n_dias + 1))})
+            base["monto"] = base["etiqueta"].map(por_dia).fillna(0.0)
+            eje_x = alt.X("etiqueta:O", title=None,
+                          axis=alt.Axis(labelAngle=0, labelColor=MUTED, ticks=False, domain=False,
+                                        labelOverlap=True))
+            titulo_x = "Día"
+            dias_transcurridos = hoy.day if periodo == mes_actual else n_dias
+            pie_chart = f"Promedio diario: **{dinero(gas / max(dias_transcurridos, 1))}**"
+
+        if gastos_p.empty:
+            st.info("Aún no hay gastos en este periodo.")
+        else:
+            barras = (
+                alt.Chart(base)
+                .mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5, color=CIAN, opacity=0.9)
                 .encode(
-                    y=alt.Y("categoria:N", sort="-x", title=None,
-                            axis=alt.Axis(labelColor="#c9d3e0", ticks=False, domain=False, labelLimit=140)),
-                    x=alt.X("monto:Q", title=None,
+                    x=eje_x,
+                    y=alt.Y("monto:Q", title=None,
                             axis=alt.Axis(labelColor=MUTED, gridColor="rgba(255,255,255,0.06)",
                                           domain=False, ticks=False)),
-                    tooltip=[alt.Tooltip("categoria:N", title="Categoría"),
-                             alt.Tooltip("monto:Q", title="Total", format=",.2f")],
+                    tooltip=[alt.Tooltip("etiqueta", title=titulo_x),
+                             alt.Tooltip("monto:Q", title="Gastado", format=",.2f")],
                 )
-                .properties(height=max(180, 44 * len(gc)))
+                .properties(height=250)
                 .configure_view(strokeWidth=0)
                 .configure(background="transparent")
             )
-            stretch(st.altair_chart, chart)
-            top = gc.iloc[0]
-            st.caption(f"Tu mayor gasto es **{top['categoria']}** "
-                       f"({top['monto'] / gc['monto'].sum() * 100:.0f}% del total).")
-
-    with g2:
-        st.markdown('<div class="sec">Evolución mensual</div>', unsafe_allow_html=True)
-        res = df.groupby(["mes", "tipo"])["monto"].sum().unstack(fill_value=0)
-        for col in ("Ingreso", "Gasto"):
-            if col not in res:
-                res[col] = 0.0
-        res = res[["Ingreso", "Gasto"]].sort_index().tail(6).reset_index()
-        res["etiqueta"] = res["mes"].map(etiqueta_corta)
-        orden = res["etiqueta"].tolist()
-        largo = res.melt(id_vars="etiqueta", value_vars=["Ingreso", "Gasto"],
-                         var_name="tipo", value_name="monto")
-        linea = (
-            alt.Chart(largo)
-            .mark_line(point=alt.OverlayMarkDef(size=70), strokeWidth=3, interpolate="monotone")
-            .encode(
-                x=alt.X("etiqueta:N", sort=orden, title=None,
-                        axis=alt.Axis(labelAngle=0, labelColor=MUTED, ticks=False, domain=False)),
-                y=alt.Y("monto:Q", title=None,
-                        axis=alt.Axis(labelColor=MUTED, gridColor="rgba(255,255,255,0.06)",
-                                      domain=False, ticks=False)),
-                color=alt.Color("tipo:N",
-                                scale=alt.Scale(domain=["Ingreso", "Gasto"], range=[CIAN, ROSA]),
-                                legend=alt.Legend(orient="top", title=None, labelColor="#c9d3e0")),
-                tooltip=[alt.Tooltip("etiqueta:N", title="Mes"),
-                         alt.Tooltip("tipo:N", title="Tipo"),
-                         alt.Tooltip("monto:Q", title="Total", format=",.2f")],
-            )
-            .properties(height=max(180, 44 * max(len(gc), 4)))
-            .configure_view(strokeWidth=0)
-            .configure(background="transparent")
-        )
-        stretch(st.altair_chart, linea)
+            stretch(st.altair_chart, barras)
+            if pie_chart:
+                st.caption(pie_chart)
 
     st.markdown('<div class="sec">Últimos movimientos</div>', unsafe_allow_html=True)
     if df_p.empty:
@@ -590,7 +815,7 @@ with tab_mov:
         )
         nombre_csv = "historial" if periodo == TODO else periodo
         st.download_button("⬇️ Exportar esta vista a CSV", csv,
-                           file_name=f"finanzas_{nombre_csv}.csv", mime="text/csv")
+                           file_name=f"finanzas_{perfil.lower()}_{nombre_csv}.csv", mime="text/csv")
 
         with st.expander("🗑️ Eliminar un movimiento"):
             etiquetas = {
@@ -602,7 +827,7 @@ with tab_mov:
                                    label_visibility="collapsed")
             confirmar = st.checkbox("Confirmo que quiero eliminarlo")
             if st.button("Eliminar movimiento", disabled=not confirmar):
-                eliminar_transaccion(elegido)
+                eliminar_transaccion(perfil, elegido)
                 st.session_state["flash"] = "Movimiento eliminado"
                 st.rerun()
 
@@ -610,7 +835,7 @@ with tab_mov:
 # TAB 3 · PRESUPUESTOS (por categoría, mensuales)
 # ─────────────────────────────────────────────────────────────
 with tab_pre:
-    presupuestos = obtener_presupuestos()
+    presupuestos = obtener_presupuestos(perfil)
     gastado_mes = (
         df[(df["mes"] == mes_ref) & (df["tipo"] == "Gasto")]
         .groupby("categoria")["monto"].sum().to_dict()
@@ -646,7 +871,7 @@ with tab_pre:
             limite_p = st.number_input(f"Límite mensual ({MONEDA}) — usa 0 para quitarlo",
                                        min_value=0.0, value=0.0, step=10.0, format="%.2f")
             if st.form_submit_button("Guardar presupuesto"):
-                guardar_presupuesto(cat_p, limite_p)
+                guardar_presupuesto(perfil, cat_p, limite_p)
                 st.session_state["flash"] = "Presupuesto actualizado"
                 st.rerun()
 
@@ -654,9 +879,9 @@ with tab_pre:
 # TAB 4 · METAS DE AHORRO
 # ─────────────────────────────────────────────────────────────
 with tab_meta:
-    meta_nombre = get_ajuste("meta_nombre", "")
+    meta_nombre = get_ajuste(perfil, "meta_nombre", "")
     try:
-        meta_obj = float(get_ajuste("meta_objetivo", "0"))
+        meta_obj = float(get_ajuste(perfil, "meta_objetivo", "0"))
     except ValueError:
         meta_obj = 0.0
 
@@ -698,7 +923,7 @@ with tab_meta:
             nuevo_obj = st.number_input(f"Monto objetivo ({MONEDA})", min_value=0.0,
                                         value=meta_obj, step=50.0, format="%.2f")
             if st.form_submit_button("Guardar meta"):
-                set_ajuste("meta_nombre", nuevo_nombre.strip())
-                set_ajuste("meta_objetivo", nuevo_obj)
+                set_ajuste(perfil, "meta_nombre", nuevo_nombre.strip())
+                set_ajuste(perfil, "meta_objetivo", nuevo_obj)
                 st.session_state["flash"] = "Meta guardada"
                 st.rerun()
