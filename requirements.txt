@@ -1,7 +1,2 @@
 streamlit
-groq
-edge-tts
-chromadb
-supabase
-requests
-Pillow
+pandas
