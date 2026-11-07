@@ -30,7 +30,7 @@ st.set_page_config(
     page_title="Mis Finanzas",
     page_icon="💰",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 # Perfiles: nombre -> color del avatar. Agrega o cambia nombres aquí.
@@ -70,11 +70,18 @@ CSS = """
   color:var(--text) !important;
 }
 #MainMenu, footer, [data-testid="stDecoration"], [data-testid="stMainMenu"],
-[data-testid="stAppDeployButton"], .stDeployButton, [data-testid="stToolbarActions"],
-[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], [data-testid="stExpandSidebarButton"]{
+[data-testid="stAppDeployButton"], .stDeployButton, [data-testid="stToolbarActions"]{
   display:none !important;
 }
 header[data-testid="stHeader"], [data-testid="stToolbar"]{background:transparent !important;}
+/* Botones para abrir/cerrar la barra lateral: siempre visibles */
+[data-testid="stExpandSidebarButton"], [data-testid="collapsedControl"],
+[data-testid="stSidebarCollapseButton"], [data-testid="stSidebarCollapsedControl"]{
+  visibility:visible !important; opacity:1 !important; color:var(--cyan) !important;
+}
+/* Barra lateral */
+[data-testid="stSidebar"]{background:#0c111c !important; border-right:1px solid var(--line) !important;}
+[data-testid="stSidebar"] [data-testid="stForm"]{border:none !important; background:transparent !important; padding:0 !important;}
 .block-container{padding:2rem 2rem 4rem !important; max-width:1120px !important;}
 
 /* Encabezado */
@@ -188,10 +195,10 @@ button[data-testid="stBaseButton-pillsActive"], button[data-testid="stBaseButton
   transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,229,255,.25);
 }
 .stButton > button:disabled{opacity:.35;}
-.st-key-logout button, .st-key-volver button{
+.st-key-logout button, .st-key-logout_side button, .st-key-volver button{
   background:transparent !important; color:var(--muted) !important; border:1px solid var(--line) !important;
 }
-.st-key-logout button p, .st-key-volver button p{color:var(--muted) !important;}
+.st-key-logout button p, .st-key-logout_side button p, .st-key-volver button p{color:var(--muted) !important;}
 .stDownloadButton > button{
   background:transparent !important; color:var(--cyan) !important; font-weight:600 !important;
   border:1px solid rgba(0,229,255,.35) !important; border-radius:12px !important; width:100%;
@@ -562,22 +569,78 @@ if "flash" in st.session_state:
     st.toast(st.session_state.pop("flash"), icon="✅")
 
 
-def elegir_tipo():
+def elegir_tipo(prefijo):
     fmt = {"Gasto": "💸 Gasto", "Ingreso": "💵 Ingreso"}.get
     if hasattr(st, "segmented_control"):
         return st.segmented_control("Tipo", ["Gasto", "Ingreso"], default="Gasto", format_func=fmt,
-                                    key="tipo_mov", label_visibility="collapsed") or "Gasto"
+                                    key=f"{prefijo}_tipo", label_visibility="collapsed") or "Gasto"
     return st.radio("Tipo", ["Gasto", "Ingreso"], horizontal=True, format_func=fmt,
-                    key="tipo_mov", label_visibility="collapsed")
+                    key=f"{prefijo}_tipo", label_visibility="collapsed")
 
 
-def elegir_categoria(tipo_):
+def elegir_categoria(tipo_, prefijo):
     opciones = list(CATEGORIAS[tipo_])
     fmt = lambda c: f"{CATEGORIAS[tipo_][c]} {c}"
     if hasattr(st, "pills"):
         return st.pills("Categoría", opciones, selection_mode="single", default=opciones[0],
-                        format_func=fmt, key=f"cat_{tipo_}")
-    return st.selectbox("Categoría", opciones, format_func=fmt)
+                        format_func=fmt, key=f"{prefijo}_cat_{tipo_}")
+    return st.selectbox("Categoría", opciones, format_func=fmt, key=f"{prefijo}_cat_{tipo_}")
+
+
+def formulario_movimiento(prefijo):
+    """Formulario de nuevo movimiento. Se usa en la barra lateral (PC) y en la pestaña Agregar (teléfono)."""
+    # El tipo va FUERA del formulario para que las categorías cambien al instante
+    tipo = elegir_tipo(prefijo)
+    with st.form(f"form_mov_{prefijo}", clear_on_submit=True):
+        categoria = elegir_categoria(tipo, prefijo)
+        monto = st.number_input(f"Monto ({MONEDA})", min_value=0.0, value=0.0, step=1.0,
+                                format="%.2f", key=f"{prefijo}_monto")
+        descripcion = st.text_input("Descripción", placeholder="Opcional", max_chars=80,
+                                    key=f"{prefijo}_desc")
+        fecha = st.date_input("Fecha", hoy, format="DD/MM/YYYY", key=f"{prefijo}_fecha")
+        guardar = st.form_submit_button("Guardar movimiento")
+
+    if guardar:
+        if categoria is None:
+            st.error("Elige una categoría.")
+        elif monto <= 0:
+            st.error("El monto debe ser mayor a 0.")
+        elif agregar_transaccion(perfil, tipo, categoria, round(monto, 2), descripcion.strip(), fecha):
+            st.session_state["flash"] = f"{tipo} de {dinero(monto)} guardado"
+            st.session_state["periodo"] = fecha.strftime("%Y-%m")  # saltar al mes del movimiento
+            st.rerun()
+
+
+# ─────────────────────────────────────────────────────────────
+# BARRA LATERAL (en el teléfono se abre con la flecha de arriba a la izquierda)
+# ─────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown(
+        f'<div class="who">{avatar(perfil)}<div><div class="who-name">{html.escape(perfil)}</div>'
+        f'<div class="who-sub">Mis finanzas</div></div></div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div class="sec">Nuevo movimiento</div>', unsafe_allow_html=True)
+    formulario_movimiento("side")
+
+    st.markdown("---")
+    if not df.empty:
+        respaldo_lateral = (
+            df[["fecha", "tipo", "categoria", "monto", "descripcion"]]
+            .assign(fecha=lambda d: d["fecha"].dt.strftime("%Y-%m-%d"))
+            .to_csv(index=False)
+            .encode("utf-8-sig")
+        )
+        st.download_button("⬇️ Respaldo (CSV)", respaldo_lateral, key="dl_side",
+                           file_name=f"finanzas_{perfil.lower()}_respaldo.csv", mime="text/csv")
+    if st.button("Cambiar de perfil", key="logout_side"):
+        st.session_state.clear()
+        st.rerun()
+    st.markdown(
+        "<p style='color:#8b98ab; font-size:.78rem; text-align:center; margin-top:12px;'>"
+        "🔒 Datos en la nube · cada perfil tiene su PIN.</p>",
+        unsafe_allow_html=True,
+    )
 
 
 # ─────────────────────────────────────────────────────────────
@@ -711,25 +774,7 @@ with tab_res:
 # ─────────────────────────────────────────────────────────────
 with tab_add:
     st.markdown('<div class="sec">Nuevo movimiento</div>', unsafe_allow_html=True)
-    # El tipo va FUERA del formulario para que las categorías cambien al instante
-    tipo = elegir_tipo()
-
-    with st.form("form_transaccion", clear_on_submit=True):
-        categoria = elegir_categoria(tipo)
-        monto = st.number_input(f"Monto ({MONEDA})", min_value=0.0, value=0.0, step=1.0, format="%.2f")
-        descripcion = st.text_input("Descripción", placeholder="Opcional", max_chars=80)
-        fecha = st.date_input("Fecha", hoy, format="DD/MM/YYYY")
-        guardar = st.form_submit_button("Guardar movimiento")
-
-    if guardar:
-        if categoria is None:
-            st.error("Elige una categoría.")
-        elif monto <= 0:
-            st.error("El monto debe ser mayor a 0.")
-        elif agregar_transaccion(perfil, tipo, categoria, round(monto, 2), descripcion.strip(), fecha):
-            st.session_state["flash"] = f"{tipo} de {dinero(monto)} guardado"
-            st.session_state["periodo"] = fecha.strftime("%Y-%m")  # saltar al mes del movimiento
-            st.rerun()
+    formulario_movimiento("tab")
 
 # ─────────────────────────────────────────────────────────────
 # TAB · HISTORIAL
@@ -918,7 +963,7 @@ with tab_cuenta:
             .to_csv(index=False)
             .encode("utf-8-sig")
         )
-        st.download_button("⬇️ Descargar respaldo (CSV)", respaldo,
+        st.download_button("⬇️ Descargar respaldo (CSV)", respaldo, key="dl_cuenta",
                            file_name=f"finanzas_{perfil.lower()}_respaldo.csv", mime="text/csv")
 
     with st.expander("⬆️ Importar movimientos desde un CSV"):
