@@ -59,8 +59,14 @@ CSS = """
 }
 
 /* Quitar elementos de Streamlit, pero conservar el botón del sidebar (importante en móvil) */
-#MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"]{display:none !important;}
-header[data-testid="stHeader"]{background:transparent !important;}
+#MainMenu, footer, [data-testid="stDecoration"], [data-testid="stMainMenu"],
+[data-testid="stAppDeployButton"], .stDeployButton, [data-testid="stToolbarActions"]{display:none !important;}
+header[data-testid="stHeader"], [data-testid="stToolbar"]{background:transparent !important;}
+/* Botones para abrir/cerrar la barra lateral: siempre visibles */
+[data-testid="stExpandSidebarButton"], [data-testid="collapsedControl"],
+[data-testid="stSidebarCollapseButton"], [data-testid="stSidebarCollapsedControl"]{
+  visibility:visible !important; opacity:1 !important; color:var(--cyan) !important;
+}
 .block-container{padding:2.2rem 2rem 4rem !important; max-width:1120px !important;}
 
 /* Encabezado */
