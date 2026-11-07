@@ -38,13 +38,14 @@ PERFILES = {"Leiver": "#00e5ff", "Winderly": "#f472b6"}
 
 MONEDA = "$"
 
-CATEGORIAS = {
+CATEGORIAS_BASE = {
     "Gasto": {
         "Comida": "🍽️", "Transporte": "🚌", "Ropa": "👕", "Servicios": "💡",
         "Hogar": "🏠", "Salud": "🩺", "Ocio": "🎬", "Otros": "📦",
     },
     "Ingreso": {"Sueldo": "💼", "Ventas": "🛍️", "Regalo": "🎁", "Otros": "✨"},
 }
+CATEGORIAS = CATEGORIAS_BASE  # se reemplaza por las categorías del perfil al iniciar sesión
 MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio",
          "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 TODO = "Todo el historial"
@@ -530,6 +531,83 @@ def marcar_pagado(*args):
     return intentar(_marcar_pagado, *args)
 
 
+# ── Categorías editables (por perfil) ──
+SQL_CATEGORIAS = """create table if not exists categorias (
+  id     bigint generated always as identity primary key,
+  perfil text not null,
+  tipo   text not null check (tipo in ('Gasto', 'Ingreso')),
+  nombre text not null,
+  icono  text not null default '🏷️',
+  unique (perfil, tipo, nombre)
+);
+alter table categorias enable row level security;"""
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def obtener_categorias(perfil):
+    """Devuelve (categorías, tabla_disponible). Sin personalizar, usa las categorías base."""
+    base = {t: dict(c) for t, c in CATEGORIAS_BASE.items()}
+    try:
+        filas = db.table("categorias").select("tipo,nombre,icono").eq("perfil", perfil).order("id").execute().data
+    except Exception:
+        return base, False
+    if not filas:
+        return base, True
+    cats = {"Gasto": {}, "Ingreso": {}}
+    for f in filas:
+        cats[f["tipo"]][f["nombre"]] = f["icono"]
+    for t in cats:
+        if not cats[t]:
+            cats[t] = base[t]
+    return cats, True
+
+
+def _sembrar_categorias(perfil):
+    """La primera vez que editas, copia las categorías base a tu perfil."""
+    hay = db.table("categorias").select("id").eq("perfil", perfil).limit(1).execute().data
+    if not hay:
+        filas = [{"perfil": perfil, "tipo": t, "nombre": n, "icono": i}
+                 for t, c in CATEGORIAS_BASE.items() for n, i in c.items()]
+        db.table("categorias").insert(filas).execute()
+
+
+def _agregar_categoria(perfil, tipo, nombre, icono_):
+    _sembrar_categorias(perfil)
+    db.table("categorias").insert({"perfil": perfil, "tipo": tipo, "nombre": nombre, "icono": icono_}).execute()
+
+
+def agregar_categoria(*args):
+    return intentar(_agregar_categoria, *args)
+
+
+def _editar_categoria(perfil, tipo, viejo, nuevo, icono_):
+    _sembrar_categorias(perfil)
+    (db.table("categorias").update({"nombre": nuevo, "icono": icono_})
+     .eq("perfil", perfil).eq("tipo", tipo).eq("nombre", viejo).execute())
+    if nuevo != viejo:  # los movimientos, presupuestos y fijos con el nombre viejo pasan al nuevo
+        (db.table("transacciones").update({"categoria": nuevo})
+         .eq("perfil", perfil).eq("tipo", tipo).eq("categoria", viejo).execute())
+        if tipo == "Gasto":
+            db.table("fijos").update({"categoria": nuevo}).eq("perfil", perfil).eq("categoria", viejo).execute()
+            try:
+                db.table("presupuestos").update({"categoria": nuevo}).eq("perfil", perfil).eq("categoria", viejo).execute()
+            except Exception:
+                pass
+
+
+def editar_categoria(*args):
+    return intentar(_editar_categoria, *args)
+
+
+def _quitar_categoria(perfil, tipo, nombre):
+    _sembrar_categorias(perfil)
+    db.table("categorias").delete().eq("perfil", perfil).eq("tipo", tipo).eq("nombre", nombre).execute()
+
+
+def quitar_categoria(*args):
+    return intentar(_quitar_categoria, *args)
+
+
 # ─────────────────────────────────────────────────────────────
 # UTILIDADES
 # ─────────────────────────────────────────────────────────────
@@ -573,7 +651,7 @@ def stretch(fn, *args, **kwargs):
 
 
 def icono(tipo, categoria):
-    return CATEGORIAS.get(tipo, {}).get(categoria, "💳")
+    return CATEGORIAS.get(tipo, {}).get(categoria, "🏷️")
 
 
 def avatar(nombre, grande=False):
@@ -708,6 +786,8 @@ if perfil not in PERFILES:
     pantalla_acceso()
     st.stop()
 
+CATEGORIAS, CAT_OK = obtener_categorias(perfil)  # categorías propias de este perfil
+
 hoy = datetime.datetime.now(ZONA).date()  # hora de Venezuela, aunque el servidor esté en otro país
 mes_actual = hoy.strftime("%Y-%m")
 
@@ -740,7 +820,7 @@ def elegir_categoria(tipo_, prefijo):
 
 
 def formulario_movimiento(prefijo):
-    """Formulario de nuevo movimiento. Se usa en la barra lateral (PC) y en la pestaña Agregar (teléfono)."""
+    """Formulario de nuevo movimiento (vive en la barra lateral)."""
     # El tipo va FUERA del formulario para que las categorías cambien al instante
     tipo = elegir_tipo(prefijo)
     with st.form(f"form_mov_{prefijo}", clear_on_submit=True):
@@ -834,8 +914,8 @@ else:
     d_ing = d_gas = None
 nota_periodo = "Todo el historial" if periodo == TODO else None
 
-tab_res, tab_add, tab_mov, tab_fijos, tab_pre, tab_meta, tab_cuenta = st.tabs(
-    ["📊 Resumen", "➕ Agregar", "🧾 Historial", "📌 Fijos", "🎯 Presupuesto", "🏆 Metas", "⚙️ Cuenta"]
+tab_res, tab_mov, tab_fijos, tab_pre, tab_meta, tab_cat, tab_cuenta = st.tabs(
+    ["📊 Resumen", "🧾 Historial", "📌 Fijos", "🎯 Presupuesto", "🏆 Metas", "🏷️ Categorías", "⚙️ Cuenta"]
 )
 
 # ─────────────────────────────────────────────────────────────
@@ -843,7 +923,7 @@ tab_res, tab_add, tab_mov, tab_fijos, tab_pre, tab_meta, tab_cuenta = st.tabs(
 # ─────────────────────────────────────────────────────────────
 with tab_res:
     if df.empty:
-        st.info("Aún no tienes movimientos. Ve a la pestaña **➕ Agregar** para registrar el primero.")
+        st.info("Aún no tienes movimientos. Usa la barra lateral izquierda para registrar el primero (en el teléfono se abre con la flecha de arriba a la izquierda).")
     else:
         c1, c2, c3 = st.columns([1.4, 1, 1])
         c1.markdown(tarjeta("Balance", dinero(bal), "📊", hero=True,
@@ -928,13 +1008,6 @@ with tab_res:
             st.info("No hay movimientos en este periodo.")
         else:
             st.markdown(lista_movimientos(df_p.head(6)), unsafe_allow_html=True)
-
-# ─────────────────────────────────────────────────────────────
-# TAB · AGREGAR
-# ─────────────────────────────────────────────────────────────
-with tab_add:
-    st.markdown('<div class="sec">Nuevo movimiento</div>', unsafe_allow_html=True)
-    formulario_movimiento("tab")
 
 # ─────────────────────────────────────────────────────────────
 # TAB · HISTORIAL
@@ -1225,6 +1298,74 @@ with tab_meta:
                 if guardar_ajustes(perfil, {"meta_nombre": nuevo_nombre.strip(), "meta_objetivo": nuevo_obj}):
                     st.session_state["flash"] = "Meta guardada"
                     st.rerun()
+
+# ─────────────────────────────────────────────────────────────
+# TAB · CATEGORÍAS (agregar, editar o quitar)
+# ─────────────────────────────────────────────────────────────
+with tab_cat:
+    st.markdown('<div class="sec">Mis categorías</div>', unsafe_allow_html=True)
+    if not CAT_OK:
+        st.warning("Para editar categorías falta un paso en Supabase: copia este texto, pégalo en "
+                   "SQL Editor, pulsa Run y recarga esta página.")
+        st.code(SQL_CATEGORIAS, language="sql")
+    else:
+        tipo_c = st.radio("Tipo de categoría", ["Gasto", "Ingreso"], horizontal=True,
+                          format_func={"Gasto": "💸 Gastos", "Ingreso": "💵 Ingresos"}.get,
+                          key="cat_tipo_sel", label_visibility="collapsed")
+        actuales = CATEGORIAS[tipo_c]
+        chips = "".join(
+            f'<span class="chip neutral" style="margin:0 6px 8px 0;font-size:.9rem;padding:6px 12px">'
+            f'{html.escape(ico)} {html.escape(n)}</span>'
+            for n, ico in actuales.items()
+        )
+        st.markdown(f'<div class="cat-card" style="padding:16px 16px 8px">{chips}</div>', unsafe_allow_html=True)
+
+        with st.expander("➕ Agregar categoría"):
+            with st.form("form_nueva_cat", clear_on_submit=True):
+                nombre_c = st.text_input("Nombre", placeholder="Ej: Mascotas", max_chars=24)
+                icono_c = st.text_input("Icono (un emoji)", placeholder="🐶", max_chars=8)
+                if st.form_submit_button("Agregar categoría"):
+                    nombre_c = nombre_c.strip()
+                    if not nombre_c:
+                        st.error("Ponle un nombre a la categoría.")
+                    elif nombre_c.lower() in {n.lower() for n in actuales}:
+                        st.error("Ya existe una categoría con ese nombre.")
+                    elif agregar_categoria(perfil, tipo_c, nombre_c, icono_c.strip() or "🏷️"):
+                        st.session_state["flash"] = f"Categoría «{nombre_c}» agregada"
+                        st.rerun()
+            st.caption("Ideas de iconos: 🐶 ✈️ 🎓 🛒 💊 🎁 📱 🚗 ⚽ 🧴 💰 🛠️ · En el teléfono usa el teclado de emojis.")
+
+        with st.expander("✏️ Editar o quitar una categoría"):
+            sel_c = st.selectbox("Categoría", list(actuales),
+                                 format_func=lambda n: f"{actuales[n]}  {n}",
+                                 key=f"cat_sel_{tipo_c}", label_visibility="collapsed")
+            with st.form("form_editar_cat"):
+                nuevo_n = st.text_input("Nombre", value=sel_c, max_chars=24, key=f"cat_edn_{tipo_c}_{sel_c}")
+                nuevo_i = st.text_input("Icono", value=actuales[sel_c], max_chars=8,
+                                        key=f"cat_edi_{tipo_c}_{sel_c}")
+                col_a, col_b = st.columns(2)
+                guardar_c = col_a.form_submit_button("Guardar cambio")
+                quitar_c = col_b.form_submit_button("Quitar")
+            if guardar_c:
+                nuevo_n = nuevo_n.strip()
+                otros = {n.lower() for n in actuales if n != sel_c}
+                if not nuevo_n:
+                    st.error("El nombre no puede estar vacío.")
+                elif nuevo_n.lower() in otros:
+                    st.error("Ya existe una categoría con ese nombre.")
+                elif editar_categoria(perfil, tipo_c, sel_c, nuevo_n, nuevo_i.strip() or "🏷️"):
+                    st.session_state.pop(f"cat_sel_{tipo_c}", None)
+                    st.session_state["flash"] = "Categoría actualizada"
+                    st.rerun()
+            elif quitar_c:
+                if len(actuales) <= 1:
+                    st.error("Debe quedar al menos una categoría.")
+                elif quitar_categoria(perfil, tipo_c, sel_c):
+                    st.session_state.pop(f"cat_sel_{tipo_c}", None)
+                    st.session_state["flash"] = f"Categoría «{sel_c}» quitada"
+                    st.rerun()
+            st.caption("Si cambias el nombre, tus movimientos, presupuestos y fijos con esa categoría se actualizan. "
+                       "Si quitas una, los movimientos que ya la usan no se borran: solo deja de aparecer para elegir.")
 
 # ─────────────────────────────────────────────────────────────
 # TAB · CUENTA
