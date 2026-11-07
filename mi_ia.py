@@ -142,6 +142,13 @@ header[data-testid="stHeader"], [data-testid="stToolbar"]{background:transparent
 .bud-foot{color:var(--muted); font-size:.8rem; margin-top:8px;}
 .goal-big{font-size:1.5rem; font-weight:700; letter-spacing:-.01em; margin-bottom:4px;}
 
+/* Sueldo fijo */
+.sueldo{background:rgba(0,229,255,.10); border:1px solid rgba(0,229,255,.28); border-radius:16px;
+        padding:16px 18px; margin-bottom:16px;}
+.sueldo-label{color:var(--muted); font-size:.78rem; margin-bottom:4px;}
+.sueldo-val{font-size:1.9rem; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums;}
+.sueldo-val small{font-size:.85rem; color:var(--muted); font-weight:500;}
+
 /* Tabs */
 .stTabs [data-baseweb="tab-list"]{gap:4px; border-bottom:1px solid var(--line); overflow-x:auto;}
 .stTabs [data-baseweb="tab"]{height:46px; padding:0 14px; color:var(--muted); background:transparent; white-space:nowrap;}
@@ -245,11 +252,19 @@ db = conectar()
 if "db_ok" not in st.session_state:
     try:
         db.table("perfiles").select("nombre").limit(1).execute()
-        st.session_state["db_ok"] = True
     except Exception as e:
         st.error("No pude conectar con Supabase. Revisa la URL, la clave y que hayas ejecutado el script SQL.")
         st.caption(f"Detalle técnico: {e}")
         st.stop()
+    try:
+        db.table("fijos").select("id").limit(1).execute()
+        db.table("transacciones").select("origen,fijo_id,mes_fijo,pagado").limit(1).execute()
+    except Exception as e:
+        st.error("Falta un paso en Supabase: ejecuta el script de actualización "
+                 "(supabase_actualizacion_fijos.sql) en el SQL Editor y recarga esta página.")
+        st.caption(f"Detalle técnico: {e}")
+        st.stop()
+    st.session_state["db_ok"] = True
 
 
 def intentar(fn, *args, **kwargs):
@@ -267,7 +282,7 @@ def intentar(fn, *args, **kwargs):
 # ─────────────────────────────────────────────────────────────
 # DATOS
 # ─────────────────────────────────────────────────────────────
-COLUMNAS = ["id", "tipo", "categoria", "monto", "descripcion", "fecha"]
+COLUMNAS = ["id", "tipo", "categoria", "monto", "descripcion", "fecha", "origen", "fijo_id", "pagado"]
 
 
 # ── PIN (se guarda con hash, nunca en texto plano) ──
@@ -314,6 +329,8 @@ def obtener_datos(perfil):
     df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
     df = df.dropna(subset=["fecha"]).copy()
     df["descripcion"] = df["descripcion"].fillna("")
+    df["origen"] = df["origen"].fillna("")
+    df["pagado"] = df["pagado"].fillna(False).astype(bool)
     df["mes"] = df["fecha"].dt.strftime("%Y-%m")
     return df
 
@@ -382,6 +399,135 @@ def _guardar_ajustes(perfil, pares):
 
 def guardar_ajustes(perfil, pares):
     return intentar(_guardar_ajustes, perfil, pares)
+
+
+# ── Sueldo fijo y gastos fijos ──
+def fecha_en_mes(ym, dia):
+    y, m = map(int, ym.split("-"))
+    return datetime.date(y, m, min(int(dia), calendar.monthrange(y, m)[1]))
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def obtener_fijos(perfil):
+    return (db.table("fijos").select("id,nombre,categoria,monto,dia")
+            .eq("perfil", perfil).order("dia").order("id").execute().data)
+
+
+def _leer_sueldo(perfil):
+    aj = obtener_ajustes(perfil)
+    try:
+        monto = float(aj.get("sueldo_monto", "0") or 0)
+    except ValueError:
+        monto = 0.0
+    try:
+        dia = int(float(aj.get("sueldo_dia", "1") or 1))
+    except ValueError:
+        dia = 1
+    return monto, min(max(dia, 1), 31)
+
+
+def _mov_sueldo(perfil, monto, dia, ym):
+    return {"perfil": perfil, "tipo": "Ingreso", "categoria": "Sueldo", "monto": float(monto),
+            "descripcion": "Sueldo fijo", "fecha": str(fecha_en_mes(ym, dia)),
+            "origen": "sueldo", "mes_fijo": ym, "pagado": True}
+
+
+def _mov_fijo(perfil, f, ym, dia=None):
+    return {"perfil": perfil, "tipo": "Gasto", "categoria": f["categoria"], "monto": float(f["monto"]),
+            "descripcion": f["nombre"], "fecha": str(fecha_en_mes(ym, dia or f["dia"])),
+            "origen": "fijo", "fijo_id": f["id"], "mes_fijo": ym, "pagado": False}
+
+
+def _generar_fijos(perfil, ym):
+    """Crea el sueldo y los gastos fijos del mes que todavía no existan."""
+    ya = (db.table("transacciones").select("origen,fijo_id")
+          .eq("perfil", perfil).eq("mes_fijo", ym).execute().data)
+    tiene_sueldo = any(r["origen"] == "sueldo" for r in ya)
+    con_fijo = {r["fijo_id"] for r in ya if r["origen"] == "fijo"}
+    nuevos = []
+    sueldo, dia_s = _leer_sueldo(perfil)
+    if sueldo > 0 and not tiene_sueldo:
+        nuevos.append(_mov_sueldo(perfil, sueldo, dia_s, ym))
+    for f in obtener_fijos(perfil):
+        if f["id"] not in con_fijo:
+            nuevos.append(_mov_fijo(perfil, f, ym))
+    for fila in nuevos:
+        try:
+            db.table("transacciones").insert(fila).execute()
+        except Exception:
+            pass  # ya existía (el índice único evita duplicados)
+
+
+def generar_mes(perfil, ym):
+    """Se ejecuta una sola vez por mes y perfil, al abrir la app."""
+    try:
+        if obtener_ajustes(perfil).get(f"gen_{ym}") == "1":
+            return
+        _generar_fijos(perfil, ym)
+        _guardar_ajustes(perfil, {f"gen_{ym}": "1"})
+        st.cache_data.clear()
+    except Exception as e:
+        st.warning("No pude preparar tus fijos de este mes. Recarga la página para intentarlo de nuevo.")
+        st.caption(f"Detalle técnico: {e}")
+
+
+def _guardar_sueldo(perfil, monto, dia, ym):
+    _guardar_ajustes(perfil, {"sueldo_monto": monto, "sueldo_dia": dia})
+    ya = (db.table("transacciones").select("id")
+          .eq("perfil", perfil).eq("origen", "sueldo").eq("mes_fijo", ym).execute().data)
+    if monto <= 0:
+        if ya:
+            db.table("transacciones").delete().eq("perfil", perfil).eq("origen", "sueldo").eq("mes_fijo", ym).execute()
+    elif ya:
+        db.table("transacciones").update(
+            {"monto": float(monto), "fecha": str(fecha_en_mes(ym, dia))}
+        ).eq("perfil", perfil).eq("origen", "sueldo").eq("mes_fijo", ym).execute()
+    else:
+        db.table("transacciones").insert(_mov_sueldo(perfil, monto, dia, ym)).execute()
+
+
+def guardar_sueldo(perfil, monto, dia, ym):
+    return intentar(_guardar_sueldo, perfil, monto, dia, ym)
+
+
+def _agregar_fijo(perfil, nombre, categoria, monto, dia, ym):
+    fila = db.table("fijos").insert({"perfil": perfil, "nombre": nombre, "categoria": categoria,
+                                     "monto": float(monto), "dia": int(dia)}).execute().data[0]
+    db.table("transacciones").insert(_mov_fijo(perfil, fila, ym)).execute()
+
+
+def agregar_fijo(*args):
+    return intentar(_agregar_fijo, *args)
+
+
+def _actualizar_fijo(perfil, id_, monto, dia, ym):
+    db.table("fijos").update({"monto": float(monto), "dia": int(dia)}).eq("id", int(id_)).eq("perfil", perfil).execute()
+    db.table("transacciones").update(
+        {"monto": float(monto), "fecha": str(fecha_en_mes(ym, dia))}
+    ).eq("perfil", perfil).eq("fijo_id", int(id_)).eq("mes_fijo", ym).execute()
+
+
+def actualizar_fijo(*args):
+    return intentar(_actualizar_fijo, *args)
+
+
+def _quitar_fijo(perfil, id_, ym):
+    # Si ya lo pagaste este mes, ese movimiento se queda; si no, se quita junto con el fijo
+    (db.table("transacciones").delete().eq("perfil", perfil).eq("fijo_id", int(id_))
+     .eq("mes_fijo", ym).eq("origen", "fijo").eq("pagado", False).execute())
+    db.table("fijos").delete().eq("id", int(id_)).eq("perfil", perfil).execute()
+
+
+def quitar_fijo(*args):
+    return intentar(_quitar_fijo, *args)
+
+
+def _marcar_pagado(perfil, id_, valor):
+    db.table("transacciones").update({"pagado": bool(valor)}).eq("id", int(id_)).eq("perfil", perfil).execute()
+
+
+def marcar_pagado(*args):
+    return intentar(_marcar_pagado, *args)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -479,10 +625,11 @@ def lista_movimientos(df_):
         es_ing = r.tipo == "Ingreso"
         titulo = html.escape(r.descripcion) if r.descripcion else html.escape(r.categoria)
         signo = "+" if es_ing else "−"
+        etiqueta_fijo = " · 📌 fijo" if r.origen in ("fijo", "sueldo") else ""
         filas.append(
             f'<div class="tx"><div class="tx-ico">{icono(r.tipo, r.categoria)}</div>'
             f'<div class="tx-main"><div class="tx-title">{titulo}</div>'
-            f'<div class="tx-sub">{html.escape(r.categoria)} · {r.fecha:%d/%m/%Y}</div></div>'
+            f'<div class="tx-sub">{html.escape(r.categoria)} · {r.fecha:%d/%m/%Y}{etiqueta_fijo}</div></div>'
             f'<div class="tx-amt {"in" if es_ing else ""}">{signo}{MONEDA}{r.monto:,.2f}</div></div>'
         )
     return f'<div class="tx-wrap">{"".join(filas)}</div>'
@@ -561,9 +708,14 @@ if perfil not in PERFILES:
     pantalla_acceso()
     st.stop()
 
-df = obtener_datos(perfil)
 hoy = datetime.datetime.now(ZONA).date()  # hora de Venezuela, aunque el servidor esté en otro país
 mes_actual = hoy.strftime("%Y-%m")
+
+if st.session_state.get("gen_ok") != (perfil, mes_actual):
+    generar_mes(perfil, mes_actual)  # sueldo y gastos fijos del mes, una sola vez
+    st.session_state["gen_ok"] = (perfil, mes_actual)
+
+df = obtener_datos(perfil)
 
 if "flash" in st.session_state:
     st.toast(st.session_state.pop("flash"), icon="✅")
@@ -682,8 +834,8 @@ else:
     d_ing = d_gas = None
 nota_periodo = "Todo el historial" if periodo == TODO else None
 
-tab_res, tab_add, tab_mov, tab_pre, tab_meta, tab_cuenta = st.tabs(
-    ["📊 Resumen", "➕ Agregar", "🧾 Historial", "🎯 Presupuesto", "🏆 Metas", "⚙️ Cuenta"]
+tab_res, tab_add, tab_mov, tab_fijos, tab_pre, tab_meta, tab_cuenta = st.tabs(
+    ["📊 Resumen", "➕ Agregar", "🧾 Historial", "📌 Fijos", "🎯 Presupuesto", "🏆 Metas", "⚙️ Cuenta"]
 )
 
 # ─────────────────────────────────────────────────────────────
@@ -700,6 +852,12 @@ with tab_res:
                     unsafe_allow_html=True)
         c3.markdown(tarjeta("Gastos", dinero(gas), "💸", d_gas, False, nota=nota_periodo),
                     unsafe_allow_html=True)
+
+        sueldo_p = df_p.loc[df_p["origen"] == "sueldo", "monto"].sum()
+        fijos_p = df_p.loc[(df_p["tipo"] == "Gasto") & (df_p["origen"] == "fijo"), "monto"].sum()
+        if sueldo_p > 0 or fijos_p > 0:
+            st.caption(f"Sueldo {dinero(sueldo_p)} · Bonos y extras {dinero(ing - sueldo_p)} · "
+                       f"Fijos {dinero(fijos_p)} · Variables {dinero(gas - fijos_p)}")
 
         st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
         g1, g2 = st.columns(2)
@@ -728,7 +886,8 @@ with tab_res:
                               axis=alt.Axis(labelAngle=0, labelColor=MUTED, ticks=False, domain=False))
                 titulo_x = "Mes"
             else:
-                st.markdown('<div class="sec">Gasto diario</div>', unsafe_allow_html=True)
+                st.markdown('<div class="sec">Gasto diario (sin fijos)</div>', unsafe_allow_html=True)
+                gastos_p = gastos_p[gastos_p["origen"] != "fijo"]
                 anio, mes_n = map(int, periodo.split("-"))
                 n_dias = calendar.monthrange(anio, mes_n)[1]
                 por_dia = gastos_p.groupby(gastos_p["fecha"].dt.day)["monto"].sum()
@@ -739,10 +898,11 @@ with tab_res:
                                             labelOverlap=True))
                 titulo_x = "Día"
                 dias_transcurridos = hoy.day if periodo == mes_actual else n_dias
-                pie_chart = f"Promedio diario: **{dinero(gas / max(dias_transcurridos, 1))}**"
+                pie_chart = (f"Promedio diario sin fijos: "
+                             f"**{dinero(gastos_p['monto'].sum() / max(dias_transcurridos, 1))}**")
 
             if gastos_p.empty:
-                st.info("Aún no hay gastos en este periodo.")
+                st.info("Aún no hay gastos variables en este periodo.")
             else:
                 barras = (
                     alt.Chart(base)
@@ -842,6 +1002,132 @@ with tab_mov:
                 if eliminar_transaccion(perfil, elegido):
                     st.session_state["flash"] = "Movimiento eliminado"
                     st.rerun()
+
+# ─────────────────────────────────────────────────────────────
+# TAB · FIJOS (sueldo fijo + gastos fijos mensuales)
+# ─────────────────────────────────────────────────────────────
+def _cambiar_pagado(id_, clave):
+    marcar_pagado(st.session_state["perfil"], id_, st.session_state[clave])
+
+
+with tab_fijos:
+    sueldo, dia_sueldo = _leer_sueldo(perfil)
+    fijos_def = obtener_fijos(perfil)
+    mov_fijos = df[(df["mes"] == mes_ref) & (df["origen"] == "fijo")].sort_values(["fecha", "id"])
+
+    # ── Sueldo fijo ──
+    if sueldo > 0:
+        st.markdown(
+            f'<div class="sueldo"><div class="sueldo-label">Sueldo fijo</div>'
+            f'<div class="sueldo-val">{dinero(sueldo)} <small>/ mes · cobras el día {dia_sueldo}</small></div>'
+            f'<div class="bud-foot">Entra solo cada mes. Bonos y extras se agregan aparte como ingresos.</div></div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.info("Define tu sueldo fijo y se sumará solo cada mes como ingreso. "
+                "Bonos y extras los agregas aparte.")
+
+    with st.expander("✏️ Cambiar mi sueldo fijo", expanded=sueldo <= 0):
+        with st.form("form_sueldo"):
+            nuevo_sueldo = st.number_input(f"Sueldo mensual ({MONEDA}) · 0 para quitarlo", min_value=0.0,
+                                           value=sueldo, step=10.0, format="%.2f")
+            nuevo_dia_s = st.number_input("Día de cobro", min_value=1, max_value=31,
+                                          value=dia_sueldo, step=1)
+            if st.form_submit_button("Guardar sueldo"):
+                if guardar_sueldo(perfil, nuevo_sueldo, int(nuevo_dia_s), mes_actual):
+                    st.session_state["flash"] = "Sueldo fijo guardado"
+                    st.rerun()
+
+    # ── Gastos fijos del mes ──
+    st.markdown('<div class="sec">Gastos fijos</div>', unsafe_allow_html=True)
+    if periodo == TODO:
+        st.caption(f"Mostrando {etiqueta_mes(mes_ref)}.")
+
+    if mov_fijos.empty:
+        st.info("Aún no tienes gastos fijos este mes. Agrega el primero abajo (alquiler, internet, luz…).")
+    else:
+        total_f = mov_fijos["monto"].sum()
+        pagado_f = mov_fijos.loc[mov_fijos["pagado"], "monto"].sum()
+        pct_pagado = pagado_f / total_f * 100 if total_f else 0
+        st.markdown(
+            f'<div class="bud"><div class="bud-head"><b>{etiqueta_mes(mes_ref)}</b>'
+            f'<span>Pagado {dinero(pagado_f)} de {dinero(total_f)}</span></div>'
+            f'<div class="bar"><div style="width:{pct_pagado:.1f}%"></div></div></div>',
+            unsafe_allow_html=True,
+        )
+        with st.container(border=True):
+            for r in mov_fijos.itertuples():
+                clave = f"pag_{int(r.id)}"
+                st.checkbox(
+                    f"{icono('Gasto', r.categoria)}  {r.descripcion} · día {r.fecha.day} · {dinero(r.monto)}",
+                    value=bool(r.pagado), key=clave,
+                    on_change=_cambiar_pagado, args=(int(r.id), clave),
+                )
+        st.caption("Marca cada gasto cuando lo pagues. Los fijos ya cuentan en tu balance desde el día 1.")
+
+    with st.expander("➕ Agregar gasto fijo", expanded=not fijos_def):
+        with st.form("form_nuevo_fijo", clear_on_submit=True):
+            nombre_f = st.text_input("Nombre", placeholder="Ej: Alquiler", max_chars=40)
+            cat_f = st.selectbox("Categoría", list(CATEGORIAS["Gasto"]),
+                                 format_func=lambda c: f"{CATEGORIAS['Gasto'][c]}  {c}")
+            monto_f = st.number_input(f"Monto mensual ({MONEDA})", min_value=0.0, value=0.0,
+                                      step=1.0, format="%.2f")
+            dia_f = st.number_input("Día de pago", min_value=1, max_value=31, value=1, step=1)
+            if st.form_submit_button("Agregar gasto fijo"):
+                if not nombre_f.strip():
+                    st.error("Ponle un nombre al gasto.")
+                elif monto_f <= 0:
+                    st.error("El monto debe ser mayor a 0.")
+                elif agregar_fijo(perfil, nombre_f.strip(), cat_f, round(monto_f, 2), int(dia_f), mes_actual):
+                    st.session_state["flash"] = f"{nombre_f.strip()} agregado a tus fijos"
+                    st.rerun()
+
+    if fijos_def:
+        with st.expander("✏️ Editar o quitar un gasto fijo"):
+            opciones_f = {f["id"]: f'{f["nombre"]} · {dinero(float(f["monto"]))}' for f in fijos_def}
+            elegido_f = st.selectbox("Gasto fijo", list(opciones_f), format_func=opciones_f.get,
+                                     label_visibility="collapsed")
+            f_sel = next(f for f in fijos_def if f["id"] == elegido_f)
+            with st.form("form_editar_fijo"):
+                nuevo_monto_f = st.number_input(f"Monto mensual ({MONEDA})", min_value=0.01,
+                                                value=float(f_sel["monto"]), step=1.0, format="%.2f",
+                                                key=f"edm_{elegido_f}")
+                nuevo_dia_f = st.number_input("Día de pago", min_value=1, max_value=31,
+                                              value=int(f_sel["dia"]), step=1, key=f"edd_{elegido_f}")
+                col_g, col_q = st.columns(2)
+                guardar_cambio = col_g.form_submit_button("Guardar cambio")
+                quitar = col_q.form_submit_button("Quitar")
+            if guardar_cambio:
+                if actualizar_fijo(perfil, elegido_f, round(nuevo_monto_f, 2), int(nuevo_dia_f), mes_actual):
+                    st.session_state["flash"] = "Gasto fijo actualizado"
+                    st.rerun()
+            elif quitar:
+                if quitar_fijo(perfil, elegido_f, mes_actual):
+                    st.session_state["flash"] = f"{f_sel['nombre']} quitado de tus fijos"
+                    st.rerun()
+            st.caption("Los cambios valen desde este mes en adelante. Los meses anteriores no se modifican.")
+
+    # ── Libre para gastar ──
+    df_m = df[df["mes"] == mes_ref]
+    ing_m, gas_m, bal_m = totales(df_m)
+    fijos_m = df_m.loc[(df_m["tipo"] == "Gasto") & (df_m["origen"] == "fijo"), "monto"].sum()
+    if ing_m > 0 or fijos_m > 0:
+        pct_fijos = min(fijos_m / ing_m * 100, 100) if ing_m > 0 else 100
+        detalle = f"Variables gastados: {dinero(gas_m - fijos_m)}"
+        if mes_ref == mes_actual and bal_m > 0:
+            anio_m, mes_m = map(int, mes_ref.split("-"))
+            dias_restantes = calendar.monthrange(anio_m, mes_m)[1] - hoy.day + 1
+            detalle += f" · unos {dinero(bal_m / max(dias_restantes, 1))} por día hasta fin de mes"
+        color_libre = "var(--green)" if bal_m >= 0 else "var(--rose)"
+        st.markdown(
+            f'<div class="bud" style="margin-top:14px"><div class="bud-foot" style="margin:0 0 4px">Libre para gastar · {etiqueta_mes(mes_ref)}</div>'
+            f'<div class="goal-big" style="color:{color_libre}">{dinero(bal_m)}</div>'
+            f'<div class="stack" style="margin:12px 0 8px"><div style="width:{pct_fijos:.1f}%;background:var(--amber)"></div>'
+            f'<div style="flex:1;background:var(--cyan)"></div></div>'
+            f'<div class="bud-head"><span>Fijos {dinero(fijos_m)}</span><span>Ingresos {dinero(ing_m)}</span></div>'
+            f'<div class="bud-foot">{detalle}</div></div>',
+            unsafe_allow_html=True,
+        )
 
 # ─────────────────────────────────────────────────────────────
 # TAB · PRESUPUESTO (por categoría, mensuales)
