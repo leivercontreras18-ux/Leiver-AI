@@ -34,7 +34,7 @@ st.set_page_config(
 )
 
 # Perfiles: nombre -> color del avatar. Agrega o cambia nombres aquí.
-PERFILES = {"Leiver": "#00e5ff", "Winderly": "#f472b6"}
+PERFILES = {"Leiver": "#D97757", "Winderly": "#C48B9F"}
 
 MONEDA = "$"
 
@@ -50,24 +50,27 @@ MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio",
          "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 TODO = "Todo el historial"
 
-CIAN, MUTED = "#00e5ff", "#8b98ab"
-PALETA = ["#00e5ff", "#7c5cff", "#34d399", "#fbbf24", "#fb7185", "#60a5fa", "#f472b6", "#a3e635"]
+ACENTO, MUTED = "#D97757", "#9C9889"
+PALETA = ["#D97757", "#E5B567", "#8FA38A", "#7F8FB0", "#C48B9F", "#B8A27A", "#6FA3A0", "#A98B73"]
 
 # ─────────────────────────────────────────────────────────────
 # ESTILOS (pensados primero para teléfono)
 # ─────────────────────────────────────────────────────────────
 CSS = """
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap');
 :root{
-  --bg:#0a0e17; --surface:#111827; --surface-2:#0f1623; --line:rgba(255,255,255,.07);
-  --cyan:#00e5ff; --violet:#7c5cff; --green:#34d399; --rose:#fb7185; --amber:#fbbf24;
-  --text:#e8eef7; --muted:#8b98ab;
+  --bg:#262624; --surface:#30302E; --surface-2:#2B2A28; --line:#3E3D3A;
+  --accent:#D97757; --accent-soft:rgba(217,119,87,.14);
+  --green:#8FB58A; --rose:#E0836B; --amber:#E5B567;
+  --text:#F0EEE6; --muted:#9C9889;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
 }
 .stApp, .stApp p, .stApp label, .stApp input, .stApp button, .stApp textarea{
   font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 }
 .stApp{
-  background:radial-gradient(1200px 520px at 50% -10%, #16223a 0%, var(--bg) 65%) !important;
+  background:radial-gradient(1000px 480px at 50% -10%, #302e2b 0%, var(--bg) 70%) !important;
   color:var(--text) !important;
 }
 #MainMenu, footer, [data-testid="stDecoration"], [data-testid="stMainMenu"],
@@ -78,129 +81,136 @@ header[data-testid="stHeader"], [data-testid="stToolbar"]{background:transparent
 /* Botones para abrir/cerrar la barra lateral: siempre visibles */
 [data-testid="stExpandSidebarButton"], [data-testid="collapsedControl"],
 [data-testid="stSidebarCollapseButton"], [data-testid="stSidebarCollapsedControl"]{
-  visibility:visible !important; opacity:1 !important; color:var(--cyan) !important;
+  visibility:visible !important; opacity:1 !important; color:var(--accent) !important;
 }
-/* Barra lateral */
-[data-testid="stSidebar"]{background:#0c111c !important; border-right:1px solid var(--line) !important;}
-[data-testid="stSidebar"] [data-testid="stForm"]{border:none !important; background:transparent !important; padding:0 !important;}
 .block-container{padding:2rem 2rem 4rem !important; max-width:1120px !important;}
 
-/* Encabezado */
-.app-title{font-size:1.9rem; font-weight:700; letter-spacing:-.02em; line-height:1.15;}
+/* Tipografía con serifa para títulos y cifras */
+.app-title, .sec, .kpi-value, .sueldo-val, .goal-big, .login-name{
+  font-family:var(--serif); font-weight:500; letter-spacing:-.01em;
+}
+.app-title{font-size:2rem; line-height:1.15;}
 .app-sub{color:var(--muted); font-size:.95rem; margin-top:4px;}
-.sec{font-size:1rem; font-weight:600; margin:10px 0 12px; letter-spacing:-.01em;}
+.sec{font-size:1.2rem; margin:14px 0 10px;}
 
 /* Tarjetas KPI */
-.kpi{background:var(--surface); border:1px solid var(--line); border-radius:18px;
+.kpi{background:var(--surface); border:1px solid var(--line); border-radius:16px;
      padding:20px 22px; min-height:140px;}
-.kpi.hero{background:linear-gradient(135deg, rgba(0,229,255,.16), rgba(124,92,255,.14) 60%, rgba(17,24,39,.92));
-          border-color:rgba(0,229,255,.25);}
+.kpi.hero{background:linear-gradient(135deg, rgba(217,119,87,.16), rgba(48,48,46,.95) 70%);
+          border-color:rgba(217,119,87,.32);}
 .kpi-top{display:flex; justify-content:space-between; align-items:center;}
-.kpi-label{color:var(--muted); font-size:.74rem; font-weight:600; letter-spacing:.09em; text-transform:uppercase;}
-.kpi-icon{width:34px; height:34px; display:grid; place-items:center; border-radius:10px;
-          background:rgba(255,255,255,.05); font-size:1.05rem;}
-.kpi-value{font-size:2.05rem; font-weight:700; letter-spacing:-.02em; margin:12px 0 10px;
-           font-variant-numeric:tabular-nums;}
-.kpi.hero .kpi-value{font-size:2.6rem;}
+.kpi-label{color:var(--muted); font-size:.72rem; font-weight:600; letter-spacing:.09em; text-transform:uppercase;}
+.kpi-icon{width:32px; height:32px; display:grid; place-items:center; border-radius:10px;
+          background:rgba(240,238,230,.06); color:var(--accent);}
+.kpi-icon svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8;
+              stroke-linecap:round; stroke-linejoin:round;}
+.kpi-value{font-size:2.2rem; margin:12px 0 10px; font-variant-numeric:tabular-nums;}
+.kpi.hero .kpi-value{font-size:2.9rem;}
 .kpi-value.neg-val{color:var(--rose);}
-.chip{display:inline-block; font-size:.76rem; font-weight:600; padding:3px 10px; border-radius:999px;}
-.chip.pos{background:rgba(52,211,153,.12); color:var(--green);}
-.chip.neg{background:rgba(251,113,133,.12); color:var(--rose);}
-.chip.neutral{background:rgba(255,255,255,.06); color:var(--muted);}
+.chip{display:inline-block; font-size:.76rem; font-weight:500; padding:3px 10px; border-radius:999px;}
+.chip.pos{background:rgba(143,181,138,.14); color:var(--green);}
+.chip.neg{background:rgba(224,131,107,.14); color:var(--rose);}
+.chip.neutral{background:rgba(240,238,230,.07); color:var(--muted);}
 
 /* Desglose por categoría */
-.cat-card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:20px 20px 10px;}
-.stack{display:flex; gap:3px; height:12px; border-radius:999px; overflow:hidden; margin-bottom:16px;}
+.cat-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:20px 20px 10px;}
+.stack{display:flex; gap:3px; height:10px; border-radius:999px; overflow:hidden; margin-bottom:16px;}
 .stack > div{height:100%;}
 .cat-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--line); font-size:.92rem;}
 .cat-row:first-of-type{border-top:none;}
 .dot{width:10px; height:10px; border-radius:50%; flex:none;}
 .cat-name{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .cat-pct{color:var(--muted); font-size:.8rem; width:38px; text-align:right;}
-.cat-amt{font-weight:600; font-variant-numeric:tabular-nums; min-width:80px; text-align:right;}
+.cat-amt{font-weight:500; font-variant-numeric:tabular-nums; min-width:80px; text-align:right;}
 
-/* Lista de movimientos estilo app bancaria */
-.tx-wrap{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:6px 18px;}
+/* Lista de movimientos */
+.tx-wrap{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:6px 18px;}
 .tx{display:flex; align-items:center; gap:14px; padding:13px 0; border-bottom:1px solid var(--line);}
 .tx:last-child{border-bottom:none;}
-.tx-ico{width:40px; height:40px; border-radius:12px; background:rgba(255,255,255,.05);
+.tx-ico{width:40px; height:40px; border-radius:12px; background:rgba(240,238,230,.06);
         display:grid; place-items:center; font-size:1.15rem; flex:none;}
 .tx-main{flex:1; min-width:0;}
-.tx-title{font-weight:600; font-size:.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.tx-title{font-weight:500; font-size:.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .tx-sub{color:var(--muted); font-size:.8rem;}
-.tx-amt{font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap;}
+.tx-amt{font-weight:500; font-variant-numeric:tabular-nums; white-space:nowrap;}
 .tx-amt.in{color:var(--green);}
 
-/* Presupuestos y metas */
+/* Presupuestos, metas y sueldo */
 .bud{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 18px; margin-bottom:12px;}
 .bud-head{display:flex; justify-content:space-between; gap:12px; font-size:.92rem; margin-bottom:10px;}
-.bud-head b{font-weight:600;}
+.bud-head b{font-weight:500;}
 .bud-head span{color:var(--muted); font-variant-numeric:tabular-nums;}
-.bar{height:8px; border-radius:999px; background:rgba(255,255,255,.07); overflow:hidden;}
-.bar > div{height:100%; border-radius:999px; background:linear-gradient(90deg, var(--cyan), #5ad7ff);}
+.bar{height:8px; border-radius:999px; background:rgba(240,238,230,.08); overflow:hidden;}
+.bar > div{height:100%; border-radius:999px; background:var(--accent);}
 .bar.warn > div{background:var(--amber);}
 .bar.over > div{background:var(--rose);}
 .bud-foot{color:var(--muted); font-size:.8rem; margin-top:8px;}
-.goal-big{font-size:1.5rem; font-weight:700; letter-spacing:-.01em; margin-bottom:4px;}
-
-/* Sueldo fijo */
-.sueldo{background:rgba(0,229,255,.10); border:1px solid rgba(0,229,255,.28); border-radius:16px;
+.goal-big{font-size:1.7rem; margin-bottom:4px;}
+.sueldo{background:var(--accent-soft); border:1px solid rgba(217,119,87,.4); border-radius:16px;
         padding:16px 18px; margin-bottom:16px;}
 .sueldo-label{color:var(--muted); font-size:.78rem; margin-bottom:4px;}
-.sueldo-val{font-size:1.9rem; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums;}
-.sueldo-val small{font-size:.85rem; color:var(--muted); font-weight:500;}
+.sueldo-val{font-size:2.1rem; font-variant-numeric:tabular-nums;}
+.sueldo-val small{font-family:'Inter',sans-serif; font-size:.85rem; color:var(--muted); font-weight:400;}
 
 /* Tabs */
 .stTabs [data-baseweb="tab-list"]{gap:4px; border-bottom:1px solid var(--line); overflow-x:auto;}
 .stTabs [data-baseweb="tab"]{height:46px; padding:0 14px; color:var(--muted); background:transparent; white-space:nowrap;}
-.stTabs [aria-selected="true"]{color:var(--cyan) !important;}
-.stTabs [data-baseweb="tab-highlight"]{background-color:var(--cyan) !important;}
+.stTabs [aria-selected="true"]{color:var(--accent) !important;}
+.stTabs [data-baseweb="tab-highlight"]{background-color:var(--accent) !important;}
+
+/* Barra lateral */
+[data-testid="stSidebar"]{background:#222220 !important; border-right:1px solid var(--line) !important;}
+[data-testid="stSidebar"] [data-testid="stForm"]{border:none !important; background:transparent !important; padding:0 !important;}
 
 /* Formularios */
-[data-testid="stForm"]{border:1px solid var(--line) !important; border-radius:18px !important;
+[data-testid="stForm"]{border:1px solid var(--line) !important; border-radius:16px !important;
                        background:var(--surface); padding:18px !important;}
-[data-testid="stForm"] [data-testid="stWidgetLabel"] p{
+[data-testid="stForm"] [data-testid="stWidgetLabel"] p,
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p{
   color:var(--muted); font-size:.72rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
 }
-[data-testid="stNumberInput"] input{font-size:1.35rem !important; font-weight:700 !important;}
+[data-testid="stNumberInput"] input{font-family:var(--serif) !important; font-size:1.45rem !important; font-weight:500 !important;}
 button[data-testid="stBaseButton-pills"], button[data-testid="stBaseButton-segmented_control"]{
-  border-radius:999px !important; border:1px solid var(--line) !important; background:var(--surface-2) !important;
+  border-radius:999px !important; border:1px solid var(--line) !important; background:var(--surface) !important;
 }
 button[data-testid="stBaseButton-pillsActive"], button[data-testid="stBaseButton-segmented_controlActive"]{
-  border-radius:999px !important; border:1px solid var(--cyan) !important; background:rgba(0,229,255,.14) !important;
-  color:var(--cyan) !important;
+  border-radius:999px !important; border:1px solid var(--accent) !important; background:var(--accent-soft) !important;
+  color:var(--accent) !important;
 }
 
 /* Perfil / acceso */
 .avatar{width:42px; height:42px; border-radius:14px; display:grid; place-items:center;
-        font-weight:800; font-size:1.1rem; color:#04121a; flex:none;}
+        font-weight:600; font-size:1.1rem; color:#262624; flex:none;}
 .who{display:flex; align-items:center; gap:12px; padding:14px; margin:4px 0 14px;
      background:var(--surface); border:1px solid var(--line); border-radius:16px;}
-.who-name{font-weight:700; font-size:1rem; line-height:1.2;}
+.who-name{font-weight:500; font-size:1rem; line-height:1.2;}
 .who-sub{color:var(--muted); font-size:.78rem;}
-.login-logo{font-size:3rem; text-align:center; margin-bottom:6px;}
-.login-card{background:var(--surface); border:1px solid var(--line); border-radius:20px;
+.login-logo{font-family:var(--serif); font-size:2.6rem; text-align:center; margin-bottom:4px; color:var(--accent);}
+.login-card{background:var(--surface); border:1px solid var(--line); border-radius:18px;
             padding:24px 12px 14px; text-align:center; margin-bottom:10px;}
 .avatar-lg{width:64px; height:64px; border-radius:20px; display:grid; place-items:center; margin:0 auto 10px;
-           font-weight:800; font-size:1.7rem; color:#04121a;}
-.login-name{font-weight:700; font-size:1.05rem;}
+           font-family:var(--serif); font-weight:500; font-size:1.8rem; color:#262624;}
+.login-name{font-size:1.2rem;}
 
-/* Inputs */
+/* Inputs y avisos */
 [data-baseweb="input"], [data-baseweb="base-input"], [data-baseweb="select"] > div, textarea{
-  background:var(--surface-2) !important; border-color:rgba(255,255,255,.08) !important;
+  background:var(--surface-2) !important; border-color:var(--line) !important;
   border-radius:10px !important; color:var(--text) !important;
 }
 [data-testid="stExpander"]{background:var(--surface); border:1px solid var(--line) !important; border-radius:14px;}
+[data-testid="stAlert"]{background:var(--surface) !important; border:1px solid var(--line) !important;
+                        border-radius:14px !important; color:var(--text) !important;}
+[data-testid="stAlert"] p{color:var(--text) !important;}
 
 /* Botones */
 .stButton > button, [data-testid="stFormSubmitButton"] > button{
-  background:var(--cyan) !important; color:#04121a !important; font-weight:700 !important;
+  background:var(--accent) !important; color:#262624 !important; font-weight:600 !important;
   border:none !important; border-radius:12px !important; padding:.65rem 1rem !important; width:100%;
-  transition:transform .15s ease, box-shadow .15s ease;
+  transition:filter .15s ease, box-shadow .15s ease;
 }
-.stButton > button p, [data-testid="stFormSubmitButton"] > button p{color:#04121a !important;}
+.stButton > button p, [data-testid="stFormSubmitButton"] > button p{color:#262624 !important;}
 .stButton > button:hover, [data-testid="stFormSubmitButton"] > button:hover{
-  transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,229,255,.25);
+  filter:brightness(1.08); box-shadow:0 6px 18px rgba(217,119,87,.25);
 }
 .stButton > button:disabled{opacity:.35;}
 .st-key-logout button, .st-key-logout_side button, .st-key-volver button{
@@ -208,19 +218,19 @@ button[data-testid="stBaseButton-pillsActive"], button[data-testid="stBaseButton
 }
 .st-key-logout button p, .st-key-logout_side button p, .st-key-volver button p{color:var(--muted) !important;}
 .stDownloadButton > button{
-  background:transparent !important; color:var(--cyan) !important; font-weight:600 !important;
-  border:1px solid rgba(0,229,255,.35) !important; border-radius:12px !important; width:100%;
+  background:transparent !important; color:var(--accent) !important; font-weight:500 !important;
+  border:1px solid rgba(217,119,87,.45) !important; border-radius:12px !important; width:100%;
   padding:.65rem 1rem !important;
 }
-.stDownloadButton > button p{color:var(--cyan) !important;}
+.stDownloadButton > button p{color:var(--accent) !important;}
 
 /* ── TELÉFONO ── */
 @media (max-width: 640px){
   .block-container{padding:1rem .8rem 3rem !important;}
-  .app-title{font-size:1.45rem;}
-  .kpi{padding:14px 16px; min-height:0; border-radius:16px;}
-  .kpi-value{font-size:1.7rem; margin:8px 0;}
-  .kpi.hero .kpi-value{font-size:2.15rem;}
+  .app-title{font-size:1.6rem;}
+  .kpi{padding:14px 16px; min-height:0; border-radius:14px;}
+  .kpi-value{font-size:1.8rem; margin:8px 0;}
+  .kpi.hero .kpi-value{font-size:2.3rem;}
   .tx-wrap, .cat-card{padding-left:14px; padding-right:14px;}
   .cat-amt{min-width:64px;}
   .stTabs [data-baseweb="tab"]{padding:0 11px; font-size:.9rem;}
@@ -353,6 +363,16 @@ def _borrar(perfil, id_):
 
 def eliminar_transaccion(perfil, id_):
     return intentar(_borrar, perfil, id_)
+
+
+def _editar_movimiento(perfil, id_, categoria, monto, descripcion, fecha):
+    (db.table("transacciones")
+     .update({"categoria": categoria, "monto": float(monto), "descripcion": descripcion, "fecha": str(fecha)})
+     .eq("id", int(id_)).eq("perfil", perfil).execute())
+
+
+def actualizar_movimiento(*args):
+    return intentar(_editar_movimiento, *args)
 
 
 def _insertar_lote(registros):
@@ -655,9 +675,31 @@ def icono(tipo, categoria):
 
 
 def avatar(nombre, grande=False):
-    color = PERFILES.get(nombre, CIAN)
+    color = PERFILES.get(nombre, ACENTO)
     clase = "avatar-lg" if grande else "avatar"
     return f'<div class="{clase}" style="background:{color}">{html.escape(nombre[:1].upper())}</div>'
+
+
+_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true">{}</svg>'
+ICO_BALANCE = _SVG.format('<path d="M3 7h15a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7z"/>'
+                          '<path d="M3 7V6a2 2 0 0 1 2-2h11"/><circle cx="17" cy="13.5" r="1"/>')
+ICO_SUBE = _SVG.format('<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>')
+ICO_BAJA = _SVG.format('<path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/>')
+
+
+def _version_streamlit():
+    try:
+        return tuple(int(x) for x in st.__version__.split(".")[:2])
+    except Exception:
+        return (0, 0)
+
+
+ICONOS_MATERIAL = _version_streamlit() >= (1, 46)
+
+
+def etiqueta_tab(icono_material, texto):
+    """Pestaña con icono fino de línea (si esta versión de Streamlit lo permite)."""
+    return f":material/{icono_material}: {texto}" if ICONOS_MATERIAL else texto
 
 
 def tarjeta(titulo, valor, ico, delta=None, sube_es_bueno=True, hero=False,
@@ -703,7 +745,7 @@ def lista_movimientos(df_):
         es_ing = r.tipo == "Ingreso"
         titulo = html.escape(r.descripcion) if r.descripcion else html.escape(r.categoria)
         signo = "+" if es_ing else "−"
-        etiqueta_fijo = " · 📌 fijo" if r.origen in ("fijo", "sueldo") else ""
+        etiqueta_fijo = " · fijo" if r.origen in ("fijo", "sueldo") else ""
         filas.append(
             f'<div class="tx"><div class="tx-ico">{icono(r.tipo, r.categoria)}</div>'
             f'<div class="tx-main"><div class="tx-title">{titulo}</div>'
@@ -721,7 +763,7 @@ def pantalla_acceso():
     _, centro, _ = st.columns([1, 1.6, 1])
     with centro:
         st.markdown(
-            '<div class="login-logo">💰</div>'
+            '<div class="login-logo">●</div>'
             '<div class="app-title" style="text-align:center">Mis Finanzas</div>'
             '<div class="app-sub" style="text-align:center;margin-bottom:22px">¿Quién va a entrar?</div>',
             unsafe_allow_html=True,
@@ -798,11 +840,11 @@ if st.session_state.get("gen_ok") != (perfil, mes_actual):
 df = obtener_datos(perfil)
 
 if "flash" in st.session_state:
-    st.toast(st.session_state.pop("flash"), icon="✅")
+    st.toast(st.session_state.pop("flash"))
 
 
 def elegir_tipo(prefijo):
-    fmt = {"Gasto": "💸 Gasto", "Ingreso": "💵 Ingreso"}.get
+    fmt = {"Gasto": "Gasto", "Ingreso": "Ingreso"}.get
     if hasattr(st, "segmented_control"):
         return st.segmented_control("Tipo", ["Gasto", "Ingreso"], default="Gasto", format_func=fmt,
                                     key=f"{prefijo}_tipo", label_visibility="collapsed") or "Gasto"
@@ -863,14 +905,14 @@ with st.sidebar:
             .to_csv(index=False)
             .encode("utf-8-sig")
         )
-        st.download_button("⬇️ Respaldo (CSV)", respaldo_lateral, key="dl_side",
+        st.download_button("Descargar respaldo (CSV)", respaldo_lateral, key="dl_side",
                            file_name=f"finanzas_{perfil.lower()}_respaldo.csv", mime="text/csv")
     if st.button("Cambiar de perfil", key="logout_side"):
         st.session_state.clear()
         st.rerun()
     st.markdown(
-        "<p style='color:#8b98ab; font-size:.78rem; text-align:center; margin-top:12px;'>"
-        "🔒 Datos en la nube · cada perfil tiene su PIN.</p>",
+        "<p style='color:#9C9889; font-size:.78rem; text-align:center; margin-top:12px;'>"
+        "Datos en la nube · cada perfil tiene su PIN.</p>",
         unsafe_allow_html=True,
     )
 
@@ -886,7 +928,7 @@ if st.session_state.get("periodo") not in opciones_periodo:
 col_t, col_f = st.columns([3, 1.3], vertical_alignment="center")
 with col_t:
     st.markdown(
-        f'<div class="app-title">Hola, {html.escape(perfil)} 👋</div>'
+        f'<div class="app-title">Hola, {html.escape(perfil)}</div>'
         '<div class="app-sub">Así van tus finanzas.</div>',
         unsafe_allow_html=True,
     )
@@ -915,7 +957,10 @@ else:
 nota_periodo = "Todo el historial" if periodo == TODO else None
 
 tab_res, tab_mov, tab_fijos, tab_pre, tab_meta, tab_cat, tab_cuenta = st.tabs(
-    ["📊 Resumen", "🧾 Historial", "📌 Fijos", "🎯 Presupuesto", "🏆 Metas", "🏷️ Categorías", "⚙️ Cuenta"]
+    [etiqueta_tab("pie_chart", "Resumen"), etiqueta_tab("receipt_long", "Historial"),
+     etiqueta_tab("push_pin", "Fijos"), etiqueta_tab("target", "Presupuesto"),
+     etiqueta_tab("emoji_events", "Metas"), etiqueta_tab("sell", "Categorías"),
+     etiqueta_tab("settings", "Cuenta")]
 )
 
 # ─────────────────────────────────────────────────────────────
@@ -926,11 +971,11 @@ with tab_res:
         st.info("Aún no tienes movimientos. Usa la barra lateral izquierda para registrar el primero (en el teléfono se abre con la flecha de arriba a la izquierda).")
     else:
         c1, c2, c3 = st.columns([1.4, 1, 1])
-        c1.markdown(tarjeta("Balance", dinero(bal), "📊", hero=True,
+        c1.markdown(tarjeta("Balance", dinero(bal), ICO_BALANCE, hero=True,
                             nota="Ingresos − gastos", negativo=bal < 0), unsafe_allow_html=True)
-        c2.markdown(tarjeta("Ingresos", dinero(ing), "💵", d_ing, True, nota=nota_periodo),
+        c2.markdown(tarjeta("Ingresos", dinero(ing), ICO_SUBE, d_ing, True, nota=nota_periodo),
                     unsafe_allow_html=True)
-        c3.markdown(tarjeta("Gastos", dinero(gas), "💸", d_gas, False, nota=nota_periodo),
+        c3.markdown(tarjeta("Gastos", dinero(gas), ICO_BAJA, d_gas, False, nota=nota_periodo),
                     unsafe_allow_html=True)
 
         sueldo_p = df_p.loc[df_p["origen"] == "sueldo", "monto"].sum()
@@ -986,11 +1031,11 @@ with tab_res:
             else:
                 barras = (
                     alt.Chart(base)
-                    .mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5, color=CIAN, opacity=0.9)
+                    .mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5, color=ACENTO, opacity=0.95)
                     .encode(
                         x=eje_x,
                         y=alt.Y("monto:Q", title=None,
-                                axis=alt.Axis(labelColor=MUTED, gridColor="rgba(255,255,255,0.06)",
+                                axis=alt.Axis(labelColor=MUTED, gridColor="rgba(240,238,230,0.07)",
                                               domain=False, ticks=False)),
                         tooltip=[alt.Tooltip("etiqueta", title=titulo_x),
                                  alt.Tooltip("monto:Q", title="Gastado", format=",.2f")],
@@ -1015,7 +1060,7 @@ with tab_res:
 with tab_mov:
     filtro_tipo = st.radio("Mostrar", ["Todos", "Ingresos", "Gastos"], horizontal=True,
                            label_visibility="collapsed")
-    busqueda = st.text_input("Buscar", placeholder="🔎 Buscar por descripción o categoría",
+    busqueda = st.text_input("Buscar", placeholder="Buscar por descripción o categoría",
                              label_visibility="collapsed")
 
     df_f = df_p
@@ -1045,7 +1090,7 @@ with tab_mov:
 
             def colorear_tipo(col):
                 return [
-                    "color:#34d399;font-weight:600" if v == "Ingreso" else "color:#fb7185;font-weight:600"
+                    "color:#8FB58A;font-weight:600" if v == "Ingreso" else "color:#E0836B;font-weight:600"
                     for v in col
                 ]
 
@@ -1062,12 +1107,40 @@ with tab_mov:
                 },
             )
 
-        with st.expander("🗑️ Eliminar un movimiento"):
-            etiquetas = {
-                int(r.id): f"{r.fecha:%d/%m/%Y} · {r.categoria} · {dinero(r.monto)}"
-                           + (f" · {r.descripcion}" if r.descripcion else "")
-                for r in df_f.head(100).itertuples()
-            }
+        etiquetas = {
+            int(r.id): f"{r.fecha:%d/%m/%Y} · {r.categoria} · {dinero(r.monto)}"
+                       + (f" · {r.descripcion}" if r.descripcion else "")
+            for r in df_f.head(100).itertuples()
+        }
+
+        with st.expander("Editar un movimiento"):
+            id_ed = st.selectbox("Movimiento a editar", list(etiquetas), format_func=etiquetas.get,
+                                 label_visibility="collapsed")
+            fila_ed = df_f[df_f["id"] == id_ed].iloc[0]
+            opciones_cat = list(CATEGORIAS[fila_ed["tipo"]])
+            if fila_ed["categoria"] not in opciones_cat:  # por si esa categoría ya fue quitada
+                opciones_cat = [fila_ed["categoria"]] + opciones_cat
+            with st.form("form_editar_mov"):
+                nueva_cat = st.selectbox(
+                    "Categoría", opciones_cat, index=opciones_cat.index(fila_ed["categoria"]),
+                    format_func=lambda c: f"{icono(fila_ed['tipo'], c)}  {c}", key=f"em_cat_{id_ed}")
+                nuevo_monto_m = st.number_input(f"Monto ({MONEDA})", min_value=0.01, value=float(fila_ed["monto"]),
+                                                step=1.0, format="%.2f", key=f"em_monto_{id_ed}")
+                nueva_desc = st.text_input("Descripción", value=fila_ed["descripcion"], max_chars=80,
+                                           key=f"em_desc_{id_ed}")
+                nueva_fecha = st.date_input("Fecha", value=fila_ed["fecha"].date(), format="DD/MM/YYYY",
+                                            key=f"em_fecha_{id_ed}")
+                guardar_ed = st.form_submit_button("Guardar cambios")
+            if guardar_ed:
+                if actualizar_movimiento(perfil, id_ed, nueva_cat, round(nuevo_monto_m, 2),
+                                         nueva_desc.strip(), nueva_fecha):
+                    st.session_state["flash"] = "Movimiento actualizado"
+                    st.rerun()
+            if fila_ed["origen"] in ("fijo", "sueldo"):
+                st.caption("Este movimiento viene de tus fijos: el cambio vale solo para este mes. "
+                           "Para cambiarlo en todos los meses usa la pestaña Fijos.")
+
+        with st.expander("Eliminar un movimiento"):
             elegido = st.selectbox("Movimiento", list(etiquetas), format_func=etiquetas.get,
                                    label_visibility="collapsed")
             confirmar = st.checkbox("Confirmo que quiero eliminarlo")
@@ -1100,7 +1173,7 @@ with tab_fijos:
         st.info("Define tu sueldo fijo y se sumará solo cada mes como ingreso. "
                 "Bonos y extras los agregas aparte.")
 
-    with st.expander("✏️ Cambiar mi sueldo fijo", expanded=sueldo <= 0):
+    with st.expander("Cambiar mi sueldo fijo", expanded=sueldo <= 0):
         with st.form("form_sueldo"):
             nuevo_sueldo = st.number_input(f"Sueldo mensual ({MONEDA}) · 0 para quitarlo", min_value=0.0,
                                            value=sueldo, step=10.0, format="%.2f")
@@ -1138,7 +1211,7 @@ with tab_fijos:
                 )
         st.caption("Marca cada gasto cuando lo pagues. Los fijos ya cuentan en tu balance desde el día 1.")
 
-    with st.expander("➕ Agregar gasto fijo", expanded=not fijos_def):
+    with st.expander("Agregar gasto fijo", expanded=not fijos_def):
         with st.form("form_nuevo_fijo", clear_on_submit=True):
             nombre_f = st.text_input("Nombre", placeholder="Ej: Alquiler", max_chars=40)
             cat_f = st.selectbox("Categoría", list(CATEGORIAS["Gasto"]),
@@ -1156,7 +1229,7 @@ with tab_fijos:
                     st.rerun()
 
     if fijos_def:
-        with st.expander("✏️ Editar o quitar un gasto fijo"):
+        with st.expander("Editar o quitar un gasto fijo"):
             opciones_f = {f["id"]: f'{f["nombre"]} · {dinero(float(f["monto"]))}' for f in fijos_def}
             elegido_f = st.selectbox("Gasto fijo", list(opciones_f), format_func=opciones_f.get,
                                      label_visibility="collapsed")
@@ -1196,7 +1269,7 @@ with tab_fijos:
             f'<div class="bud" style="margin-top:14px"><div class="bud-foot" style="margin:0 0 4px">Libre para gastar · {etiqueta_mes(mes_ref)}</div>'
             f'<div class="goal-big" style="color:{color_libre}">{dinero(bal_m)}</div>'
             f'<div class="stack" style="margin:12px 0 8px"><div style="width:{pct_fijos:.1f}%;background:var(--amber)"></div>'
-            f'<div style="flex:1;background:var(--cyan)"></div></div>'
+            f'<div style="flex:1;background:var(--accent)"></div></div>'
             f'<div class="bud-head"><span>Fijos {dinero(fijos_m)}</span><span>Ingresos {dinero(ing_m)}</span></div>'
             f'<div class="bud-foot">{detalle}</div></div>',
             unsafe_allow_html=True,
@@ -1211,6 +1284,10 @@ with tab_pre:
         df[(df["mes"] == mes_ref) & (df["tipo"] == "Gasto")]
         .groupby("categoria")["monto"].sum().to_dict()
     )
+    st.markdown('<div class="sec">Presupuesto</div>', unsafe_allow_html=True)
+    st.caption("Un presupuesto es el tope que te pones por categoría cada mes. La barra se llena con lo que "
+               "gastas (los gastos fijos también cuentan), se pone ámbar al llegar al 80% y coral si te pasas. "
+               "Se reinicia solo cada mes y no bloquea nada: solo te avisa.")
     if periodo == TODO:
         st.caption(f"Los presupuestos son mensuales. Mostrando {etiqueta_mes(mes_ref)}.")
 
@@ -1234,8 +1311,11 @@ with tab_pre:
                 f'<div class="bud-foot">{pct:.0f}% usado · {pie}</div></div>',
                 unsafe_allow_html=True,
             )
+        sin_presupuesto = sum(v for c, v in gastado_mes.items() if c not in presupuestos)
+        if sin_presupuesto > 0:
+            st.caption(f"Gastos de este mes en categorías sin presupuesto: {dinero(sin_presupuesto)}")
 
-    with st.expander("➕ Definir o editar un presupuesto", expanded=not presupuestos):
+    with st.expander("Definir o editar un presupuesto", expanded=not presupuestos):
         with st.form("form_presupuesto", clear_on_submit=True):
             cat_p = st.selectbox("Categoría", list(CATEGORIAS["Gasto"]),
                                  format_func=lambda c: f"{CATEGORIAS['Gasto'][c]}  {c}")
@@ -1265,7 +1345,7 @@ with tab_meta:
         titulo_meta = html.escape(meta_nombre or "Mi meta de ahorro")
         barra_meta = f'<div class="bar"><div style="width:{pct:.1f}%"></div></div>'
         st.markdown(
-            f'<div class="bud"><div class="goal-big">🏆 {titulo_meta}</div>'
+            f'<div class="bud"><div class="goal-big">{titulo_meta}</div>'
             f'<div class="bud-head"><span>Llevas {dinero(balance_total)}</span>'
             f'<span>Meta {dinero(meta_obj)}</span></div>'
             f'{barra_meta}'
@@ -1273,7 +1353,7 @@ with tab_meta:
             unsafe_allow_html=True,
         )
         if falta <= 0:
-            st.success("🎉 ¡Meta alcanzada! Puedes definir una nueva abajo.")
+            st.success("¡Meta alcanzada! Puedes definir una nueva abajo.")
         elif not df.empty:
             neto = df["monto"].where(df["tipo"] == "Ingreso", -df["monto"])
             prom = neto.groupby(df["mes"]).sum().sort_index().tail(3).mean()
@@ -1288,7 +1368,7 @@ with tab_meta:
     else:
         st.info("Define una meta (un viaje, inventario nuevo, fondo de emergencia) y sigue tu avance aquí.")
 
-    with st.expander("✏️ Definir o cambiar mi meta", expanded=meta_obj <= 0):
+    with st.expander("Definir o cambiar mi meta", expanded=meta_obj <= 0):
         with st.form("form_meta"):
             nuevo_nombre = st.text_input("¿Para qué estás ahorrando?", value=meta_nombre,
                                          placeholder="Ej: Fondo de emergencia", max_chars=60)
@@ -1310,7 +1390,7 @@ with tab_cat:
         st.code(SQL_CATEGORIAS, language="sql")
     else:
         tipo_c = st.radio("Tipo de categoría", ["Gasto", "Ingreso"], horizontal=True,
-                          format_func={"Gasto": "💸 Gastos", "Ingreso": "💵 Ingresos"}.get,
+                          format_func={"Gasto": "Gastos", "Ingreso": "Ingresos"}.get,
                           key="cat_tipo_sel", label_visibility="collapsed")
         actuales = CATEGORIAS[tipo_c]
         chips = "".join(
@@ -1320,7 +1400,7 @@ with tab_cat:
         )
         st.markdown(f'<div class="cat-card" style="padding:16px 16px 8px">{chips}</div>', unsafe_allow_html=True)
 
-        with st.expander("➕ Agregar categoría"):
+        with st.expander("Agregar categoría"):
             with st.form("form_nueva_cat", clear_on_submit=True):
                 nombre_c = st.text_input("Nombre", placeholder="Ej: Mascotas", max_chars=24)
                 icono_c = st.text_input("Icono (un emoji)", placeholder="🐶", max_chars=8)
@@ -1335,7 +1415,7 @@ with tab_cat:
                         st.rerun()
             st.caption("Ideas de iconos: 🐶 ✈️ 🎓 🛒 💊 🎁 📱 🚗 ⚽ 🧴 💰 🛠️ · En el teléfono usa el teclado de emojis.")
 
-        with st.expander("✏️ Editar o quitar una categoría"):
+        with st.expander("Editar o quitar una categoría"):
             sel_c = st.selectbox("Categoría", list(actuales),
                                  format_func=lambda n: f"{actuales[n]}  {n}",
                                  key=f"cat_sel_{tipo_c}", label_visibility="collapsed")
@@ -1390,10 +1470,10 @@ with tab_cuenta:
             .to_csv(index=False)
             .encode("utf-8-sig")
         )
-        st.download_button("⬇️ Descargar respaldo (CSV)", respaldo, key="dl_cuenta",
+        st.download_button("Descargar respaldo (CSV)", respaldo, key="dl_cuenta",
                            file_name=f"finanzas_{perfil.lower()}_respaldo.csv", mime="text/csv")
 
-    with st.expander("⬆️ Importar movimientos desde un CSV"):
+    with st.expander("Importar movimientos desde un CSV"):
         st.caption("Sirve para traer los datos de la versión anterior de la app. "
                    "Columnas necesarias: fecha, tipo, categoria, monto (y descripcion, opcional). "
                    "Importa el archivo una sola vez para no duplicar movimientos.")
@@ -1430,4 +1510,4 @@ with tab_cuenta:
                 st.error("No pude leer ese archivo. Asegúrate de que sea el CSV de respaldo.")
                 st.caption(f"Detalle técnico: {e}")
 
-    st.caption("🔒 Cada perfil tiene su propio PIN y sus propios datos.")
+    st.caption("Cada perfil tiene su propio PIN y sus propios datos.")
